@@ -4,10 +4,25 @@ authors = ["Joshua Lampert <joshua.lampert@uni-hamburg.de> and contributors"]
 version = "0.1.0-DEV"
 
 [deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+PreallocationTools = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 SummationByPartsOperators = "9f78cca6-572e-554e-b819-917d2f1cf240"
 
+[weakdeps]
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+Optim = "429524aa-4258-5aef-a3af-852621145aeb"
+
+[extensions]
+SummationByPartsOperatorsExtraOptimForwardDiffExt = ["Optim", "ForwardDiff"]
+
 [compat]
+ForwardDiff = "0.10"
+LinearAlgebra = "1"
+Optim = "1.12"
+PreallocationTools = "0.4.26"
 Reexport = "1.2"
+SparseArrays = "1"
 SummationByPartsOperators = "0.5.78"
 julia = "1.10"
