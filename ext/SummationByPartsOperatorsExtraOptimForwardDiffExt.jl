@@ -6,10 +6,9 @@ import ForwardDiff
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       GlaubitzNordströmÖffner2023,
                                       MatrixDerivativeOperator,
-                                      MultidimensionalMatrixDerivativeOperator,
-                                      AbstractMultidimensionalMatrixDerivativeOperator
+                                      MultidimensionalMatrixDerivativeOperator
 using SummationByPartsOperatorsExtra: get_nsigma
-using LinearAlgebra: Diagonal, UpperTriangular, LowerTriangular, dot, diag, norm, mul!,
+using LinearAlgebra: Diagonal, UpperTriangular, LowerTriangular, diag, mul!,
                      issymmetric
 using SparseArrays: spzeros
 using PreallocationTools: DiffCache, get_tmp
