@@ -5,8 +5,7 @@ import ForwardDiff
 
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       GlaubitzNordströmÖffner2023,
-                                      MatrixDerivativeOperator,
-                                      MultidimensionalMatrixDerivativeOperator
+                                      MatrixDerivativeOperator
 using SummationByPartsOperatorsExtra: get_nsigma
 using LinearAlgebra: Diagonal, UpperTriangular, LowerTriangular, diag, mul!,
                      issymmetric

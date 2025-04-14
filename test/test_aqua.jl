@@ -9,9 +9,9 @@
                   stale_deps = (;
                                 ignore = [:PreallocationTools]))
     @test isnothing(check_no_implicit_imports(SummationByPartsOperatorsExtra,
-                                              skip = (SummationByPartsOperatorsExtra.SummationByPartsOperators,)))
-    @test isnothing(check_no_stale_explicit_imports(SummationByPartsOperatorsExtra,
-                                                    ignore = (:AbstractMultidimensionalMatrixDerivativeOperator,)))
+                                              skip = (Core, Base,
+                                                      SummationByPartsOperatorsExtra.SummationByPartsOperators)))
+    @test isnothing(check_no_stale_explicit_imports(SummationByPartsOperatorsExtra))
     @test isnothing(check_all_qualified_accesses_via_owners(SummationByPartsOperatorsExtra))
     @test isnothing(check_no_self_qualified_accesses(SummationByPartsOperatorsExtra))
 end
