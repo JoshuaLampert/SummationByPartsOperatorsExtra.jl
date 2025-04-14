@@ -2,7 +2,6 @@
 
 [![Build Status](https://github.com/JoshuaLampert/SummationByPartsOperatorsExtra.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JoshuaLampert/SummationByPartsOperatorsExtra.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/JoshuaLampert/SummationByPartsOperatorsExtra.jl/graph/badge.svg)](https://codecov.io/gh/JoshuaLampert/SummationByPartsOperatorsExtra.jl)
-[![Coveralls](https://coveralls.io/repos/github/JoshuaLampert/SummationByPartsOperatorsExtra.jl/badge.svg?branch=main)](https://coveralls.io/github/JoshuaLampert/SummationByPartsOperatorsExtra.jl?branch=main)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](https://opensource.org/licenses/MIT)
 
