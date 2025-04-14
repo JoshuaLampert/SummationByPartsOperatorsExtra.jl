@@ -1,0 +1,8 @@
+/docs/build/
+**/Manifest.toml
+**/*.vtu
+run
+run/*
+out*/
+**/*.code-workspace
+.vscode/
