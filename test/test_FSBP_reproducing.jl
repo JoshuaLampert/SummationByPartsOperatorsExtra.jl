@@ -103,7 +103,7 @@ end
                 @test isapprox(mass_matrix(D_sparsity_pattern), mass_matrix(D_poly);
                                atol = 1e-4) # almost equal
 
-                # This neeeds only 1 iteration
+                # This needs only 1 iteration
                 x_poly_sparsity_pattern = get_optimization_entries(D_poly;
                                                                    sparsity_pattern)
                 D_sparsity_pattern_x0 = function_space_operator(basis, nodes,
