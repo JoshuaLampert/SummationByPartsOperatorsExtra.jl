@@ -55,11 +55,5 @@ See also [`GlaubitzNordströmÖffner2023`](@ref).
 """
 function function_space_operator end
 
-# Just to be able to call them from outside
-function get_optimization_entries end
-
-function get_nsigma end
-
-function get_multidimensional_optimization_entries end
-
+# Just to be able to call it from outside
 function create_S end

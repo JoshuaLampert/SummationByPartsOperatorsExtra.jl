@@ -9,7 +9,7 @@
 implements some extra functionality for the package [SummationByPartsOperators.jl](https://github.com/ranocha/SummationByPartsOperators.jl).
 SummationByPartsOperatorsExtra.jl is still in an early stage of development and is meant to be used
 for research purposes. Maybe some parts of the package will be moved to SummationByPartsOperators.jl in the future.
-Until now, the package focusses on the implementation of function space summation-by-parts operators in one and multiple dimensions.
+Until now, the package focuses on the implementation of function space summation-by-parts operators in one and multiple dimensions.
 
 ## Installation
 

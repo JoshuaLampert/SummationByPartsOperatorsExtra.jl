@@ -1,0 +1,17 @@
+function to_S(P, D)
+    Q = P * D
+    S = 0.5 * (Q - Q')
+    return S
+end
+
+function to_S(D::SummationByPartsOperators.AbstractNonperiodicDerivativeOperator)
+    to_S(mass_matrix(D), Matrix(D))
+end
+
+function get_sparsity_pattern(D::SummationByPartsOperators.AbstractNonperiodicDerivativeOperator)
+    return get_sparsity_pattern(to_S(D))
+end
+
+function get_sparsity_pattern(S)
+    return UpperTriangular(S .!= 0.0)
+end
