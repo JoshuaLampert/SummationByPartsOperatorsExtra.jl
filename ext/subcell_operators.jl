@@ -155,7 +155,8 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
          bandwidth, size_boundary, different_values, sparsity_pattern)
 
     if isnothing(x0)
-        x0 = [zeros(T, 2 * L); invsig.(x_length_left / N_L * ones(T, N_L)); invsig.(x_length_right / N_R * ones(T, N_R))]
+        x0 = [zeros(T, 2 * L); invsig.(x_length_left / N_L * ones(T, N_L));
+              invsig.(x_length_right / N_R * ones(T, N_R))]
     else
         n_x = 2 * L + N_L + N_R
         @assert length(x0)==n_x "Initial guess has to be 2L + N_L + N_R = $n_x long"
