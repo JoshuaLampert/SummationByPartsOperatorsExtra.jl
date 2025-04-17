@@ -78,16 +78,6 @@ function grid_right(D::SubcellOperator)
     return x[(N - N_R + 1):N]
 end
 
-# function weights_left(D::SubcellOperator{T})
-#     N = size(D, 2)
-#     N_L = length(D.weights_left)
-#     return [D.weights_left; zeros(T, N - N_L)]
-# end
-# function weights_right(D::SubcellOperator{T})
-#     N = length(grid(D))
-#     N_R = length(D.weights_right)
-#     return [zeros(T, N - N_R); D.weights_right]
-# end
 weights_left(D::SubcellOperator) = get_weight_left.(Ref(D), 1:size(D, 2))
 weights_right(D::SubcellOperator) = get_weight_right.(Ref(D), 1:size(D, 2))
 weights(D::SubcellOperator) = weights_left(D) + weights_right(D)
