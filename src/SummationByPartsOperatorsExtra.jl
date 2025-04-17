@@ -2,7 +2,7 @@ module SummationByPartsOperatorsExtra
 
 using AutoHashEquals: @auto_hash_equals
 using ArgCheck: @argcheck
-using LinearAlgebra: LinearAlgebra, Diagonal, UpperTriangular, diag, issymmetric
+using LinearAlgebra: LinearAlgebra, Diagonal, UpperTriangular, diag
 import LinearAlgebra: mul!
 using Reexport: @reexport
 @reexport using SummationByPartsOperators

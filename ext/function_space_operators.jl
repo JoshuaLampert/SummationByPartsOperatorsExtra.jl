@@ -90,7 +90,7 @@ function construct_function_space_operator(basis_functions, nodes,
          bandwidth, size_boundary, different_values, sparsity_pattern)
 
     if isnothing(x0)
-        x0 = [zeros(T, L); invsig.(x_length / N * ones(T, N))]
+        x0 = [zeros(T, L); invsig.(1 / N * ones(T, N))]
     else
         @assert length(x0)==L + N "Initial guess to has be L + N = $(L + N) long"
     end
