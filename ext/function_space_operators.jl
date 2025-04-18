@@ -114,7 +114,7 @@ end
     (; L, x_length, V, V_x, R, S_cache, SV_cache, PV_x_cache, A_cache,
     bandwidth, size_boundary, different_values, sparsity_pattern) = p
 
-    (N, _) = size(R)
+    N = size(R, 1)
     sigma, rho = split_x_function_space_operator(x, L)
 
     S = get_tmp(S_cache, x)
@@ -122,8 +122,8 @@ end
     PV_x = get_tmp(PV_x_cache, x)
     A = get_tmp(A_cache, x)
     set_S!(S, sigma, N, bandwidth, size_boundary, different_values, sparsity_pattern)
-    P = create_P(rho, x_length)
     mul!(SV, S, V)
+    P = create_P(rho, x_length)
     mul!(PV_x, P, V_x)
     @. A = SV - PV_x + R
     return sum(abs2, A)
