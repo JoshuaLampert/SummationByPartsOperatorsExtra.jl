@@ -1,5 +1,5 @@
 """
-    GlaubitzIskeLampertÖffner2024()
+    GlaubitzIskeLampertÖffner2025()
 
 Multidimensional function space SBP (MFSBP) operators given in
 - Glaubitz, Iske, Lampert, Öffner (2025)
@@ -11,7 +11,7 @@ See [`multidimensional_function_space_operator`](@ref).
 """
 struct GlaubitzIskeLampertÖffner2025 <: SourceOfCoefficients end
 
-function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2024)
+function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2025)
   if get(io, :compact, false)
     summary(io, source)
   else
