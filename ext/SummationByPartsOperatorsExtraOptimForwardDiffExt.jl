@@ -9,8 +9,7 @@ using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       GlaubitzIskeLampertÖffner2025,
                                       MultidimensionalMatrixDerivativeOperator
 using SummationByPartsOperatorsExtra: get_nsigma
-using LinearAlgebra: Diagonal, UpperTriangular, LowerTriangular, dot, diag, norm, mul!,
-                     issymmetric
+using LinearAlgebra: Diagonal, UpperTriangular, LowerTriangular, diag, mul!, issymmetric
 using SparseArrays: spzeros
 using PreallocationTools: DiffCache, get_tmp
 
