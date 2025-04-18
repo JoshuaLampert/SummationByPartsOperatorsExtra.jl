@@ -12,15 +12,15 @@ See [`multidimensional_function_space_operator`](@ref).
 struct GlaubitzIskeLampertÖffner2025 <: SourceOfCoefficients end
 
 function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2025)
-  if get(io, :compact, false)
-    summary(io, source)
-  else
-      print(io,
-          "Glaubitz, Iske, Lampert, Öffner (2025) \n",
-          "  Efficient construction and application of multi-dimensional summation-by-parts operators \n",
-          "  to global radial basis function methods \n",
-          "  TODO.")
-  end
+    if get(io, :compact, false)
+        summary(io, source)
+    else
+        print(io,
+              "Glaubitz, Iske, Lampert, Öffner (2025) \n",
+              "  Efficient construction and application of multi-dimensional summation-by-parts operators \n",
+              "  to global radial basis function methods \n",
+              "  TODO.")
+    end
 end
 
 # This function is extended in the package extension SummationByPartsOperatorsExtraOptimExt
