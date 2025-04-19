@@ -124,7 +124,7 @@ end
                                                              bandwidth, size_boundary,
                                                              different_values,
                                                              verbose, opt_kwargs...)
-                @test isapprox(Matrix(D[1]), Matrix(D_poly); atol) # equal
+                @test isapprox(Matrix(D[1]), Matrix(D_poly); 1e-12) # equal
                 @test isapprox(mass_matrix(D), mass_matrix(D_poly); atol) # equal
                 @test isapprox(mass_matrix_boundary(D, 1), mass_matrix_boundary(D_poly);
                                atol) # equal
