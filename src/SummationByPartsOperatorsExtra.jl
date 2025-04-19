@@ -9,5 +9,6 @@ include("multidimensional_function_space_operators.jl")
 include("utils/utils.jl")
 export get_sparsity_pattern
 export get_nsigma, get_optimization_entries
+export compute_moments_boundary
 export GlaubitzIskeLampertÖffner2025, multidimensional_function_space_operator
 end
