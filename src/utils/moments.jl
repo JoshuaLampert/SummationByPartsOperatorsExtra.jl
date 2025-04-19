@@ -13,11 +13,11 @@ function compute_moments_boundary(basis_functions, nodes, normals)
 end
 
 function compute_moments_boundary(functions,
-                                  D::SummationByPartsOperators.AbstractMultidimensionalMatrixDerivativeOperator{Dim,
-                                                                                                                T}) where {
-                                                                                                                           Dim,
-                                                                                                                           T
-                                                                                                                           }
+                                  D::AbstractMultidimensionalMatrixDerivativeOperator{Dim,
+                                                                                      T}) where {
+                                                                                                 Dim,
+                                                                                                 T
+                                                                                                 }
     K = length(functions)
     nodes = grid(D)
     moments = ntuple(Dim) do i
