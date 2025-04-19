@@ -5,10 +5,11 @@ import ForwardDiff
 
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       GlaubitzNordströmÖffner2023,
-                                      MatrixDerivativeOperator
+                                      MatrixDerivativeOperator,
+                                      GlaubitzIskeLampertÖffner2025,
+                                      MultidimensionalMatrixDerivativeOperator
 using SummationByPartsOperatorsExtra: get_nsigma
-using LinearAlgebra: Diagonal, UpperTriangular, LowerTriangular, diag, mul!,
-                     issymmetric
+using LinearAlgebra: Diagonal, UpperTriangular, LowerTriangular, diag, mul!, issymmetric
 using SparseArrays: spzeros
 using PreallocationTools: DiffCache, get_tmp
 
@@ -167,8 +168,8 @@ invsig(p) = log(p / (1 - p))
 # invsig(p) = log(p)
 
 # For b, no sigmoid function seems to perform better
-# sig_b(x) = x
-# invsig_b(p) = p
+sig_b(x) = x
+invsig_b(p) = p
 
 # sig_b(x) = 1 / (1 + exp(-x))
 # invsig_b(p) = log(p / (1 - p))
@@ -177,6 +178,27 @@ function create_P(rho, vol)
     P = Diagonal(sig.(rho))
     P *= vol / sum(P)
     return P
+end
+
+function create_B(N, phi, normals, boundary_indices, dim;
+                  corners = ntuple(_ -> eltype(phi)[], dim))
+    b = zeros(eltype(phi), N)
+    B = Diagonal(b)
+    set_B!(B, phi, normals, boundary_indices, dim; corners)
+    return B
+end
+
+function set_B!(B, phi, normals, boundary_indices, dim;
+                corners = ntuple(_ -> eltype(phi)[], dim))
+    fill!(B, zero(eltype(B)))
+    for j in eachindex(boundary_indices)
+        k = boundary_indices[j]
+        # If we have corners, we store multiple weights (boundary_indices is not unique)
+        # and we need to make sure to not overwrite the corner weights
+        if !(j in corners[dim])
+            B[k, k] = sig_b(phi[j]) * normals[j][dim]
+        end
+    end
 end
 
 function SummationByPartsOperatorsExtra.function_space_operator(basis_functions,
@@ -353,4 +375,6 @@ end
     @. A = SV - PV_x + R
     return sum(abs2, A)
 end
+
+include("multidimensional_function_space_operators.jl")
 end
