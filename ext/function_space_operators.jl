@@ -40,12 +40,6 @@ function SummationByPartsOperatorsExtra.function_space_operator(basis_functions,
                                     accuracy_order, source)
 end
 
-function create_P(rho, vol)
-    P = Diagonal(sig.(rho))
-    P *= vol / sum(P)
-    return P
-end
-
 function construct_function_space_operator(basis_functions, nodes,
                                            ::GlaubitzNordströmÖffner2023;
                                            bandwidth = length(nodes) - 1,

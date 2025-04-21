@@ -1,7 +1,7 @@
 # SummationByPartsOperatorsExtra.jl
 
 [![Build Status](https://github.com/JoshuaLampert/SummationByPartsOperatorsExtra.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JoshuaLampert/SummationByPartsOperatorsExtra.jl/actions/workflows/CI.yml?query=branch%3Amain)
-[![codecov](https://codecov.io/gh/JoshuaLampert/SummationByPartsOperatorsExtra.jl/graph/badge.svg)](https://codecov.io/gh/JoshuaLampert/SummationByPartsOperatorsExtra.jl)
+[![codecov](https://codecov.io/gh/JoshuaLampert/SummationByPartsOperatorsExtra.jl/graph/badge.svg?token=ZnS5D3tWSK)](https://codecov.io/gh/JoshuaLampert/SummationByPartsOperatorsExtra.jl)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](https://opensource.org/licenses/MIT)
 
