@@ -1,8 +1,9 @@
 # This function is extended in the package extension SummationByPartsOperatorsExtraOptimExt
 """
     function_space_operator(basis_functions, nodes, source;
-                            derivative_order = 1, accuracy_order = 0, bandwidth = length(nodes) - 1,
-                            size_boundary = 2 * bandwidth, different_values = true,
+                            derivative_order = 1, accuracy_order = 0,
+                            bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
+                            different_values = true, sparsity_pattern = nothing,
                             opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
                             autodiff = :forward, x0 = nothing, verbose = false)
 
@@ -28,6 +29,11 @@ The initial guess for the optimization problem can be passed with the keyword ar
 If `nothing` is passed, a default initial guess (zeros for the entries of the differentiation matrix and
 equal values for all the weights) is used.
 
+There are two alternative ways to enforce sparsity of the resulting operator. The first is by passing
+a matrix `sparsity_pattern` that is a matrix of zeros and ones, where the ones indicate the non-zero
+entries of the operator. This matrix should be symmetric or `UpperTriangular` and have zeros on the diagonal.
+
+The second way is to use a banded-block structure for the operator as is common, e.g., in finite difference methods.
 The keyword arguments `bandwidth` and `size_boundary` specify the bandwidth and the size of the
 boundary blocks of the operator, where the default of `bandwidth` is set to `length(nodes) - 1`,
 i.e., a dense operator (in this case `size_boundary` is ignored). To construct a sparse operator, you can set the
