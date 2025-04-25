@@ -87,8 +87,8 @@ SummationByPartsOperators.mass_matrix(D::SubcellOperator) = Diagonal(weights(D))
 
 mass_matrix_boundary_left(D::SubcellOperator) = D.B_left
 mass_matrix_boundary_right(D::SubcellOperator) = D.B_right
-# This is always diag(-1, 0, ..., 0, 1) if e_L and e_R are the first and last unit vectors
-# SummationByPartsOperators.mass_matrix_boundary(D::SubcellOperator) = D.B_left + D.B_right
+# If e_L and e_R are the first and last unit vectors and e_M is the same in both sub-cells, this would always be diag(-1, 0, ..., 0, 1).
+SummationByPartsOperators.mass_matrix_boundary(D::SubcellOperator) = D.B_left + D.B_right
 
 """
     derivative_matrix(Dop::SubcellOperator)
@@ -254,3 +254,7 @@ See also [`GlaubitzLampertNordströmWinters2025`](@ref).
     This is an experimental feature and may change in future releases.
 """
 function subcell_operator end
+
+# Just to be able to call them from outside
+function create_S_left end
+function create_S_right end
