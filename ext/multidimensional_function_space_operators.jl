@@ -20,22 +20,7 @@ function SummationByPartsOperatorsExtra.multidimensional_function_space_operator
                                                                                  autodiff = :forward,
                                                                                  x0 = nothing,
                                                                                  verbose = false) where {SourceOfCoefficients}
-    if derivative_order != 1
-        throw(ArgumentError("Derivative order $derivative_order not implemented."))
-    end
-    if !isnothing(sparsity_patterns)
-        for sparsity_pattern in sparsity_patterns
-            if !(sparsity_pattern isa UpperTriangular || issymmetric(sparsity_pattern)) ||
-               !all(diag(sparsity_pattern) .== 0)
-                throw(ArgumentError("Sparsity patterns have to be symmetric with all diagonal entries being false or `UpperTriangular`."))
-            end
-        end
-        sparsity_patterns = UpperTriangular.(sparsity_patterns)
-    end
-    if (length(nodes) < 2 * size_boundary + bandwidth || bandwidth < 1) &&
-       (bandwidth != length(nodes) - 1)
-        throw(ArgumentError("2 * size_boundary + bandwidth = $(2 * size_boundary + bandwidth) needs to be smaller than or equal to N = $(length(nodes)) and bandwidth = $bandwidth needs to be at least 1."))
-    end
+    assert_first_derivative_order(derivative_order)
     weights, weights_boundary, Ds = construct_multidimensional_function_space_operator(basis_functions,
                                                                                        nodes,
                                                                                        boundary_indices,
@@ -77,8 +62,15 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
     K = length(basis_functions)
     N = length(nodes)
     N_boundary = length(boundary_indices)
+
     @assert length(normals)==N_boundary "You must provide normals for all boundary nodes (length(normals) = $(length(normals)), N_boundary = $N_boundary)."
-    if isnothing(sparsity_patterns)
+    assert_correct_bandwidth(nodes, bandwidth, size_boundary)
+    if !isnothing(sparsity_patterns)
+        for sparsity_pattern in sparsity_patterns
+            assert_correct_sparsity_pattern(sparsity_pattern)
+        end
+        sparsity_patterns = UpperTriangular.(sparsity_patterns)
+    else
         d = length(first(nodes))
         sparsity_patterns = ntuple(_ -> nothing, d)
     end

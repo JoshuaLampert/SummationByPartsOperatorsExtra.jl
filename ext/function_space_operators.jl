@@ -17,20 +17,7 @@ function SummationByPartsOperatorsExtra.function_space_operator(basis_functions,
                                                                 verbose = false) where {T,
                                                                                         SourceOfCoefficients
                                                                                         }
-    if derivative_order != 1
-        throw(ArgumentError("Derivative order $derivative_order not implemented."))
-    end
-    if !isnothing(sparsity_pattern)
-        if !(sparsity_pattern isa UpperTriangular || issymmetric(sparsity_pattern)) ||
-           !all(diag(sparsity_pattern) .== 0)
-            throw(ArgumentError("Sparsity pattern has to be symmetric with all diagonal entries being false or `UpperTriangular`."))
-        end
-        sparsity_pattern = UpperTriangular(sparsity_pattern)
-    end
-    if (length(nodes) < 2 * size_boundary + bandwidth || bandwidth < 1) &&
-       (bandwidth != length(nodes) - 1)
-        throw(ArgumentError("2 * size_boundary + bandwidth = $(2 * size_boundary + bandwidth) needs to be smaller than or equal to N = $(length(nodes)) and bandwidth = $bandwidth needs to be at least 1."))
-    end
+    assert_first_derivative_order(derivative_order)
     sort!(nodes)
     weights, D = construct_function_space_operator(basis_functions, nodes, source;
                                                    bandwidth, size_boundary,
@@ -54,6 +41,12 @@ function construct_function_space_operator(basis_functions, nodes,
     T = eltype(nodes)
     K = length(basis_functions)
     N = length(nodes)
+
+    assert_correct_bandwidth(nodes, bandwidth, size_boundary)
+    if !isnothing(sparsity_pattern)
+        assert_correct_sparsity_pattern(sparsity_pattern)
+        sparsity_pattern = UpperTriangular(sparsity_pattern)
+    end
     L = get_nsigma(N; bandwidth, size_boundary, different_values, sparsity_pattern)
 
     basis_functions_derivatives = [x -> ForwardDiff.derivative(basis_functions[i], x)
