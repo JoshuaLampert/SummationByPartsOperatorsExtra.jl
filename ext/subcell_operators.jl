@@ -17,20 +17,7 @@ function SummationByPartsOperatorsExtra.subcell_operator(basis_functions,
                                                          verbose = false) where {T,
                                                                                  SourceOfCoefficients
                                                                                  }
-    if derivative_order != 1
-        throw(ArgumentError("Derivative order $derivative_order not implemented."))
-    end
-    # if !isnothing(sparsity_pattern)
-    #     if !(sparsity_pattern isa UpperTriangular || issymmetric(sparsity_pattern)) ||
-    #        !all(diag(sparsity_pattern) .== 0)
-    #         throw(ArgumentError("Sparsity pattern has to be symmetric with all diagonal entries being false or `UpperTriangular`."))
-    #     end
-    #     sparsity_pattern = UpperTriangular(sparsity_pattern)
-    # end
-    # if (length(nodes) < 2 * size_boundary + bandwidth || bandwidth < 1) &&
-    #    (bandwidth != length(nodes) - 1)
-    #     throw(ArgumentError("2 * size_boundary + bandwidth = $(2 * size_boundary + bandwidth) needs to be smaller than or equal to N = $(length(nodes)) and bandwidth = $bandwidth needs to be at least 1."))
-    # end
+    assert_first_derivative_order(derivative_order)
     sort!(nodes)
     x_L = first(nodes)
     x_R = last(nodes)
@@ -74,15 +61,14 @@ end
 
 function set_S_left!(S_L, sigma_L, N_L, bandwidth, size_boundary,
                      different_values, sparsity_pattern)
-    set_S!(view(S_L, 1:N_L, 1:N_L), sigma_L, N_L, bandwidth, size_boundary,
-           different_values,
-           sparsity_pattern)
+    set_S!(view(S_L, 1:N_L, 1:N_L), sigma_L,  bandwidth, size_boundary,
+           different_values, sparsity_pattern)
 end
 
 function set_S_right!(S_R, sigma_R, N_R, bandwidth, size_boundary,
                       different_values, sparsity_pattern)
     N = size(S_R, 1)
-    set_S!(view(S_R, (N - N_R + 1):N, (N - N_R + 1):N), sigma_R, N_R, bandwidth,
+    set_S!(view(S_R, (N - N_R + 1):N, (N - N_R + 1):N), sigma_R, bandwidth,
            size_boundary, different_values, sparsity_pattern)
 end
 
@@ -106,8 +92,6 @@ function create_P_right(rho, N, vol)
     return P_R
 end
 
-# TODO: Need two different `bandwidth`s, `size_boundary`s, `different_values`s, and `sparsity_pattern`s
-# for left and right sub-cells
 function construct_subcell_operator(basis_functions, nodes, x_M,
                                     ::GlaubitzLampertNordströmWinters2025;
                                     bandwidths = [0, 0],
@@ -125,6 +109,7 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
     N_L = findfirst(x -> x > x_M, nodes) - 1
     # If x_M is in the nodes, x_M will be part of both sub-cells, which means we have one more node
     N_R = x_M in nodes ? N - N_L + 1 : N - N_L
+
     if bandwidths[1] == 0
         bandwidths[1] = N_L - 1
         size_boundaries[1] = 2 * bandwidths[1]
@@ -132,6 +117,14 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
     if bandwidths[2] == 0
         bandwidths[2] = N_R - 1
         size_boundaries[2] = 2 * bandwidths[2]
+    end
+    assert_correct_bandwidth(N_L, bandwidths[1], size_boundaries[1])
+    assert_correct_bandwidth(N_R, bandwidths[2], size_boundaries[2])
+    for (i, sparsity_pattern) in enumerate(sparsity_patterns)
+        if !isnothing(sparsity_pattern)
+            assert_correct_sparsity_pattern(sparsity_patterns)
+            sparsity_patterns[i] = UpperTriangular(sparsity_patterns[i])
+        end
     end
     L_L = get_nsigma(N_L; bandwidth = bandwidths[1], size_boundary = size_boundaries[1],
                      different_values = different_values[1],

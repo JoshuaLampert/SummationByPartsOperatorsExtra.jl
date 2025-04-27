@@ -42,7 +42,7 @@ function construct_function_space_operator(basis_functions, nodes,
     K = length(basis_functions)
     N = length(nodes)
 
-    assert_correct_bandwidth(nodes, bandwidth, size_boundary)
+    assert_correct_bandwidth(N, bandwidth, size_boundary)
     if !isnothing(sparsity_pattern)
         assert_correct_sparsity_pattern(sparsity_pattern)
         sparsity_pattern = UpperTriangular(sparsity_pattern)
