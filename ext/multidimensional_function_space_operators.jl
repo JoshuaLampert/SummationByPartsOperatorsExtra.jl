@@ -165,7 +165,7 @@ end
         M = moments[i]
         V_xi = V_xis[i]
         sigma = sigmas[i]
-        set_S!(S, sigma, N, bandwidth, size_boundary, different_values,
+        set_S!(S, sigma, bandwidth, size_boundary, different_values,
                sparsity_patterns[i])
         mul!(SV, S, V)
         mul!(PV_xi, P, V_xi)

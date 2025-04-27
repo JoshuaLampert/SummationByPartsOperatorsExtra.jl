@@ -29,7 +29,7 @@ end
 function SummationByPartsOperatorsExtra.create_S(sigma, N, bandwidth, size_boundary,
                                                  different_values, sparsity_pattern)
     S = zeros(eltype(sigma), N, N)
-    set_S!(S, sigma, N, bandwidth, size_boundary, different_values, sparsity_pattern)
+    set_S!(S, sigma, bandwidth, size_boundary, different_values, sparsity_pattern)
     return S
 end
 
@@ -91,8 +91,9 @@ function set_triangular!(C, sigma, bandwidth, size_boundary = 2 * bandwidth, ini
     return k
 end
 
-function set_S!(S, sigma, N, bandwidth, size_boundary = 2 * bandwidth,
+function set_S!(S, sigma, bandwidth, size_boundary = 2 * bandwidth,
                 different_values = true, sparsity_pattern = nothing)
+    N = size(S, 1)
     fill!(S, zero(eltype(sigma)))
     if isnothing(sparsity_pattern)
         set_S_block_banded!(S, sigma, N, bandwidth, size_boundary, different_values)

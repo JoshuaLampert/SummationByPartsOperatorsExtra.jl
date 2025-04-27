@@ -115,7 +115,7 @@ end
     SV = get_tmp(SV_cache, x)
     PV_x = get_tmp(PV_x_cache, x)
     A = get_tmp(A_cache, x)
-    set_S!(S, sigma, N, bandwidth, size_boundary, different_values, sparsity_pattern)
+    set_S!(S, sigma, bandwidth, size_boundary, different_values, sparsity_pattern)
     mul!(SV, S, V)
     P = create_P(rho, x_length)
     mul!(PV_x, P, V_x)
