@@ -165,7 +165,8 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
     B_left = E_L * B_P * E_L' # = e_M_L * e_M_L' - e_L * e_L'
     B_right = E_R * B_P * E_R' # = e_R * e_R' - e_M_R * e_M_R'
 
-    # Here, B is also just B_left + B_right
+    # B needs to be a block matrix
+    # B_left has a non-zero upper left block and B_right has a non-zero lower right block
     # B = spzeros(T, N, N)
     # B[1, 1] = -1
     # B[N, N] = 1
@@ -180,25 +181,14 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
     SV = zeros(T, N, K)
     PV_x = zeros(T, N, K)
     A = zeros(T, N, K)
-    P_LS_R = zeros(T, N, N)
-    P_RS_L = zeros(T, N, N)
-    P_LB_R = zeros(T, N, N)
-    P_RB_L = zeros(T, N, N)
-    C = zeros(T, N, N)
     S_L_cache = DiffCache(S_L)
     S_R_cache = DiffCache(S_R)
     S_cache = DiffCache(S)
     SV_cache = DiffCache(SV)
     PV_x_cache = DiffCache(PV_x)
     A_cache = DiffCache(A)
-    P_LS_R_cache = DiffCache(P_LS_R)
-    P_RS_L_cache = DiffCache(P_RS_L)
-    P_LB_R_Cache = DiffCache(P_LB_R)
-    P_RB_L_Cache = DiffCache(P_RB_L)
-    C_cache = DiffCache(C)
-    p = (; L_L, L_R, N_L, N_R, x_length_left, x_length_right, V, V_x, R, B_left, B_right,
+    p = (; L_L, L_R, N_L, N_R, x_length_left, x_length_right, V, V_x, R,
          S_L_cache, S_R_cache, S_cache, SV_cache, PV_x_cache, A_cache,
-         P_LS_R_cache, P_RS_L_cache, P_LB_R_Cache, P_RB_L_Cache, C_cache,
          bandwidths, size_boundaries, different_values, sparsity_patterns)
 
     if isnothing(x0)
@@ -233,14 +223,13 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
 end
 
 function optimization_function_subcell_operator(x, p)
-    (; L_L, L_R, N_L, N_R, x_length_left, x_length_right, V, V_x, R, B_left, B_right,
+    (; L_L, L_R, N_L, N_R, x_length_left, x_length_right, V, V_x, R,
     S_L_cache, S_R_cache, S_cache, SV_cache, PV_x_cache, A_cache,
-    P_LS_R_cache, P_RS_L_cache, P_LB_R_Cache, P_RB_L_Cache, C_cache,
     bandwidths, size_boundaries, different_values, sparsity_patterns) = p
 
     (N, _) = size(R)
     sigma_L, sigma_R, rho_L, rho_R = split_x_subcell_operator(x, L_L, L_R, N_L)
-    # first part (exactness of derivative operator)
+
     S_L = get_tmp(S_L_cache, x)
     S_R = get_tmp(S_R_cache, x)
     S = get_tmp(S_cache, x)
@@ -259,19 +248,7 @@ function optimization_function_subcell_operator(x, p)
     mul!(PV_x, P, V_x)
     @. A = SV - PV_x + R
 
-    # second part (P_{L/R}D = Q_{L/R})
-    # Not needed, since with the special structure, this is already satisfied
-    # P_LS_R = get_tmp(P_LS_R_cache, x)
-    # P_RS_L = get_tmp(P_RS_L_cache, x)
-    # P_LB_R = get_tmp(P_LB_R_Cache, x)
-    # P_RB_L = get_tmp(P_RB_L_Cache, x)
-    # C = get_tmp(C_cache, x)
-    # mul!(P_LS_R, P_L, S_R)
-    # mul!(P_RS_L, P_R, S_L)
-    # mul!(P_LB_R, P_L, B_right)
-    # mul!(P_RB_L, P_R, B_left)
-    # @. C = P_LS_R - P_RS_L + 0.5 * (P_LB_R - P_RB_L)
-    return sum(abs2, A) #+ sum(abs2, C)
+    return sum(abs2, A)
 end
 
 # x = [sigma_L; sigma_R; rho_L; rho_R]
