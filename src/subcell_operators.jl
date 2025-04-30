@@ -10,12 +10,28 @@
                                                          BType <: AbstractMatrix{T},
                                                          SourceOfCoefficients}
 
-TODO
+A sub-cell derivative operator on a non-periodic grid with scalar type `T`. A sub-cell operator
+consists of two parts, a left and a right part, which are defined on the left and right
+sub-cells of the grid. Each of the two parts satisfy a summation-by-parts property on their
+respecting sub-cell. The whole operator satisfies a summation-by-parts property on the whole
+grid.
 
-See also [`subcell_operator`](@ref).
+The whole operator follows the general interface of a derivative operator, e.g., implementing
+matrix-vector multiplication, integration, and the mass matrix. To obtain the derivative matrix
+``D = P^{-1}(Q_L + Q_R)`` associated to the sub-cell operator, use the function
+[`derivative_matrix`](@ref).
+The left and right mass matrices can be obtained with the functions
+[`mass_matrix_left`](@ref) and [`mass_matrix_right`](@ref), respectively. Similarly, the
+boundary mass matrices can be obtained with the functions
+[`mass_matrix_boundary_left`](@ref) and [`mass_matrix_boundary_right`](@ref).
+
+See also [`subcell_operator`](@ref) and [`GlaubitzIskeLampertÖffner2025`](@ref).
 
 References:
-- TODO
+- Glaubitz, Lampert, Nordström, Winters (2025):
+  Provable energy stable overset grid methods using sub-cell summation-by-parts
+  operators: One-dimensional linear advection equations.
+  TODO
 """
 @auto_hash_equals struct SubcellOperator{T, QType <: AbstractMatrix{T},
                                          BType <: AbstractMatrix{T},
@@ -70,7 +86,17 @@ function SummationByPartsOperators.integrate(func, u, D::SubcellOperator)
     return integrate(func, u, weights(D))
 end
 
+"""
+    grid_left(D::SubcellOperator)
+
+Returns the grid associated to the left part of the sub-cell operator `D`.
+"""
 grid_left(D::SubcellOperator) = grid(D)[1:length(D.weights_left)]
+"""
+    grid_right(D::SubcellOperator)
+
+Returns the grid associated to the right part of the sub-cell operator `D`.
+"""
 function grid_right(D::SubcellOperator)
     x = grid(D)
     N = length(x)
@@ -81,11 +107,31 @@ end
 weights_left(D::SubcellOperator) = get_weight_left.(Ref(D), 1:size(D, 2))
 weights_right(D::SubcellOperator) = get_weight_right.(Ref(D), 1:size(D, 2))
 weights(D::SubcellOperator) = weights_left(D) + weights_right(D)
+"""
+    mass_matrix_left(D::SubcellOperator)
+
+Returns the mass matrix associated to the left part of the sub-cell operator `D`.
+"""
 mass_matrix_left(D::SubcellOperator) = Diagonal(weights_left(D))
+"""
+    mass_matrix_right(D::SubcellOperator)
+
+Returns the mass matrix associated to the right part of the sub-cell operator `D`.
+"""
 mass_matrix_right(D::SubcellOperator) = Diagonal(weights_right(D))
 SummationByPartsOperators.mass_matrix(D::SubcellOperator) = Diagonal(weights(D))
 
+"""
+    mass_matrix_boundary_left(D::SubcellOperator)
+
+Returns the mass matrix associated to the left boundary of the sub-cell operator `D`.
+"""
 mass_matrix_boundary_left(D::SubcellOperator) = D.B_left
+"""
+    mass_matrix_boundary_right(D::SubcellOperator)
+
+Returns the mass matrix associated to the right boundary of the sub-cell operator `D`.
+"""
 mass_matrix_boundary_right(D::SubcellOperator) = D.B_right
 # If e_L and e_R are the first and last unit vectors and e_M is the same in both sub-cells, this would always be diag(-1, 0, ..., 0, 1).
 SummationByPartsOperators.mass_matrix_boundary(D::SubcellOperator) = D.B_left + D.B_right
@@ -217,7 +263,10 @@ end
     GlaubitzLampertNordströmWinters2025()
 
 Sub-cell SBP operators given in
-TODO
+- Glaubitz, Lampert, Nordström, Winters (2025):
+  Provable energy stable overset grid methods using sub-cell summation-by-parts
+  operators: One-dimensional linear advection equations.
+  TODO
 
 See [`subcell_operator`](@ref).
 """
@@ -229,7 +278,8 @@ function Base.show(io::IO, source::GlaubitzLampertNordströmWinters2025)
     else
         print(io,
               "Glaubitz, Lampert, Nordström, Winters (2025) \n",
-              "  TODO \n",
+              "  Provable energy stable overset grid methods using sub-cell summation-by-parts \n",
+              "  operators: One-dimensional linear advection equations. \n",
               "  TODO")
     end
 end
@@ -238,15 +288,53 @@ end
 """
     subcell_operator(basis_functions, nodes, x_M, source;
                      derivative_order = 1, accuracy_order = 0,
-                     bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
-                     different_values = true, sparsity_pattern = nothing,
+                     bandwidths = [N_L - 1, N_R - 1], size_boundaries = 2 .* bandwidths,
+                     different_values = [true, true], sparsity_patterns = [nothing, nothing],
                      opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
                      autodiff = :forward, x0 = nothing, verbose = false)
 
 Construct a sub-cell operator in a function space spanned by the `basis_functions`, which is an
-iterable of functions.
+iterable of functions. The operator is constructed on the interval `[x_min, x_max]` with the nodes `nodes`,
+where `x_min` is taken as the minimal value in `nodes` and `x_max` the maximal value. Note that the `nodes`
+will be sorted internally. The left part of the sub-cell operator consists of the `nodes`, which are smaller
+than `x_M` and the right part of the `nodes`, which are bigger than `x_M`.
+The `accuracy_order` is the order of the accuracy of the operator, which can optionally be passed,
+but does not have any effect on the operator.
 
-TODO
+The operator is constructed solving an optimization problem with Optim.jl. You can specify the
+optimization algorithm, the options for the optimization problem, and the `autodiff` mode with
+the keyword arguments `opt_alg`, `options`, and `autodiff` respectively, see also the documentation of
+Optim.jl about [configurable options](https://julianlsolvers.github.io/Optim.jl/stable/user/config/)
+and [automatic differentiation](https://julianlsolvers.github.io/Optim.jl/stable/user/gradientsandhessians/#Automatic-differentiation).
+In this case, reverse mode automatic differentiation is usually significantly faster than forward mode.
+We recommend using `autodiff = ADTypes.AutoMooncake(; config = nothing)` or
+`autodiff = ADTypes.AutoEnzyme(; mode = Enzyme.Reverse, function_annotation = Enzyme.Duplicated)`. Note that
+you need to import the package `ADTypes` as well as the corresponding autodiff (i.e., `Mooncake` or `Enzyme`)
+package to use these modes.
+
+The initial guess for the optimization problem can be passed with the keyword argument `x0`, which is optional.
+If `nothing` is passed, a default initial guess (zeros for the entries of the differentiation matrix and
+equal values for all the weights) is used.
+
+There are two alternative ways to enforce sparsity of the resulting left and right operator. The first is by passing
+matrices `sparsity_pattern` that are matrices of zeros and ones each, where the ones indicate the non-zero
+entries of the left and operator, respectively. The matrices should be symmetric or `UpperTriangular` and have zeros on the diagonal.
+
+The second way is to use a banded-block structure for the parts of the operator as is common, e.g., in finite difference methods.
+The keyword arguments `bandwidths` and `size_boundaries` specify the bandwidth and the size of the
+boundary blocks of the operators, where the default of `bandwidths` is set to the number of nodes in the left and right
+sub-cell minus one, i.e., a dense operator (in this case `size_boundaries` is ignored). To construct a sparse operator, you can set the
+bandwidth to a smaller value, such that `2 * size_boundaries[i] + bandwidths[i] < N_{L/R}`, which is a
+requirement for the boundary blocks in the upper left and lower right of the resulting operator.
+If `different_values` is set to `true` all the entries in the upper right triangle of S (the skew symmetric
+parts of the differentiation matrix blocks) are different, which is generally meaningful for non-equidistant nodes and general bases, if it
+is `false` the entries of the stencil are repeated in the central part and the two boundary closures share
+their values (makes sense for uniformly distributed nodes and, e.g., a polynomial basis). The keyword
+argument `different_values` is ignored for dense operators.
+
+The keyword argument `verbose` can be set to `true` to print information about the optimization process.
+
+Returns a [`SubcellOperator`](@ref) object.
 
 See also [`GlaubitzLampertNordströmWinters2025`](@ref).
 
