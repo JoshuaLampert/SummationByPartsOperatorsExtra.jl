@@ -1,10 +1,18 @@
-function compute_moments_boundary(basis_functions, nodes, normals)
-    K = length(basis_functions)
+"""
+    compute_moments_boundary(functions, nodes, normals)
+    compute_moments_boundary(functions, D::AbstractMultidimensionalMatrixDerivativeOperator)
+
+Compute the moments, i.e., the integrals of the product of two basis functions weighted by the normal direction
+of the direction. For each direction, it computes a ``K \times K`` matrix, where ``K`` is the number of `functions`
+and returns a tuple of these matrices.
+"""
+function compute_moments_boundary(functions, nodes, normals)
+    K = length(functions)
     M = zeros(K, K)
     for i in 1:K
         for j in 1:K
-            fi = basis_functions[i]
-            fj = basis_functions[j]
+            fi = functions[i]
+            fj = functions[j]
             M[i, j] = fi(nodes[1]) * fj(nodes[1]) * normals[1][1] +
                       fi(nodes[end]) * fj(nodes[end]) * normals[end][1]
         end
