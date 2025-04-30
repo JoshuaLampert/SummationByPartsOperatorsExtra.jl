@@ -16,8 +16,9 @@ include("utils/utils.jl")
 include("function_space_operators.jl")
 include("multidimensional_function_space_operators.jl")
 include("subcell_operators.jl")
-export get_sparsity_pattern
+include("utils/utils.jl")
 export get_nsigma, get_optimization_entries, get_multidimensional_optimization_entries
+export get_sparsity_pattern
 export compute_moments_boundary
 export GlaubitzIskeLampertÖffner2025, multidimensional_function_space_operator
 export SubcellOperator, GlaubitzLampertNordströmWinters2025, subcell_operator,

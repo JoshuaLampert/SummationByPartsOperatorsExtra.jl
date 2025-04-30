@@ -1,3 +1,17 @@
+"""
+    get_nsigma(N; bandwidth = N - 1,
+               size_boundary = 2 * bandwidth, different_values = true,
+               sparsity_pattern = nothing)
+
+Get the number of unique non-zero entries in a skew-symmetric matrix. If `bandwidth` is
+`N - 1`, the whole upper right triangle is used. If `bandwidth` is smaller, a block-banded
+structure with boundary blocks of size `size_boundary` is used and a banded matrix with
+bandwidth `bandwidth` in the middle. If `different_values` is `false`, the stencils are
+repeating.
+If `sparsity_pattern` is given, the number of non-zero entries in the sparsity pattern
+is returned. The sparsity pattern is assumed to be a `UpperTriangular` matrix with zeros
+on the diagonal.
+"""
 function get_nsigma(N; bandwidth = N - 1,
                     size_boundary = 2 * bandwidth, different_values = true,
                     sparsity_pattern = nothing)
@@ -89,6 +103,18 @@ end
 
 # Helper function to get the entries to optimize for from other operators.
 # These can, e.g., be used to initialize the optimization problem.
+"""
+    get_optimization_entries(D;
+                             bandwidth = div(accuracy_order(D), 2),
+                             size_boundary = SummationByPartsOperators.lower_bandwidth(D) + 1,
+                             different_values = false,
+                             sparsity_pattern = nothing)
+
+Get the entries to optimize for in an optimization-based construction procedure of summation-by-parts operators
+from a derivative operator `D`. It contains the entries of the skew-symmetric part of the operator `D` and the
+entries of the diagonal mass matrix `M`. For more details, see [`function_space_operator`](@ref). The output
+can be passed as initial values to the optimization problem as `x0`.
+"""
 function get_optimization_entries(D;
                                   bandwidth = div(accuracy_order(D), 2),
                                   size_boundary = SummationByPartsOperators.lower_bandwidth(D) +
@@ -171,6 +197,18 @@ function get_optimization_entries_block_banded(S;
     return sigma
 end
 
+"""
+    get_multidimensional_optimization_entries(D;
+                                              bandwidth = div(accuracy_order(D), 2),
+                                              size_boundary = SummationByPartsOperators.lower_bandwidth(D) + 1,
+                                              different_values = false,
+                                              sparsity_pattern = nothing)
+
+Get the entries to optimize for in an optimization-based construction procedure of multidimensional summation-by-parts operators
+from a derivative operator `D`. It contains the entries of the skew-symmetric part of the operator `D`, the
+entries of the diagonal mass matrix `M`, and the entries of the diagonal boundary mass matrix. For more details,
+see [`multidimensional_function_space_operator`](@ref). The output can be passed as initial values to the optimization problem as `x0`.
+"""
 function get_multidimensional_optimization_entries(D;
                                                    bandwidth = div(accuracy_order(D), 2),
                                                    size_boundary = SummationByPartsOperators.lower_bandwidth(D) +
