@@ -8,7 +8,9 @@ using Reexport: @reexport
 @reexport using SummationByPartsOperators
 using SimpleUnPack: @unpack
 using SummationByPartsOperators: AbstractNonperiodicDerivativeOperator,
-                                 AbstractMultidimensionalMatrixDerivativeOperator
+                                 AbstractMultidimensionalMatrixDerivativeOperator,
+                                 scale_by_mass_matrix!,
+                                 scale_by_inverse_mass_matrix!
 
 include("utils/utils.jl")
 include("function_space_operators.jl")

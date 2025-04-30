@@ -1,5 +1,6 @@
 @testsnippet SubCell begin
     import Optim
+    using LinearAlgebra: issymmetric
 end
 
 @testitem "Sub-cell operators" setup=[SubCell] begin
@@ -20,6 +21,17 @@ end
         show(IOContext(devnull, :compact => compact), Dop)
     end
 
+    @test_throws ArgumentError subcell_operator(basis_functions, nodes, x_M, source;
+                                                derivative_order = 2)
+    @test_throws ArgumentError subcell_operator(basis_functions, nodes, x_L - 1.0, source)
+
+    @test !issymmetric(Dop)
+    @test source_of_coefficients(Dop) == source
+    @test SummationByPartsOperators.lower_bandwidth(Dop) == length(nodes) - 1
+    @test SummationByPartsOperators.upper_bandwidth(Dop) == length(nodes) - 1
+    @test derivative_order(Dop) == 1
+    @test accuracy_order(Dop) == 0
+
     # grids
     @test grid(Dop) ≈ nodes
     @test all(grid_left(Dop) .<= x_M)
@@ -31,6 +43,22 @@ end
     M_L = mass_matrix_left(Dop)
     M_R = mass_matrix_right(Dop)
     @test M ≈ M_L + M_R
+    @test left_boundary_weight(Dop) == M[1, 1] == M_L[1, 1]
+    @test right_boundary_weight(Dop) == M[end, end] == M_R[end, end]
+
+    # integration
+    u = sin.(nodes)
+    u_copy = copy(u)
+    @test integrate(cos, u, Dop) == sum(M * cos.(u))
+    SummationByPartsOperators.scale_by_mass_matrix!(u, Dop)
+    @test_throws DimensionMismatch SummationByPartsOperators.scale_by_mass_matrix!(@view(u[(begin + 1):(end - 1)]),
+                                                                                   Dop)
+
+    @test u ≈ M * u_copy
+    SummationByPartsOperators.scale_by_inverse_mass_matrix!(u, Dop)
+    @test_throws DimensionMismatch SummationByPartsOperators.scale_by_inverse_mass_matrix!(@view(u[(begin + 1):(end - 1)]),
+                                                                                           Dop)
+    @test u ≈ u_copy
 
     # boundary mass matrices
     B = mass_matrix_boundary(Dop)
@@ -64,6 +92,7 @@ end
     D = derivative_matrix(Dop)
     Q = M * D
     @test Q + Q' ≈ B
+    @test Matrix(Dop) == D
 
     # consistency between matrices
     @test Q ≈ Q_L + Q_R

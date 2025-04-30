@@ -20,7 +20,7 @@ References:
 @auto_hash_equals struct SubcellOperator{T, QType <: AbstractMatrix{T},
                                          BType <: AbstractMatrix{T},
                                          SourceOfCoefficients} <:
-                         SummationByPartsOperators.AbstractNonperiodicDerivativeOperator{T}
+                         AbstractNonperiodicDerivativeOperator{T}
     grid::Vector{T}
     x_M::T
     weights_left::Vector{T}
@@ -66,7 +66,7 @@ LinearAlgebra.issymmetric(D::SubcellOperator) = false
 
 SummationByPartsOperators.source_of_coefficients(D::SubcellOperator) = D.source
 
-function integrate(func, u, D::SubcellOperator)
+function SummationByPartsOperators.integrate(func, u, D::SubcellOperator)
     return integrate(func, u, weights(D))
 end
 
@@ -99,29 +99,32 @@ derivative_matrix(D::SubcellOperator) = inv(mass_matrix(D)) * (D.Q_left + D.Q_ri
 
 Base.eltype(::SubcellOperator{T}) where {T} = T
 
-function scale_by_mass_matrix!(u::AbstractVector, D::SubcellOperator,
-                               factor = true)
+function SummationByPartsOperators.scale_by_mass_matrix!(u::AbstractVector,
+                                                         D::SubcellOperator,
+                                                         factor = true)
     Base.require_one_based_indexing(u)
     @boundscheck begin
         length(u) == size(D, 2) ||
             throw(DimensionMismatch("sizes of input vector and operator do not match"))
     end
 
-    @inbounds @simd for i in eachindex(u, D.weights)
+    @inbounds @simd for i in eachindex(u, weights(D))
         u[i] = factor * u[i] * get_weight(D, i)
     end
 
     return u
 end
 
-function scale_by_inverse_mass_matrix!(u::AbstractVector, D::SubcellOperator, factor = true)
+function SummationByPartsOperators.scale_by_inverse_mass_matrix!(u::AbstractVector,
+                                                                 D::SubcellOperator,
+                                                                 factor = true)
     Base.require_one_based_indexing(u)
     @boundscheck begin
         length(u) == size(D, 2) ||
             throw(DimensionMismatch("sizes of input vector and operator do not match"))
     end
 
-    @inbounds @simd for i in eachindex(u, D.weights)
+    @inbounds @simd for i in eachindex(u, weights(D))
         u[i] = factor * u[i] / get_weight(D, i)
     end
 
