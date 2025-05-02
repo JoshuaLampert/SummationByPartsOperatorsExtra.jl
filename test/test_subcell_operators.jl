@@ -24,7 +24,8 @@ end
     @test_throws ArgumentError subcell_operator(basis_functions, nodes, x_M, source;
                                                 derivative_order = 2)
     @test_throws ArgumentError subcell_operator(basis_functions, nodes, x_L - 1.0, source)
-    @test_throws ArgumentError subcell_operator(basis_functions, nodes, x_M, source; x0 = zeros(3))
+    @test_throws ArgumentError subcell_operator(basis_functions, nodes, x_M, source;
+                                                x0 = zeros(3))
 
     @test !issymmetric(Dop)
     @test source_of_coefficients(Dop) == source
