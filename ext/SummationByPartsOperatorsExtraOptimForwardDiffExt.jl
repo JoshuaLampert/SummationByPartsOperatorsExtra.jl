@@ -5,9 +5,12 @@ import ForwardDiff
 
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       GlaubitzNordströmÖffner2023,
-                                      MatrixDerivativeOperator,
                                       GlaubitzIskeLampertÖffner2025,
-                                      MultidimensionalMatrixDerivativeOperator
+                                      GlaubitzLampertNordströmWinters2025,
+                                      MatrixDerivativeOperator,
+                                      MultidimensionalMatrixDerivativeOperator,
+                                      SubcellOperator
+
 using SummationByPartsOperatorsExtra: get_nsigma
 using LinearAlgebra: Diagonal, UpperTriangular, LowerTriangular, diag, mul!, issymmetric
 using SparseArrays: spzeros
@@ -257,10 +260,10 @@ function assert_first_derivative_order(derivative_order)
     end
 end
 
-function assert_correct_bandwidth(nodes, bandwidth, size_boundary)
-    if (length(nodes) < 2 * size_boundary + bandwidth || bandwidth < 1) &&
-       (bandwidth != length(nodes) - 1)
-        throw(ArgumentError("2 * size_boundary + bandwidth = $(2 * size_boundary + bandwidth) needs to be smaller than or equal to N = $(length(nodes)) and bandwidth = $bandwidth needs to be at least 1."))
+function assert_correct_bandwidth(N, bandwidth, size_boundary)
+    if (N < 2 * size_boundary + bandwidth || bandwidth < 1) &&
+       (bandwidth != N - 1)
+        throw(ArgumentError("2 * size_boundary + bandwidth = $(2 * size_boundary + bandwidth) needs to be smaller than or equal to N = $N and bandwidth = $bandwidth needs to be at least 1."))
     end
 end
 
@@ -273,4 +276,5 @@ end
 
 include("function_space_operators.jl")
 include("multidimensional_function_space_operators.jl")
+include("subcell_operators.jl")
 end

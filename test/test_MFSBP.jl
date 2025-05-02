@@ -42,6 +42,13 @@ end
                                                                         moments, vol,
                                                                         source;
                                                                         bandwidth = 2)
+    @test_throws ArgumentError multidimensional_function_space_operator(basis_functions,
+                                                                        nodes,
+                                                                        boundary_indices_,
+                                                                        normals_,
+                                                                        moments, vol,
+                                                                        source;
+                                                                        x0 = zeros(3))
 
     D = multidimensional_function_space_operator(basis_functions, nodes,
                                                  boundary_indices_, normals_,

@@ -64,7 +64,7 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
     N_boundary = length(boundary_indices)
 
     @assert length(normals)==N_boundary "You must provide normals for all boundary nodes (length(normals) = $(length(normals)), N_boundary = $N_boundary)."
-    assert_correct_bandwidth(nodes, bandwidth, size_boundary)
+    assert_correct_bandwidth(N, bandwidth, size_boundary)
     if !isnothing(sparsity_patterns)
         for sparsity_pattern in sparsity_patterns
             assert_correct_sparsity_pattern(sparsity_pattern)
@@ -106,7 +106,9 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
               invsig_b(1 / N_boundary * ones(T, N_boundary))]
     else
         n_total = sum(Ls) + N + N_boundary
-        @assert length(x0)==n_total "Initial guess has to be sum(Ls) + N + N_boundary = $n_total long, but got length $(length(x0))"
+        if length(x0) != n_total
+            throw(ArgumentError("Initial guess has to be sum(Ls) + N + N_boundary = $n_total long"))
+        end
     end
 
     f(x) = optimization_function_multidimensional_function_space_operator(x, p)
