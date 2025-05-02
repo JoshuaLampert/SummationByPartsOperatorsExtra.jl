@@ -106,7 +106,9 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
               invsig_b(1 / N_boundary * ones(T, N_boundary))]
     else
         n_total = sum(Ls) + N + N_boundary
-        @assert length(x0)==n_total "Initial guess has to be sum(Ls) + N + N_boundary = $n_total long, but got length $(length(x0))"
+        if length(x0) != n_total
+            throw(ArgumentError("Initial guess has to be sum(Ls) + N + N_boundary = $n_total long"))
+        end
     end
 
     f(x) = optimization_function_multidimensional_function_space_operator(x, p)

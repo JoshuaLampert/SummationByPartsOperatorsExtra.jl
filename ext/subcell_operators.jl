@@ -195,8 +195,10 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
         x0 = [zeros(T, L_L + L_R); invsig.(1 / N_L * ones(T, N_L));
               invsig.(1 / N_R * ones(T, N_R))]
     else
-        n_x = L_L + L_R + N_L + N_R
-        @assert length(x0)==n_x "Initial guess has to be L_L + L_R + N_L + N_R = $n_x long"
+        n_total = L_L + L_R + N_L + N_R
+        if length(x0) != n_total
+            throw(ArgumentError("Initial guess has to be L_L + L_R + N_L + N_R = $n_total long"))
+        end
     end
 
     f(x) = optimization_function_subcell_operator(x, p)
