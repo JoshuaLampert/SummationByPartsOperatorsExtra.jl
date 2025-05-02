@@ -61,7 +61,7 @@ end
 
 function set_S_left!(S_L, sigma_L, N_L, bandwidth, size_boundary,
                      different_values, sparsity_pattern)
-    set_S!(view(S_L, 1:N_L, 1:N_L), sigma_L,  bandwidth, size_boundary,
+    set_S!(view(S_L, 1:N_L, 1:N_L), sigma_L, bandwidth, size_boundary,
            different_values, sparsity_pattern)
 end
 
