@@ -19,12 +19,14 @@ Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 
 [extensions]
 SummationByPartsOperatorsExtraOptimForwardDiffExt = ["Optim", "ForwardDiff"]
+SummationByPartsOperatorsExtraMeshesExt = "Meshes"
 
 [compat]
 ArgCheck = "1, 2"
 AutoHashEquals = "0.2, 1, 2"
 ForwardDiff = "0.10"
 LinearAlgebra = "1"
+Meshes = "0.53"
 Optim = "1.12"
 PreallocationTools = "0.4.26"
 Reexport = "1.2"
