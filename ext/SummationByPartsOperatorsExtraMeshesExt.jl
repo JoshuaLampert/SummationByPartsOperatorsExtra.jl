@@ -216,7 +216,6 @@ function SummationByPartsOperatorsExtra.multidimensional_function_space_operator
 
     moments = compute_moments_boundary(basis_functions, geometry)
     vol = Meshes.ustrip(measure(geometry))
-    @info "Starting optimization..."
     D = multidimensional_function_space_operator(basis_functions, nodes,
                                                  boundary_indices, normals, moments, vol,
                                                  source; corners, sparsity_patterns,

@@ -9,14 +9,16 @@ include("normals.jl")
 
 uto(p::Point) = Meshes.ustrip(to(p))
 # if geometry is already the boundary
-function SummationByPartsOperatorsExtra.integrate_boundary(func, geometry::Union{Ring, Sphere})
+function SummationByPartsOperatorsExtra.integrate_boundary(func,
+                                                           geometry::Union{Ring, Sphere})
     return Meshes.ustrip(integral(func, geometry, MeshIntegrals.GaussLegendre(100)))
 end
 function SummationByPartsOperatorsExtra.integrate_boundary(func, geometry::Geometry)
     integrate_boundary(func, boundary(geometry))
 end
 
-function SummationByPartsOperatorsExtra.compute_moments_boundary(functions, geometry::Geometry)
+function SummationByPartsOperatorsExtra.compute_moments_boundary(functions,
+                                                                 geometry::Geometry)
     K = length(functions)
     moments = ntuple(paramdim(geometry)) do i
         M = zeros(K, K)

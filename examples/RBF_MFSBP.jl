@@ -3,7 +3,7 @@ using SummationByPartsOperatorsExtra
 import Random
 using Meshes, MeshIntegrals
 using KernelInterpolation
-import Optim,  ADTypes, Mooncake
+import Optim, ADTypes, Mooncake
 Random.seed!(43)
 
 xmin = -1.0
