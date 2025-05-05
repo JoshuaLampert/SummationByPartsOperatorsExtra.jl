@@ -7,7 +7,10 @@
 
     Aqua.test_all(SummationByPartsOperatorsExtra,
                   stale_deps = (;
-                                ignore = [:PreallocationTools]))
+                                # These are needed in the extensions, but not in the main module.
+                                # Since package extensions cannot have additional dependencies,
+                                # we need to load them in the main module.
+                                ignore = [:PreallocationTools, :StatsBase]))
     @test isnothing(check_no_implicit_imports(SummationByPartsOperatorsExtra,
                                               skip = (Core, Base,
                                                       SummationByPartsOperatorsExtra.SummationByPartsOperators)))

@@ -11,26 +11,34 @@ PreallocationTools = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 SimpleUnPack = "ce78b400-467f-4804-87d8-8f486da07d0a"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 SummationByPartsOperators = "9f78cca6-572e-554e-b819-917d2f1cf240"
 
 [weakdeps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+MeshIntegrals = "dadec2fd-bbe0-4da4-9dbe-476c782c8e47"
+Meshes = "eacbb407-ea5a-433e-ab97-5258b1ca43fa"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 
 [extensions]
-SummationByPartsOperatorsExtraOptimForwardDiffExt = ["Optim", "ForwardDiff"]
+SummationByPartsOperatorsExtraMeshIntegralsExt = ["Meshes", "MeshIntegrals"]
 SummationByPartsOperatorsExtraMeshesExt = "Meshes"
+SummationByPartsOperatorsExtraOptimForwardDiffExt = ["Optim", "ForwardDiff"]
 
 [compat]
 ArgCheck = "1, 2"
 AutoHashEquals = "0.2, 1, 2"
 ForwardDiff = "0.10"
 LinearAlgebra = "1"
+MeshIntegrals = "0.16"
 Meshes = "0.53"
 Optim = "1.12"
 PreallocationTools = "0.4.26"
 Reexport = "1.2"
 SimpleUnPack = "1"
 SparseArrays = "1"
+StaticArrays = "1.9"
+StatsBase = "0.34"
 SummationByPartsOperators = "0.5.78"
-julia = "1.10"
+julia = "1.11"
