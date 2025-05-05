@@ -7,7 +7,7 @@ using Meshes: Meshes, Geometry, Point, Ring, Sphere, boundary, paramdim, to
 
 include("normals.jl")
 
-uto(p::Point) = Meshes.ustrip(to(p))
+uto(p::Point) = Meshes.ustrip.(to(p))
 # if geometry is already the boundary
 function SummationByPartsOperatorsExtra.integrate_boundary(func,
                                                            geometry::Union{Ring, Sphere})

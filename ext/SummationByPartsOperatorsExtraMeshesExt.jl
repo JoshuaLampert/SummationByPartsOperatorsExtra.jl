@@ -12,7 +12,7 @@ using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
 using StatsBase: countmap
 include("normals.jl")
 
-uto(p::Point) = Meshes.ustrip(to(p))
+uto(p::Point) = Meshes.ustrip.(to(p))
 Meshes.Point(x::AbstractVector) = Point(Tuple(x))
 Meshes.PointSet(xs::Vector{<:AbstractVector}) = PointSet(Point.(xs))
 # This function samples in the whole geometry using `sampler` and uses
