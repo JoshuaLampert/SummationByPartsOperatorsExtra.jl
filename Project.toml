@@ -17,6 +17,7 @@ SummationByPartsOperators = "9f78cca6-572e-554e-b819-917d2f1cf240"
 
 [weakdeps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 MeshIntegrals = "dadec2fd-bbe0-4da4-9dbe-476c782c8e47"
 Meshes = "eacbb407-ea5a-433e-ab97-5258b1ca43fa"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
@@ -24,6 +25,7 @@ Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 [extensions]
 SummationByPartsOperatorsExtraMeshIntegralsExt = ["Meshes", "MeshIntegrals"]
 SummationByPartsOperatorsExtraMeshesExt = "Meshes"
+SummationByPartsOperatorsExtraMeshesMakieExt = ["Meshes", "Makie"]
 SummationByPartsOperatorsExtraOptimForwardDiffExt = ["Optim", "ForwardDiff"]
 
 [compat]
@@ -31,6 +33,7 @@ ArgCheck = "1, 2"
 AutoHashEquals = "0.2, 1, 2"
 ForwardDiff = "0.10"
 LinearAlgebra = "1"
+Makie = "0.22"
 MeshIntegrals = "0.16"
 Meshes = "0.53"
 Optim = "1.12"
