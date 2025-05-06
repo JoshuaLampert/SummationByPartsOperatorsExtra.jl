@@ -33,3 +33,28 @@ function get_sparsity_pattern(D::AbstractMultidimensionalMatrixDerivativeOperato
     P = mass_matrix(D)
     return (get_sparsity_pattern(to_S(P, D[1])), get_sparsity_pattern(to_S(P, D[2])))
 end
+
+"""
+    neighborhood_sparsity_pattern(nodes, lengths)
+
+For a given set of `nodes` in a multi-dimensional space, this function computes the sparsity pattern of
+the differentiation matrices, which only includes non-zero entries at nodes, which are within a certain
+ellipsoid neighborhood.
+`lengths` is a tuple of length `d` (dimension) representing the lengths of an ellipsoid
+indicating, which nodes are counted as neighbors.
+For example, for a differentiation matrix in x direction, it makes sense to use
+a larger length in x direction than in y direction.
+"""
+function neighborhood_sparsity_pattern(nodes, lengths)
+    N = length(nodes)
+    sparsity_pattern = zeros(Bool, N, N)
+    for i in 1:N
+        for j in i:N # Only need to compute the upper triangular part since the matrix is symmetric
+            if norm((nodes[i] - nodes[j]) ./ lengths) < 1.0
+                sparsity_pattern[i, j] = true
+            end
+        end
+    end
+    sparsity_pattern[diagind(sparsity_pattern)] .= false
+    return UpperTriangular(sparsity_pattern)
+end
