@@ -7,6 +7,7 @@ using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       multidimensional_function_space_operator,
                                       neighborhood_sparsity_pattern,
                                       compute_moments_boundary,
+                                      find_corners,
                                       SVector
 include("normals.jl")
 
