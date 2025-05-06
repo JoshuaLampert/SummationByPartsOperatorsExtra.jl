@@ -25,3 +25,28 @@
                 4.0 0.0 0.0 0.0
                 0.0 1.2044456338738128 0.0 0.0]))
 end
+
+@testitem "corners" begin
+    D = derivative_operator(MattssonNordström2004(), 1, 2, -1.0, 1.0, 4)
+    D_2 = tensor_product_operator_2D(D)
+    # The `TensorProductOperator` has the information about the corners in SummationByPartsOperators.jl
+    # and therefore defines a `mass_matrix_boundary` function. Here, we also define a `mass_matrix_boundary`
+    # function for the `MultidimensionalMatrixDerivativeOperator` by finding the corner indices based on
+    # the `boundary_indices`. With this, we can define a general `mass_matrix_boundary` function.
+    # Here, we test that the `mass_matrix_boundary` function for the `MultidimensionalMatrixDerivativeOperator`
+    # defined in SummationByPartsOperatorsExtra.jl is the same as the one for the `TensorProductOperator`
+    # defined in SummationByPartsOperators.jl.
+    # We need to bring the normals in the correct order (x indices first, y indices second). We know that
+    # in the `TensorProductOperator` for the first two corners, the y indices are first. So we need to
+    # swap the first two corners.
+    ns = copy(normals(D_2))
+    (corners_x, corners_y) = SummationByPartsOperatorsExtra.find_corners(D_2.boundary_indices)
+    ns[corners_x[1]], ns[corners_y[1]] = ns[corners_y[1]], ns[corners_x[1]]
+    ns[corners_x[2]], ns[corners_y[2]] = ns[corners_y[2]], ns[corners_x[2]]
+    D_2_multi = MultidimensionalMatrixDerivativeOperator(grid(D_2), boundary_indices(D_2),
+                                                         ns, D_2.weights,
+                                                         D_2.weights_boundary, D_2.Ds,
+                                                         D_2.accuracy_order, D_2.source)
+    @test mass_matrix_boundary(D_2, 1) == mass_matrix_boundary(D_2_multi, 1)
+    @test mass_matrix_boundary(D_2, 2) == mass_matrix_boundary(D_2_multi, 2)
+end

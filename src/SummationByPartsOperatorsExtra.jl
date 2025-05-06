@@ -8,6 +8,7 @@ using Reexport: @reexport
 @reexport using SummationByPartsOperators
 using SimpleUnPack: @unpack
 @reexport using StaticArrays: SVector
+using StatsBase: countmap
 using SummationByPartsOperators: AbstractDerivativeOperator,
                                  AbstractNonperiodicDerivativeOperator,
                                  AbstractMultidimensionalMatrixDerivativeOperator,

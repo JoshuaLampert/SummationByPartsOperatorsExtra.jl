@@ -4,12 +4,10 @@ using Meshes: Meshes, PointSet, Point, Ring,
               paramdim, sample, boundary, measure, to
 
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
-                                      MultidimensionalMatrixDerivativeOperator,
                                       multidimensional_function_space_operator,
                                       neighborhood_sparsity_pattern,
                                       compute_moments_boundary,
                                       SVector
-using StatsBase: countmap
 include("normals.jl")
 
 uto(p::Point) = Meshes.ustrip.(to(p))
@@ -59,23 +57,6 @@ function compute_nodes_normals(geometry, sampler, sampler_boundary)
     append!(normals, extended_normals)
     fix_corner_normals!(normals, corners, geometry_boundary, nodes, boundary_indices)
     return nodes, normals, boundary_indices
-end
-
-# This function finds corners based on `boundary_indices`, which are assumed
-# to have duplicates for each corner.
-# Works only for 2D for now
-function find_corners(boundary_indices)
-    all_corners = sort(findall(>(1), countmap(boundary_indices)))
-    corners_x = Int[]
-    corners_y = Int[]
-    for corner in all_corners
-        corner_inds = findall(==(corner), boundary_indices)
-        if length(corner_inds) == 2
-            push!(corners_x, corner_inds[1])
-            push!(corners_y, corner_inds[2])
-        end
-    end
-    return (corners_x, corners_y)
 end
 
 # This function assumes one has sampled a set of `nodes` including boundary nodes,
@@ -175,23 +156,6 @@ function divide_into_inner_and_boundary(geometry, nodes)
         end
     end
     return PointSet(nodes_inner), PointSet(nodes_boundary), boundary_indices
-end
-
-# In SummationByPartsOperators.jl `mass_matrix_boundary` is only allowed
-# if `D` doesn't contain corners or if the operator is a `TensorProductOperator`
-# with very specific corner indices. If we have another operator with other corner
-# indices, we can detect them and use a similar approach as done in SummationByPartsOperators.jl
-# to compute the boundary mass matrix.
-function SummationByPartsOperatorsExtra.mass_matrix_boundary(D::MultidimensionalMatrixDerivativeOperator{2},
-                                                             dim::Int)
-    boundary_weights = SummationByPartsOperatorsExtra.weights_boundary_scaled(D, dim)
-    boundary_indices = copy(D.boundary_indices)
-    corners = find_corners(boundary_indices)
-    deleteat!(boundary_weights, corners[dim])
-    deleteat!(boundary_indices, corners[dim])
-    b = zeros(eltype(D), length(grid(D)))
-    b[boundary_indices] .= boundary_weights
-    return Diagonal(b)
 end
 
 function SummationByPartsOperatorsExtra.multidimensional_function_space_operator(basis_functions,
