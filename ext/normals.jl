@@ -1,4 +1,4 @@
-using Meshes: Vec, Ngon, Box, Ball, Ring, Segment, Sphere, segments
+using Meshes: Vec, Ngon, Box, Ball, Ring, Segment, segments
 using LinearAlgebra: normalize
 using Base.ScopedValues: with
 
@@ -29,11 +29,5 @@ function outer_normal(segment::Segment, point)
     x1, x2 = extrema(segment)
     d = x2 - x1
     n = Vec(d[2], -d[1])
-    return normalize(n)
-end
-
-function outer_normal(sphere::Sphere, point)
-    @assert point in sphere "point has to be on the boundary"
-    n = point .- sphere.center
     return normalize(n)
 end
