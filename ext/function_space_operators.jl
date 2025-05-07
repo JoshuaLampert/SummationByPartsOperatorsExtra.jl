@@ -63,18 +63,7 @@ function construct_function_space_operator(basis_functions, nodes,
     B[1, 1] = -1
     B[N, N] = 1
     R = B * V / 2
-
     x_length = last(nodes) - first(nodes)
-    S = zeros(T, N, N)
-    SV = zeros(T, N, K)
-    PV_x = zeros(T, N, K)
-    A = zeros(T, N, K)
-    S_cache = DiffCache(S)
-    SV_cache = DiffCache(SV)
-    PV_x_cache = DiffCache(PV_x)
-    A_cache = DiffCache(A)
-    p = (; L, x_length, V, V_x, R, S_cache, SV_cache, PV_x_cache, A_cache,
-         bandwidth, size_boundary, different_values, sparsity_pattern)
 
     if isnothing(x0)
         x0 = [zeros(T, L); invsig.(1 / N * ones(T, N))]
@@ -84,6 +73,18 @@ function construct_function_space_operator(basis_functions, nodes,
             throw(ArgumentError("Initial guess to has be L + N = $n_total long"))
         end
     end
+
+    chunksize = ForwardDiff.pick_chunksize(length(x0))
+    S = zeros(T, N, N)
+    SV = zeros(T, N, K)
+    PV_x = zeros(T, N, K)
+    A = zeros(T, N, K)
+    S_cache = DiffCache(S, chunksize)
+    SV_cache = DiffCache(SV, chunksize)
+    PV_x_cache = DiffCache(PV_x, chunksize)
+    A_cache = DiffCache(A, chunksize)
+    p = (; L, x_length, V, V_x, R, S_cache, SV_cache, PV_x_cache, A_cache,
+         bandwidth, size_boundary, different_values, sparsity_pattern)
 
     f(x) = optimization_function_function_space_operator(x, p)
     result = optimize(f, x0, opt_alg, options; autodiff)
@@ -104,7 +105,6 @@ end
     (; L, x_length, V, V_x, R, S_cache, SV_cache, PV_x_cache, A_cache,
     bandwidth, size_boundary, different_values, sparsity_pattern) = p
 
-    N = size(R, 1)
     sigma, rho = split_x_function_space_operator(x, L)
 
     S = get_tmp(S_cache, x)
