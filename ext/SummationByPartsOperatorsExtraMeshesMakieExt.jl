@@ -1,6 +1,6 @@
 module SummationByPartsOperatorsExtraMeshesMakieExt
 
-using Meshes: Meshes, PointSet, Point, coords, viz, viz!
+using Meshes: Meshes, PointSet, coords, viz, viz!
 import Makie
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra, grid,
                                       boundary_indices, restrict_boundary
