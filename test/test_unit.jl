@@ -50,3 +50,18 @@ end
     @test mass_matrix_boundary(D_2, 1) == mass_matrix_boundary(D_2_multi, 1)
     @test mass_matrix_boundary(D_2, 2) == mass_matrix_boundary(D_2_multi, 2)
 end
+
+@testitem "visualization" begin
+    import Meshes, CairoMakie
+    N_x = N_y = 4
+    D = derivative_operator(MattssonNordström2004(), 1, 2, -1.0, 1.0, N_x)
+    D_2 = tensor_product_operator_2D(D)
+
+    corner_indices = [N_y + 1, # lower left corner
+        N_x + N_y, # lower right corner
+        N_x + N_y + 1, # upper left corner
+        2 * N_x + N_y] # upper right corner
+    @test_nowarn plot_nodes(D_2; pointsize = 10)
+    @test_nowarn plot_nodes(D_2; corner_indices = corner_indices, pointsize = 10)
+    @test_nowarn plot_normals(D_2; pointsize = 10)
+end

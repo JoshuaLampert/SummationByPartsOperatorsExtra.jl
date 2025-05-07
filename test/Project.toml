@@ -1,6 +1,7 @@
 [deps]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 ExplicitImports = "7d51a73a-1435-4ff3-83d9-f097790105c7"
 KernelInterpolation = "95686e15-3c94-4443-8f08-76d06d509f7b"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -19,6 +20,7 @@ TrixiBase = "9a0f1c46-06d5-4909-a5a3-ce25d3fa3284"
 [compat]
 ADTypes = "1.13"
 Aqua = "0.8.3"
+CairoMakie = "0.13"
 ExplicitImports = "1.6"
 KernelInterpolation = "0.3"
 LinearAlgebra = "1"
