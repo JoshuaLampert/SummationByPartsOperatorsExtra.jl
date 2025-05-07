@@ -52,7 +52,7 @@ end
 end
 
 @testitem "visualization" begin
-    import Meshes, GLMakie
+    import Meshes, CairoMakie
     N_x = N_y = 4
     D = derivative_operator(MattssonNordström2004(), 1, 2, -1.0, 1.0, N_x)
     D_2 = tensor_product_operator_2D(D)
