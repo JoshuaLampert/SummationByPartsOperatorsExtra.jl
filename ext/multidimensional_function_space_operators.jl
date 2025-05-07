@@ -97,7 +97,7 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
         end
     end
 
-    chunksize = ForwardDiff.pick_chunksize(length(x0))
+    chunksize = ForwardDiff.pickchunksize(length(x0))
     S = zeros(T, N, N)
     A = zeros(T, N, K)
     M = zeros(T, K, K)

@@ -74,7 +74,7 @@ function construct_function_space_operator(basis_functions, nodes,
         end
     end
 
-    chunksize = ForwardDiff.pick_chunksize(length(x0))
+    chunksize = ForwardDiff.pickchunksize(length(x0))
     S = zeros(T, N, N)
     SV = zeros(T, N, K)
     PV_x = zeros(T, N, K)

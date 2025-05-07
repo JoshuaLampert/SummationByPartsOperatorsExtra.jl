@@ -135,12 +135,9 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
 
     basis_functions_derivatives = [x -> ForwardDiff.derivative(basis_functions[i], x)
                                    for i in 1:K]
-    basis_functions_orthonormalized, basis_functions_orthonormalized_derivatives = orthonormalize_gram_schmidt(basis_functions,
-                                                                                                               basis_functions_derivatives,
-                                                                                                               nodes)
 
-    V = vandermonde_matrix(basis_functions_orthonormalized, nodes)
-    V_x = vandermonde_matrix(basis_functions_orthonormalized_derivatives, nodes)
+    V = vandermonde_matrix(basis_functions, nodes)
+    V_x = vandermonde_matrix(basis_functions_derivatives, nodes)
 
     # We assume that x_1 = x_L and x_N = x_R
     e_L = spzeros(T, N)
@@ -188,7 +185,7 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
         end
     end
 
-    chunksize = ForwardDiff.pick_chunksize(length(x0))
+    chunksize = ForwardDiff.pickchunksize(length(x0))
     S_L = zeros(T, N, N)
     S_R = zeros(T, N, N)
     S = zeros(T, N, N)
