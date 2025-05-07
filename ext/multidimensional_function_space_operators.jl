@@ -86,20 +86,6 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
     V_xis = ntuple(j -> vandermonde_matrix([x -> basis_functions_gradients[i](x)[j]
                                             for i in 1:K], nodes), d)
 
-    S = zeros(T, N, N)
-    A = zeros(T, N, K)
-    M = zeros(T, K, K)
-    S_cache = DiffCache(S)
-    SV_cache = DiffCache(copy(A))
-    PV_xi_cache = DiffCache(copy(A))
-    B_cache = DiffCache(copy(S))
-    BV_cache = DiffCache(copy(A))
-    A_cache = DiffCache(A)
-    VTBV_cache = DiffCache(M)
-    C_cache = DiffCache(copy(M))
-    p = (; Ls, vol, normals, moments, boundary_indices, V, V_xis,
-         S_cache, SV_cache, PV_xi_cache, B_cache, BV_cache, A_cache, VTBV_cache, C_cache,
-         bandwidth, size_boundary, different_values, sparsity_patterns, corners)
     if isnothing(x0)
         # x0 = zeros(T, sum(Ls) + N + N_boundary)
         x0 = [zeros(T, sum(Ls)); invsig.(1 / N * ones(T, N));
@@ -110,6 +96,22 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
             throw(ArgumentError("Initial guess has to be sum(Ls) + N + N_boundary = $n_total long"))
         end
     end
+
+    chunksize = ForwardDiff.pickchunksize(length(x0))
+    S = zeros(T, N, N)
+    A = zeros(T, N, K)
+    M = zeros(T, K, K)
+    S_cache = DiffCache(S, chunksize)
+    SV_cache = DiffCache(copy(A), chunksize)
+    PV_xi_cache = DiffCache(copy(A), chunksize)
+    B_cache = DiffCache(copy(S), chunksize)
+    BV_cache = DiffCache(copy(A), chunksize)
+    A_cache = DiffCache(A, chunksize)
+    VTBV_cache = DiffCache(M, chunksize)
+    C_cache = DiffCache(copy(M), chunksize)
+    p = (; Ls, vol, normals, moments, boundary_indices, V, V_xis,
+         S_cache, SV_cache, PV_xi_cache, B_cache, BV_cache, A_cache, VTBV_cache, C_cache,
+         bandwidth, size_boundary, different_values, sparsity_patterns, corners)
 
     f(x) = optimization_function_multidimensional_function_space_operator(x, p)
     result = optimize(f, x0, opt_alg, options; autodiff)

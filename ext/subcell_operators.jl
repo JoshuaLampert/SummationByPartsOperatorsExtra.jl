@@ -172,24 +172,8 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
     # B[N, N] = 1
     B = B_left + B_right
     R = B * V / 2
-
     x_length_left = x_M - first(nodes)
     x_length_right = last(nodes) - x_M
-    S_L = zeros(T, N, N)
-    S_R = zeros(T, N, N)
-    S = zeros(T, N, N)
-    SV = zeros(T, N, K)
-    PV_x = zeros(T, N, K)
-    A = zeros(T, N, K)
-    S_L_cache = DiffCache(S_L)
-    S_R_cache = DiffCache(S_R)
-    S_cache = DiffCache(S)
-    SV_cache = DiffCache(SV)
-    PV_x_cache = DiffCache(PV_x)
-    A_cache = DiffCache(A)
-    p = (; L_L, L_R, N_L, N_R, x_length_left, x_length_right, V, V_x, R,
-         S_L_cache, S_R_cache, S_cache, SV_cache, PV_x_cache, A_cache,
-         bandwidths, size_boundaries, different_values, sparsity_patterns)
 
     if isnothing(x0)
         x0 = [zeros(T, L_L + L_R); invsig.(1 / N_L * ones(T, N_L));
@@ -200,6 +184,23 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
             throw(ArgumentError("Initial guess has to be L_L + L_R + N_L + N_R = $n_total long"))
         end
     end
+
+    chunksize = ForwardDiff.pickchunksize(length(x0))
+    S_L = zeros(T, N, N)
+    S_R = zeros(T, N, N)
+    S = zeros(T, N, N)
+    SV = zeros(T, N, K)
+    PV_x = zeros(T, N, K)
+    A = zeros(T, N, K)
+    S_L_cache = DiffCache(S_L, chunksize)
+    S_R_cache = DiffCache(S_R, chunksize)
+    S_cache = DiffCache(S, chunksize)
+    SV_cache = DiffCache(SV, chunksize)
+    PV_x_cache = DiffCache(PV_x, chunksize)
+    A_cache = DiffCache(A, chunksize)
+    p = (; L_L, L_R, N_L, N_R, x_length_left, x_length_right, V, V_x, R,
+         S_L_cache, S_R_cache, S_cache, SV_cache, PV_x_cache, A_cache,
+         bandwidths, size_boundaries, different_values, sparsity_patterns)
 
     f(x) = optimization_function_subcell_operator(x, p)
     result = optimize(f, x0, opt_alg, options; autodiff)
