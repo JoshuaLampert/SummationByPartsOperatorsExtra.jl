@@ -284,6 +284,7 @@ end
                      derivative_order = 1, accuracy_order = 0,
                      bandwidths = [N_L - 1, N_R - 1], size_boundaries = 2 .* bandwidths,
                      different_values = [true, true], sparsity_patterns = [nothing, nothing],
+                     M_local_approximation = [N_L, N_R],
                      opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
                      autodiff = :forward, x0 = nothing, verbose = false)
 
@@ -325,6 +326,10 @@ parts of the differentiation matrix blocks) are different, which is generally me
 is `false` the entries of the stencil are repeated in the central part and the two boundary closures share
 their values (makes sense for uniformly distributed nodes and, e.g., a polynomial basis). The keyword
 argument `different_values` is ignored for dense operators.
+
+You can use the keyword argument `M_local_approximation` to specify the number of points used for local approximations
+of the discrete projections. The default is to use the number of nodes in the left and right sub-cell, respectively.
+To use an interpolation, you can set `M_local_approximation` to `[K, K]`, where `K` is the number of basis functions.
 
 The keyword argument `verbose` can be set to `true` to print information about the optimization process.
 

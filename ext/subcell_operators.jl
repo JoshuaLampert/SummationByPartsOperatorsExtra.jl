@@ -9,6 +9,7 @@ function SummationByPartsOperatorsExtra.subcell_operator(basis_functions,
                                                          different_values = [true, true],
                                                          sparsity_patterns = [nothing,
                                                              nothing],
+                                                         M_local_approximation = [0, 0],
                                                          opt_alg = LBFGS(),
                                                          options = Options(g_tol = 1e-14,
                                                                            iterations = 10000),
@@ -32,6 +33,7 @@ function SummationByPartsOperatorsExtra.subcell_operator(basis_functions,
                                                                                                size_boundaries,
                                                                                                different_values,
                                                                                                sparsity_patterns,
+                                                                                               M_local_approximation,
                                                                                                opt_alg,
                                                                                                options,
                                                                                                autodiff,
@@ -98,6 +100,7 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
                                     size_boundaries = [0, 0],
                                     different_values = [true, true],
                                     sparsity_patterns = [nothing, nothing],
+                                    M_local_approximation = [0, 0],
                                     opt_alg = LBFGS(),
                                     options = Options(g_tol = 1e-14,
                                                       iterations = 10000),
@@ -132,6 +135,12 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
             sparsity_patterns[i] = UpperTriangular(sparsity_patterns[i])
         end
     end
+    if M_local_approximation[1] == 0
+        M_local_approximation[1] = N_L
+    end
+    if M_local_approximation[2] == 0
+        M_local_approximation[2] = N_R
+    end
     L_L = get_nsigma(N_L; bandwidth = bandwidths[1], size_boundary = size_boundaries[1],
                      different_values = different_values[1],
                      sparsity_pattern = sparsity_patterns[1])
@@ -155,10 +164,15 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
     f_M = [basis_functions[i](x_M) for i in 1:K]
     # e_M = V' \ f_M
     # We need e_M_L and e_M_R to be supported only in their sub-cells
-    e_M_L_1 = view(V', :, 1:N_L) \ f_M
-    e_M_L = [e_M_L_1; zeros(T, N - N_L)]
-    e_M_R_1 = view(V', :, (N - N_R + 1):N) \ f_M
-    e_M_R = [zeros(T, N - N_R); e_M_R_1]
+    # and we only use a local interpolant/least squares approximation
+    indices_L = (N_L - M_local_approximation[1] + 1):N_L
+    e_M_L_1 = view(V', :, indices_L) \ f_M
+    e_M_L = zeros(T, N)
+    e_M_L[indices_L] = e_M_L_1
+    indices_R = (N - N_R + 1):(N - N_R + M_local_approximation[2])
+    e_M_R_1 = view(V', :, indices_R) \ f_M
+    e_M_R = zeros(T, N)
+    e_M_R[indices_R] = e_M_R_1
 
     # If x_M is in the nodes, we can also use
     # e_M = spzeros(T, N)
