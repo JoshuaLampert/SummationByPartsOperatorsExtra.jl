@@ -108,7 +108,9 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
     N = length(nodes)
     N_L = findfirst(x -> x > x_M, nodes) - 1
     # If x_M is in the nodes, x_M will be part of both sub-cells, which means we have one more node
-    N_R = x_M in nodes ? N - N_L + 1 : N - N_L
+    # N_R = x_M in nodes ? N - N_L + 1 : N - N_L
+    # If x_M is in the nodes, we just put it in the left sub-cell, but not in the right one
+    N_R = N - N_L
 
     if bandwidths[1] == 0
         bandwidths[1] = N_L - 1
@@ -156,7 +158,7 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
     e_M_L_1 = view(V', :, 1:N_L) \ f_M
     e_M_L = [e_M_L_1; zeros(T, N - N_L)]
     e_M_R_1 = view(V', :, (N - N_R + 1):N) \ f_M
-    e_M_R = [zeros(T, N_L); e_M_R_1]
+    e_M_R = [zeros(T, N - N_R); e_M_R_1]
 
     # If x_M is in the nodes, we can also use
     # e_M = spzeros(T, N)

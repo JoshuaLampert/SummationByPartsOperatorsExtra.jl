@@ -60,14 +60,8 @@ References:
                                                                   AbstractMatrix{T},
                                                                   SourceOfCoefficients
                                                                   }
-        if x_M in nodes
-            if length(nodes) != length(weights_left) + length(weights_right) - 1
-                throw(ArgumentError("If `x_M` is in `nodes`, then the length of `nodes` must be equal to the sum of the lengths of `weights_left` and `weights_right` minus 1."))
-            end
-        else
-            if length(nodes) != length(weights_left) + length(weights_right)
-                throw(ArgumentError("If `x_M` is not in `nodes`, then the length of `nodes` must be equal to the sum of the lengths of `weights_left` and `weights_right`."))
-            end
+        if length(nodes) != length(weights_left) + length(weights_right)
+            throw(ArgumentError("If `x_M` is not in `nodes`, then the length of `nodes` must be equal to the sum of the lengths of `weights_left` and `weights_right`."))
         end
         new{T, QType, BType, SourceOfCoefficients}(nodes, x_M,
                                                    weights_left, weights_right,
