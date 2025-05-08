@@ -112,10 +112,14 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
 
     if bandwidths[1] == 0
         bandwidths[1] = N_L - 1
-        size_boundaries[1] = 2 * bandwidths[1]
     end
     if bandwidths[2] == 0
         bandwidths[2] = N_R - 1
+    end
+    if size_boundaries[1] == 0
+        size_boundaries[1] = 2 * bandwidths[1]
+    end
+    if size_boundaries[2] == 0
         size_boundaries[2] = 2 * bandwidths[2]
     end
     assert_correct_bandwidth(N_L, bandwidths[1], size_boundaries[1])
