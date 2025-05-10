@@ -2,7 +2,7 @@
 using SummationByPartsOperatorsExtra
 import Random
 using Meshes, MeshIntegrals
-using KernelInterpolation
+using KernelInterpolation: WendlandKernel, LagrangeBasis, NodeSet
 import Optim, ADTypes, Mooncake
 Random.seed!(43)
 
