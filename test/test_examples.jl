@@ -1,11 +1,11 @@
 @testsnippet Examples begin
     using TrixiBase: trixi_include
-    include("test_util.jl")
+    using TrixiTest: @trixi_test_nowarn
     examples_dir() = pkgdir(SummationByPartsOperatorsExtra, "examples")
 end
 
 @testitem "RBF_FSBP_advection.jl" setup=[Examples] begin
-    @test_nowarn include(joinpath(examples_dir(), "RBF_FSBP_advection.jl"))
+    @trixi_test_nowarn trixi_include(joinpath(examples_dir(), "RBF_FSBP_advection.jl"))
 end
 
 @testitem "RBF_MFSBP.jl" setup=[Examples] begin
@@ -33,9 +33,9 @@ end
     kwargs = (; ellipsoid_lengths = ((longer, shorter), (shorter, longer)), verbose = true)
 
     # This example takes a long time to run, so we only test it with a small number of iterations.
-    @test_nowarn_mod trixi_include(joinpath(examples_dir(), "RBF_MFSBP.jl"),
-                                   xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax,
-                                   sampler = sampler, sampler_boundary = sampler_boundary,
-                                   kwargs = kwargs,
-                                   iterations = 50)
+    @trixi_test_nowarn trixi_include(joinpath(examples_dir(), "RBF_MFSBP.jl"),
+                                     xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax,
+                                     sampler = sampler, sampler_boundary = sampler_boundary,
+                                     kwargs = kwargs,
+                                     iterations = 50)
 end
