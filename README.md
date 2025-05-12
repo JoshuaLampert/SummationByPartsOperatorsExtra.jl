@@ -15,7 +15,7 @@ Until now, the package focuses on the implementation of function space summation
 
 If you have not yet installed Julia, then you first need to [download Julia](https://julialang.org/downloads/). Please
 [follow the instructions for your operating system](https://julialang.org/downloads/platform/). SummationByPartsOperatorsExtra.jl
-works with Julia v1.10 and newer. You can install SummationByPartsOperatorsExtra.jl by
+works with Julia v1.11 and newer. You can install SummationByPartsOperatorsExtra.jl by
 executing the following commands from the Julia REPL
 
 ```julia
