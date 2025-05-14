@@ -24,7 +24,7 @@ export get_sparsity_pattern, neighborhood_sparsity_pattern
 export compute_moments_boundary
 export plot_nodes, plot_normals
 export GlaubitzIskeLampertÖffner2025, multidimensional_function_space_operator
-export SubcellOperator, GlaubitzLampertNordströmWinters2025, subcell_operator,
+export SubcellOperator, GlaubitzLampertNordströmWinters2025, subcell_operator, couple_subcell,
        derivative_matrix, grid_left, grid_right, mass_matrix_left, mass_matrix_right,
        mass_matrix_boundary_left, mass_matrix_boundary_right
 end

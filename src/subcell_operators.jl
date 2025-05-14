@@ -253,6 +253,45 @@ function SummationByPartsOperators.right_boundary_weight(D::SubcellOperator)
     retval
 end
 
+function couple_subcell(D_left::AbstractNonperiodicDerivativeOperator,
+                        D_right::AbstractNonperiodicDerivativeOperator,
+                        x_M::Real)
+    T = promote_type(eltype(D_left), eltype(D_right))
+    grid_left = grid(D_left)
+    N_L = length(grid_left)
+    grid_right = grid(D_right)
+    N_R = length(grid_right)
+    if x_M < last(grid_left)
+        throw(ArgumentError("Left sub-cell must be to the left of x_M."))
+    end
+    if x_M > first(grid_right)
+        throw(ArgumentError("Right sub-cell must be to the right of x_M."))
+    end
+    nodes = vcat(collect(grid_left), collect(grid_right))
+    weights_left_ = diag(mass_matrix(D_left))
+    weights_right_ = diag(mass_matrix(D_right))
+
+    Q_left_ = mass_matrix(D_left) * Matrix(D_left)
+    Q_left = [Q_left_ zeros(T, N_L, N_R)
+              zeros(T, N_R, N_L) zeros(T, N_R, N_R)]
+    Q_right_ = mass_matrix(D_right) * Matrix(D_right)
+    Q_right = [zeros(T, N_L, N_L) zeros(T, N_L, N_R)
+               zeros(T, N_R, N_L) Q_right_]
+
+    B_left_ = mass_matrix_boundary(D_left)
+    B_left = [B_left_ zeros(T, N_L, N_R)
+              zeros(T, N_R, N_L) zeros(T, N_R, N_R)]
+    B_right_ = mass_matrix_boundary(D_right)
+    B_right = [zeros(T, N_L, N_L) zeros(T, N_L, N_R)
+               zeros(T, N_R, N_L) B_right_]
+
+    acc_order = min(accuracy_order(D_left), accuracy_order(D_right))
+    source = GlaubitzLampertNordströmWinters2025()
+    return SubcellOperator(nodes, x_M, weights_left_, weights_right_,
+                           Q_left, Q_right, B_left, B_right,
+                           acc_order, source)
+end
+
 """
     GlaubitzLampertNordströmWinters2025()
 
