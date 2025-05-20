@@ -9,13 +9,15 @@ function SummationByPartsOperatorsExtra.function_space_operator(basis_functions,
                                                                                 bandwidth,
                                                                 different_values = true,
                                                                 sparsity_pattern = nothing,
-                                                                opt_alg = default_opt_alg(source),
-                                                                options = default_options(source),
                                                                 autodiff = :forward,
                                                                 x0 = nothing,
-                                                                verbose = false) where {T,
-                                                                                        SourceOfCoefficients
-                                                                                        }
+                                                                verbose = false,
+                                                                opt_alg = default_opt_alg(source),
+                                                                options = default_options(source,
+                                                                                          verbose)) where {
+                                                                                                           T,
+                                                                                                           SourceOfCoefficients
+                                                                                                           }
     assert_first_derivative_order(derivative_order)
     sort!(nodes)
     weights, D = construct_function_space_operator(basis_functions, nodes, source;

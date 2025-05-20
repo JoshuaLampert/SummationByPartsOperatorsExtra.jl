@@ -1,7 +1,9 @@
 include("function_space_operators.jl")
 
 default_opt_alg(::GlaubitzNordströmÖffner2023) = LBFGS()
-default_options(::GlaubitzNordströmÖffner2023) = Options(g_tol = 1e-14, iterations = 10000)
+function default_options(::GlaubitzNordströmÖffner2023, verbose)
+    Options(g_tol = 1e-16, iterations = 10000, show_trace = verbose)
+end
 
 function construct_function_space_operator(basis_functions, nodes,
                                            source::GlaubitzNordströmÖffner2023;
@@ -9,10 +11,10 @@ function construct_function_space_operator(basis_functions, nodes,
                                            size_boundary = 2 * bandwidth,
                                            different_values = true,
                                            sparsity_pattern = nothing,
-                                           opt_alg = default_opt_alg(source),
-                                           options = default_options(source),
                                            autodiff = :forward,
-                                           x0 = nothing, verbose = false)
+                                           x0 = nothing, verbose = false,
+                                           opt_alg = default_opt_alg(source),
+                                           options = default_options(source, verbose))
     T = eltype(nodes)
     K = length(basis_functions)
     N = length(nodes)
@@ -93,6 +95,3 @@ end
     @. A = SV - PV_x + R
     return sum(abs2, A)
 end
-
-# x = [sigma; rho]
-split_x_function_space_operator(x, L) = x[1:L], x[(L + 1):end]

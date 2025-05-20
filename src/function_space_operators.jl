@@ -61,5 +61,10 @@ See also [`GlaubitzNordströmÖffner2023`](@ref).
 """
 function function_space_operator end
 
+# We need to define these functions here, because we dispatch on the type of `source` in the
+# different extensions
+function construct_function_space_operator end
+function default_opt_alg end
+function default_options end
 # Just to be able to call it from outside
 function create_S end

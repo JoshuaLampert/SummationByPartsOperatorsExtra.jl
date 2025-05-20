@@ -23,9 +23,10 @@ Manopt = "0fc0a36d-df90-57f3-8f93-d78a9fc72bb5"
 MeshIntegrals = "dadec2fd-bbe0-4da4-9dbe-476c782c8e47"
 Meshes = "eacbb407-ea5a-433e-ab97-5258b1ca43fa"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
+RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
 
 [extensions]
-SummationByPartsOperatorsExtraManifoldsManoptExt = ["Manifolds", "Manopt"]
+SummationByPartsOperatorsExtraManifoldsManoptForwardDiffExt = ["Manifolds", "Manopt", "ForwardDiff", "RecursiveArrayTools"]
 SummationByPartsOperatorsExtraMeshIntegralsExt = ["Meshes", "MeshIntegrals"]
 SummationByPartsOperatorsExtraMeshesExt = "Meshes"
 SummationByPartsOperatorsExtraMeshesMakieExt = ["Meshes", "Makie"]
@@ -43,6 +44,7 @@ MeshIntegrals = "0.16"
 Meshes = "0.53"
 Optim = "1.12"
 PreallocationTools = "0.4.26"
+RecursiveArrayTools = "3.33"
 Reexport = "1.2"
 SimpleUnPack = "1"
 SparseArrays = "1"
