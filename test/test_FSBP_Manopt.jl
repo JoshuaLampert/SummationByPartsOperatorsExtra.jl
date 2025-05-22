@@ -1,13 +1,13 @@
 @testsnippet FSBP begin
-    import Optim
+    import Manifolds, Manopt, ForwardDiff
 end
 
-@testitem "FSBP" setup=[FSBP] begin
+@testitem "FSBP with Manopt.jl" setup=[FSBP] begin
     N = 5
     x_min = -1.0
     x_max = 1.0
     nodes = collect(range(x_min, x_max, length = N))
-    source = GlaubitzNordströmÖffner2023()
+    source = GlaubitzIskeLampertÖffner2025()
     for compact in (true, false)
         show(IOContext(devnull, :compact => compact), source)
     end
