@@ -1,8 +1,8 @@
-@testsnippet FSBP begin
+@testsnippet FSBP_Manopt begin
     import Manifolds, Manopt, ForwardDiff
 end
 
-@testitem "FSBP with Manopt.jl" setup=[FSBP] begin
+@testitem "FSBP with Manopt.jl" setup=[FSBP_Manopt] begin
     N = 5
     x_min = -1.0
     x_max = 1.0
@@ -12,7 +12,7 @@ end
         show(IOContext(devnull, :compact => compact), source)
     end
     let basis_functions = [x -> x^i for i in 0:3]
-        D = function_space_operator(basis_functions, nodes, source)
+        D = function_space_operator(basis_functions, nodes, source; verbose = true)
         # Test errors
         @test_throws ArgumentError function_space_operator(basis_functions, nodes,
                                                            source; derivative_order = 2)
