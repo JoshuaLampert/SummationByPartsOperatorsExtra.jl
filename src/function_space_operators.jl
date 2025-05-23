@@ -63,8 +63,14 @@ function function_space_operator end
 
 # We need to define these functions here, because we dispatch on the type of `source` in the
 # different extensions
+# Placeholder for constructing a function space operator. This method is extended in backend-specific implementations.
 function construct_function_space_operator end
+
+# Placeholder for providing the default optimization algorithm. This method is extended in backend-specific implementations.
 function default_opt_alg end
+
+# Placeholder for providing the default optimization options. This method is extended in backend-specific implementations.
 function default_options end
-# Just to be able to call it from outside
+
+# Placeholder for creating the matrix S. This method is extended in backend-specific implementations.
 function create_S end

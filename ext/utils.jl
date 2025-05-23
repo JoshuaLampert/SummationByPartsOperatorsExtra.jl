@@ -197,7 +197,7 @@ end
 norm_H1(f, f_derivative, nodes) = sqrt(inner_H1(f, f, f_derivative, f_derivative, nodes))
 
 function call_orthonormal_basis_function(A, basis_functions, k, x)
-    sum([basis_functions[i](x) * A[k, i] for i in 1:k])
+    sum(basis_functions[i](x) * A[k, i] for i in 1:k)
 end
 
 # This will orthonormalize the basis functions using the Gram-Schmidt process to reduce the condition
