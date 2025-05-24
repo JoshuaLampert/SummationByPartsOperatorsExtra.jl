@@ -19,7 +19,7 @@ cd SummationByPartsOperatorsExtra
 mkdir run
 cd run
 julia --project=. -e 'using Pkg; Pkg.develop(PackageSpec(path=".."))' # Install local SummationByPartsOperatorsExtra.jl clone
-julia --project=. -e 'using Pkg; Pkg.add(["OrdinaryDiffEqLowStorageRK", "Plots"])' # Install additional packages
+julia --project=. -e 'using Pkg; Pkg.add(["Optim", "Meshes", "OrdinaryDiffEqSSPRK", "KernelInterpolation", "Makie", "Plots"])' # Install additional packages
 ```
 
 If you use other packages for executing SummationByPartsOperatorsExtra.jl, you can add them to the project in the `run`
