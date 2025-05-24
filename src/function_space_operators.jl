@@ -48,10 +48,10 @@ argument `different_values` is ignored for dense operators.
 The keyword argument `verbose` can be set to `true` to print information about the optimization process.
 
 The operator that is returned follows the general interface. Currently, it is wrapped in a
-[`MatrixDerivativeOperator`](@ref), but this might change in the future.
+[`MatrixDerivativeOperator`](@extref), but this might change in the future.
 In order to use this function, the package `Optim` must be loaded.
 
-See also [`GlaubitzNordströmÖffner2023`](@ref).
+See also [`GlaubitzNordströmÖffner2023`](@extref).
 
 !!! compat "Julia 1.9"
     This function requires at least Julia 1.9.
