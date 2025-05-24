@@ -1,3 +1,15 @@
+"""
+    SummationByPartsOperatorsExtra
+
+**SummationByPartsOperatorsExtra.jl** is a [Julia](https://julialang.org/) package that
+implements some extra functionality for the package [SummationByPartsOperators.jl](https://github.com/ranocha/SummationByPartsOperators.jl).
+SummationByPartsOperatorsExtra.jl is still in an early stage of development and is meant to be used
+for research purposes. Maybe some parts of the package will be moved to SummationByPartsOperators.jl in the future.
+Until now, the package focuses on the implementation of function space summation-by-parts operators in one and multiple dimensions
+and on subcell summation-by-parts operators.
+
+See also: [SummationByPartsOperatorsExtra.jl](https://github.com/JoshuaLampert/SummationByPartsOperatorsExtra.jl)
+"""
 module SummationByPartsOperatorsExtra
 
 using AutoHashEquals: @auto_hash_equals
