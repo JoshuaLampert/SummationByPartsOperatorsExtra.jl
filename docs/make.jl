@@ -3,8 +3,8 @@ using DocumenterInterLinks
 using SummationByPartsOperatorsExtra
 
 # Provide external links to the SummationByPartsOperators.jl docs (project root and inventory file)
-links = InterLinks("SummationByPartsOperators" => ("https://ranocha.github.io/SummationByPartsOperators/stable/",
-                                                   "https://ranocha.github.io/SummationByPartsOperators/stable/objects.inv"))
+links = InterLinks("SummationByPartsOperators" => ("https://ranocha.github.io/SummationByPartsOperators.jl/stable/",
+                                                   "https://ranocha.github.io/SummationByPartsOperators.jl/stable/objects.inv"))
 
 # Define module-wide setups such that the respective modules are available in doctests
 DocMeta.setdocmeta!(SummationByPartsOperatorsExtra, :DocTestSetup,
