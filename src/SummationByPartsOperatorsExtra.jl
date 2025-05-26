@@ -38,5 +38,7 @@ export plot_nodes, plot_normals
 export GlaubitzIskeLampertÖffner2025, multidimensional_function_space_operator
 export SubcellOperator, GlaubitzLampertNordströmWinters2025, subcell_operator,
        derivative_matrix, grid_left, grid_right, mass_matrix_left, mass_matrix_right,
-       mass_matrix_boundary_left, mass_matrix_boundary_right
+       mass_matrix_boundary_left, mass_matrix_boundary_right,
+       left_projection_left, left_projection_right,
+       right_projection_left, right_projection_right
 end
