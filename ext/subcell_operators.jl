@@ -242,7 +242,8 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
     weights_right = diag(P_R)[(N - N_R + 1):end]
     Q_left = S_L + B_left / 2
     Q_right = S_R + B_right / 2
-    return weights_left, weights_right, Q_left, Q_right, B_left, B_right, e_L, e_M_L, e_M_R, e_R
+    return weights_left, weights_right, Q_left, Q_right, B_left, B_right,
+           e_L, e_M_L, e_M_R, e_R
 end
 
 function optimization_function_subcell_operator(x, p)
