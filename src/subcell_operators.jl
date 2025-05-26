@@ -35,6 +35,7 @@ References:
 """
 @auto_hash_equals struct SubcellOperator{T, QType <: AbstractMatrix{T},
                                          BType <: AbstractMatrix{T},
+                                         ProjectionType <: AbstractVector{T},
                                          SourceOfCoefficients} <:
                          AbstractNonperiodicDerivativeOperator{T}
     grid::Vector{T}
@@ -45,6 +46,10 @@ References:
     Q_right::QType
     B_left::BType
     B_right::BType
+    e_L::ProjectionType
+    e_M_L::ProjectionType
+    e_M_R::ProjectionType
+    e_R::ProjectionType
     accuracy_order::Int
     source::SourceOfCoefficients
 
@@ -52,22 +57,28 @@ References:
                              weights_left::Vector{T}, weights_right::Vector{T},
                              Q_left::QType, Q_right::QType,
                              B_left::BType, B_right::BType,
+                             e_L::ProjectionType, e_M_L::ProjectionType,
+                             e_M_R::ProjectionType, e_R::ProjectionType,
                              accuracy_order::Int,
                              source::SourceOfCoefficients) where {T <: Real,
                                                                   QType <:
                                                                   AbstractMatrix{T},
                                                                   BType <:
                                                                   AbstractMatrix{T},
+                                                                  ProjectionType <:
+                                                                  AbstractVector{T},
                                                                   SourceOfCoefficients
                                                                   }
         if length(nodes) != length(weights_left) + length(weights_right)
             throw(ArgumentError("If `x_M` is not in `nodes`, then the length of `nodes` must be equal to the sum of the lengths of `weights_left` and `weights_right`."))
         end
-        new{T, QType, BType, SourceOfCoefficients}(nodes, x_M,
-                                                   weights_left, weights_right,
-                                                   Q_left, Q_right,
-                                                   B_left, B_right,
-                                                   accuracy_order, source)
+        new{T, QType, BType, ProjectionType, SourceOfCoefficients}(nodes, x_M,
+                                                                   weights_left,
+                                                                   weights_right,
+                                                                   Q_left, Q_right,
+                                                                   B_left, B_right,
+                                                                   e_L, e_M_L, e_M_R, e_R,
+                                                                   accuracy_order, source)
     end
 end
 
@@ -129,6 +140,19 @@ Returns the mass matrix associated to the right boundary of the sub-cell operato
 mass_matrix_boundary_right(D::SubcellOperator) = D.B_right
 # If e_L and e_R are the first and last unit vectors and e_M is the same in both sub-cells, this would always be diag(-1, 0, ..., 0, 1).
 SummationByPartsOperators.mass_matrix_boundary(D::SubcellOperator) = D.B_left + D.B_right
+
+"""
+    left_projection_left(D::SubcellOperator)
+    left_projection_right(D::SubcellOperator)
+    right_projection_left(D::SubcellOperator)
+    right_projection_right(D::SubcellOperator)
+
+Returns the left and right projection operators associated to the left and right parts of the sub-cell operator `D`.
+"""
+left_projection_left(D::SubcellOperator) = D.e_L
+left_projection_right(D::SubcellOperator) = D.e_M_L
+right_projection_left(D::SubcellOperator) = D.e_M_R
+right_projection_right(D::SubcellOperator) = D.e_R
 
 """
     derivative_matrix(Dop::SubcellOperator)

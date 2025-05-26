@@ -25,22 +25,22 @@ function SummationByPartsOperatorsExtra.subcell_operator(basis_functions,
     if x_M < x_L || x_M > x_R
         throw(ArgumentError("x_M = $x_M needs to be in the interval [$x_L, $x_R]."))
     end
-    weights_left, weights_right, Q_left, Q_right, B_left, B_right = construct_subcell_operator(basis_functions,
-                                                                                               nodes,
-                                                                                               x_M,
-                                                                                               source;
-                                                                                               bandwidths,
-                                                                                               size_boundaries,
-                                                                                               different_values,
-                                                                                               sparsity_patterns,
-                                                                                               M_local_approximation,
-                                                                                               opt_alg,
-                                                                                               options,
-                                                                                               autodiff,
-                                                                                               x0,
-                                                                                               verbose)
+    weights_left, weights_right, Q_left, Q_right, B_left, B_right, e_L, e_M_L, e_M_R, e_R = construct_subcell_operator(basis_functions,
+                                                                                                                       nodes,
+                                                                                                                       x_M,
+                                                                                                                       source;
+                                                                                                                       bandwidths,
+                                                                                                                       size_boundaries,
+                                                                                                                       different_values,
+                                                                                                                       sparsity_patterns,
+                                                                                                                       M_local_approximation,
+                                                                                                                       opt_alg,
+                                                                                                                       options,
+                                                                                                                       autodiff,
+                                                                                                                       x0,
+                                                                                                                       verbose)
     return SubcellOperator(nodes, x_M, weights_left, weights_right, Q_left, Q_right,
-                           B_left, B_right, accuracy_order, source)
+                           B_left, B_right, e_L, e_M_L, e_M_R, e_R, accuracy_order, source)
 end
 
 function SummationByPartsOperatorsExtra.create_S_left(sigma_L, N, N_L, bandwidth,
@@ -155,9 +155,9 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
     V_x = vandermonde_matrix(basis_functions_derivatives, nodes)
 
     # We assume that x_1 = x_L and x_N = x_R
-    e_L = spzeros(T, N)
+    e_L = zeros(T, N)
     e_L[1] = 1
-    e_R = spzeros(T, N)
+    e_R = zeros(T, N)
     e_R[end] = 1
     # e_L = V' \ [basis_functions[i](first(nodes)) for i in 1:K]
     # e_R = V' \ [basis_functions[i](last(nodes)) for i in 1:K]
@@ -242,7 +242,7 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
     weights_right = diag(P_R)[(N - N_R + 1):end]
     Q_left = S_L + B_left / 2
     Q_right = S_R + B_right / 2
-    return weights_left, weights_right, Q_left, Q_right, B_left, B_right
+    return weights_left, weights_right, Q_left, Q_right, B_left, B_right, e_L, e_M_L, e_M_R, e_R
 end
 
 function optimization_function_subcell_operator(x, p)
