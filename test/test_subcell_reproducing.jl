@@ -1,5 +1,5 @@
 @testsnippet ReproducingSubcell1D begin
-    using Optim: Optim, BFGS
+    using Optim: Optim
     using LinearAlgebra: diag
     using FastGaussQuadrature: gaussradau
 
