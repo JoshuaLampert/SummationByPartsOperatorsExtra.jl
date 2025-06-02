@@ -11,7 +11,7 @@ end
     # Gauss-Radau nodes are defined on [-1, 1]
     a = -1.0
     b = 1.0
-    # Construct `D` on [-1, 1] with subcells [-1, 0] and [0, 1]
+    # Construct `D` on [-1, 1] with subcells [-1, x_M] and [x_M, 1]
     c = -1.0
     d = 1.0
     x_M = 0.1
