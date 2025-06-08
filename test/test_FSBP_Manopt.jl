@@ -1,18 +1,18 @@
-@testsnippet FSBP begin
-    import Optim
+@testsnippet FSBP_Manopt begin
+    import Manifolds, Manopt, ForwardDiff
 end
 
-@testitem "FSBP" setup=[FSBP] begin
+@testitem "FSBP with Manopt.jl" setup=[FSBP_Manopt] begin
     N = 5
     x_min = -1.0
     x_max = 1.0
     nodes = collect(range(x_min, x_max, length = N))
-    source = GlaubitzNordströmÖffner2023()
+    source = GlaubitzIskeLampertÖffner2025()
     for compact in (true, false)
         show(IOContext(devnull, :compact => compact), source)
     end
     let basis_functions = [x -> x^i for i in 0:3]
-        D = function_space_operator(basis_functions, nodes, source)
+        D = function_space_operator(basis_functions, nodes, source; verbose = true)
         # Test errors
         @test_throws ArgumentError function_space_operator(basis_functions, nodes,
                                                            source; derivative_order = 2)
