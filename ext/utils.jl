@@ -260,5 +260,12 @@ function assert_correct_sparsity_pattern(sparsity_pattern)
     end
 end
 
+function assert_correct_length_basis_functions_weights(basis_functions_weights,
+                                                       basis_functions)
+    if length(basis_functions_weights) != length(basis_functions)
+        throw(ArgumentError("Length of basis function weights $(length(basis_functions_weights)) does not match number of basis functions $(length(basis_functions))."))
+    end
+end
+
 # x = [sigma; rho]
 split_x_function_space_operator(x, L) = x[1:L], x[(L + 1):end]
