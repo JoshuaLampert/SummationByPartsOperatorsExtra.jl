@@ -1,6 +1,8 @@
 function SummationByPartsOperatorsExtra.function_space_operator(basis_functions,
                                                                 nodes::Vector{T},
                                                                 source::SourceOfCoefficients;
+                                                                basis_function_weights = ones(T,
+                                                                                              length(basis_functions)),
                                                                 derivative_order = 1,
                                                                 accuracy_order = 0,
                                                                 bandwidth = length(nodes) -
@@ -21,6 +23,7 @@ function SummationByPartsOperatorsExtra.function_space_operator(basis_functions,
     assert_first_derivative_order(derivative_order)
     sort!(nodes)
     weights, D = construct_function_space_operator(basis_functions, nodes, source;
+                                                   basis_function_weights,
                                                    bandwidth, size_boundary,
                                                    different_values, sparsity_pattern,
                                                    opt_alg, options, autodiff, x0, verbose)
