@@ -57,6 +57,7 @@ function construct_function_space_operator(basis_functions, nodes,
         assert_correct_sparsity_pattern(sparsity_pattern)
         sparsity_pattern = UpperTriangular(sparsity_pattern)
     end
+    assert_correct_length_basis_functions_weights(basis_function_weights, basis_functions)
     L = get_nsigma(N; bandwidth, size_boundary, different_values, sparsity_pattern)
 
     basis_functions_derivatives = [x -> ForwardDiff.derivative(basis_functions[i], x)
