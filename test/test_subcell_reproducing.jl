@@ -30,6 +30,7 @@ end
                                                      g_tol = 1e-16))
 
         weights_D = diag(mass_matrix(D))
+        # TODO: Also test derivative matrix and mass matrix boundary (with PolynomialBasis.jl)
         @test all((b - a) / (x_M - c) * weights_D[1:n] .≈ weights)
         @test all((b - a) / (d - x_M) * weights_D[(n + 1):end] .≈ reverse(weights))
     end

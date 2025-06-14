@@ -38,6 +38,8 @@ end
 
 function construct_function_space_operator(basis_functions, nodes,
                                            source::GlaubitzIskeLampertÖffner2025;
+                                           basis_functions_weights = ones(eltype(nodes),
+                                                                          length(basis_functions)),
                                            bandwidth = length(nodes) - 1,
                                            size_boundary = 2 * bandwidth,
                                            different_values = true,
@@ -55,6 +57,7 @@ function construct_function_space_operator(basis_functions, nodes,
         assert_correct_sparsity_pattern(sparsity_pattern)
         sparsity_pattern = UpperTriangular(sparsity_pattern)
     end
+    assert_correct_length_basis_functions_weights(basis_functions_weights, basis_functions)
     L = get_nsigma(N; bandwidth, size_boundary, different_values, sparsity_pattern)
 
     basis_functions_derivatives = [x -> ForwardDiff.derivative(basis_functions[i], x)
@@ -62,8 +65,11 @@ function construct_function_space_operator(basis_functions, nodes,
     basis_functions_orthonormalized, basis_functions_orthonormalized_derivatives = orthonormalize_gram_schmidt(basis_functions,
                                                                                                                basis_functions_derivatives,
                                                                                                                nodes)
-    V = vandermonde_matrix(basis_functions_orthonormalized, nodes)
-    V_x = vandermonde_matrix(basis_functions_orthonormalized_derivatives, nodes)
+    # This weights column k, i.e. basis function k, with the weight `basis_functions_weights[k]`
+    V = vandermonde_matrix(basis_functions_orthonormalized, nodes) *
+        Diagonal(basis_functions_weights)
+    V_x = vandermonde_matrix(basis_functions_orthonormalized_derivatives, nodes) *
+          Diagonal(basis_functions_weights)
     B = spzeros(T, N, N)
     B[1, 1] = -1
     B[N, N] = 1
