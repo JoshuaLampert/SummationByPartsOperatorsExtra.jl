@@ -39,7 +39,7 @@ end
 function construct_function_space_operator(basis_functions, nodes,
                                            source::GlaubitzIskeLampertÖffner2025;
                                            basis_functions_weights = ones(eltype(nodes),
-                                                                         length(basis_functions)),
+                                                                          length(basis_functions)),
                                            bandwidth = length(nodes) - 1,
                                            size_boundary = 2 * bandwidth,
                                            different_values = true,

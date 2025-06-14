@@ -2,7 +2,7 @@ function SummationByPartsOperatorsExtra.function_space_operator(basis_functions,
                                                                 nodes::Vector{T},
                                                                 source::SourceOfCoefficients;
                                                                 basis_functions_weights = ones(T,
-                                                                                              length(basis_functions)),
+                                                                                               length(basis_functions)),
                                                                 derivative_order = 1,
                                                                 accuracy_order = 0,
                                                                 bandwidth = length(nodes) -
