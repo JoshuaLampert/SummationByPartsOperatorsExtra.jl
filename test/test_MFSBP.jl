@@ -55,7 +55,7 @@ end
                                                                         normals_,
                                                                         moments, vol,
                                                                         source;
-                                                                        basis_function_weights = ones(4))
+                                                                        basis_functions_weights = ones(4))
 
     D = multidimensional_function_space_operator(basis_functions, nodes,
                                                  boundary_indices_, normals_,

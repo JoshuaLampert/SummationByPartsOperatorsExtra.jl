@@ -332,9 +332,9 @@ end
             # Also minimizing the error for polynomial of one degree higher gets closer to
             # original operator
             basis = [x -> x^i for i in 0:(div(p, 2) + 1)]
-            basis_function_weights = [ones(div(p, 2) + 1); 0.001]
+            basis_functions_weights = [ones(div(p, 2) + 1); 0.001]
             D = function_space_operator(basis, nodes, source;
-                                        basis_function_weights,
+                                        basis_functions_weights,
                                         bandwidth, size_boundary, different_values,
                                         verbose,
                                         options = Optim.Options(f_abstol = 1e-26,

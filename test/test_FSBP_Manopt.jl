@@ -26,7 +26,7 @@ end
         @test_throws ArgumentError function_space_operator(basis_functions, nodes, source;
                                                            x0 = zeros(3))
         @test_throws ArgumentError function_space_operator(basis_functions, nodes, source;
-                                                           basis_function_weights = ones(3))
+                                                           basis_functions_weights = ones(3))
 
         @test grid(D) ≈ nodes
         @test all(isapprox.(D * ones(N), zeros(N); atol = 1e-13))

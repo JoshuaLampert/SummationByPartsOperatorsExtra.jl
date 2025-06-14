@@ -2,7 +2,7 @@
 """
     function_space_operator(basis_functions, nodes, source;
                             derivative_order = 1, accuracy_order = 0,
-                            basis_function_weights = ones(length(basis_functions)),
+                            basis_functions_weights = ones(length(basis_functions)),
                             bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
                             different_values = true, sparsity_pattern = nothing,
                             opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
@@ -30,7 +30,7 @@ The initial guess for the optimization problem can be passed with the keyword ar
 If `nothing` is passed, a default initial guess (zeros for the entries of the differentiation matrix and
 equal values for all the weights) is used.
 
-You can weight each basis function with the keyword argument `basis_function_weights`, which is a vector of
+You can weight each basis function with the keyword argument `basis_functions_weights`, which is a vector of
 weights for each basis function. The default is a vector of ones, which means that all basis functions
 are equally weighted. This can be used to, e.g., enforce exactness for certain basis functions (high weights),
 but allow non-exactness for others only minimizing the error (low weights).
