@@ -5,6 +5,8 @@ function SummationByPartsOperatorsExtra.multidimensional_function_space_operator
                                                                                  moments,
                                                                                  vol,
                                                                                  source::SourceOfCoefficients;
+                                                                                 basis_function_weights = ones(typeof(basis_functions[1](nodes[1])),
+                                                                                                               length(basis_functions)),
                                                                                  derivative_order = 1,
                                                                                  accuracy_order = 0,
                                                                                  bandwidth = length(nodes) -
@@ -28,6 +30,7 @@ function SummationByPartsOperatorsExtra.multidimensional_function_space_operator
                                                                                        moments,
                                                                                        vol,
                                                                                        source;
+                                                                                       basis_function_weights,
                                                                                        bandwidth,
                                                                                        size_boundary,
                                                                                        different_values,
@@ -47,6 +50,8 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
                                                             boundary_indices, normals,
                                                             moments, vol,
                                                             ::GlaubitzIskeLampertÖffner2025;
+                                                            basis_function_weights = ones(typeof(basis_functions[1](nodes[1])),
+                                                                                          length(basis_functions)),
                                                             bandwidth = length(nodes) - 1,
                                                             size_boundary = 2 * bandwidth,
                                                             different_values = true,
@@ -77,14 +82,18 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
     if isnothing(corners)
         corners = ntuple(_ -> T[], d)
     end
+    assert_correct_length_basis_functions_weights(basis_function_weights, basis_functions)
     Ls = ntuple(i -> get_nsigma(N; bandwidth, size_boundary, different_values,
                                 sparsity_pattern = sparsity_patterns[i]), d)
     basis_functions_gradients = [x -> ForwardDiff.gradient(basis_functions[i], x)
                                  for i in 1:K]
     # TODO: Orthonormalize? What happens with moments? Need moments with respect to orthonormalized basis functions?
-    V = vandermonde_matrix(basis_functions, nodes)
+    # This weights column k, i.e. basis function k, with the weight `basis_function_weights[k]`
+    V = vandermonde_matrix(basis_functions, nodes) *
+        Diagonal(basis_function_weights)
     V_xis = ntuple(j -> vandermonde_matrix([x -> basis_functions_gradients[i](x)[j]
-                                            for i in 1:K], nodes), d)
+                                            for i in 1:K], nodes) *
+                        Diagonal(basis_function_weights), d)
 
     if isnothing(x0)
         # x0 = zeros(T, sum(Ls) + N + N_boundary)
