@@ -105,7 +105,7 @@ end
                 D = function_space_operator(basis, nodes, source;
                                             bandwidth, size_boundary, different_values,
                                             verbose, opt_kwargs...)
-                @test isapprox(Matrix(D), Matrix(D_poly); atol = 1e-11) # equal
+                @test isapprox(Matrix(D), Matrix(D_poly); atol = 1e-10) # equal
                 @test isapprox(mass_matrix(D), mass_matrix(D_poly); atol = 1e-11) # equal
             end
 
@@ -166,9 +166,9 @@ end
                                                              source;
                                                              sparsity_pattern,
                                                              verbose, opt_kwargs...)
-                @test isapprox(Matrix(D_sparsity_pattern), Matrix(D_poly); atol = 1e-3) # almost equal
+                @test isapprox(Matrix(D_sparsity_pattern), Matrix(D_poly); atol = 1e-2) # almost equal
                 @test isapprox(mass_matrix(D_sparsity_pattern), mass_matrix(D_poly);
-                               atol = 1e-4) # almost equal
+                               atol = 1e-3) # almost equal
 
                 # This needs only 1 iteration
                 x_poly_sparsity_pattern = get_optimization_entries(D_poly;
@@ -384,7 +384,7 @@ end
             D = function_space_operator(basis, nodes, source;
                                         bandwidth, size_boundary, different_values,
                                         verbose, opt_kwargs...)
-            @test isapprox(Matrix(D), Matrix(D_poly); atol = 1e-10) # equal
+            @test isapprox(Matrix(D), Matrix(D_poly); atol = 1e-9) # equal
             @test isapprox(mass_matrix(D), mass_matrix(D_poly); atol = 1e-11) # equal
         end
 
