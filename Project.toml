@@ -35,7 +35,7 @@ SummationByPartsOperatorsExtraOptimForwardDiffExt = ["Optim", "ForwardDiff"]
 [compat]
 ArgCheck = "1, 2"
 AutoHashEquals = "0.2, 1, 2"
-ForwardDiff = "0.10"
+ForwardDiff = "0.10, 1"
 LinearAlgebra = "1"
 Makie = "0.22"
 Manifolds = "0.10"
