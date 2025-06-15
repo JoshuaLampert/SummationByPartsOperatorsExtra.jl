@@ -40,7 +40,7 @@ function SummationByPartsOperatorsExtra.plot_normals(nodes_boundary, normals; kw
     y_vals = [Meshes.ustrip(coords(nodes_boundary[i]).y) for i in 1:N_boundary]
     u = [normals[i].x for i in 1:N_boundary]
     v = [normals[i].y for i in 1:N_boundary]
-    Makie.arrows(x_vals, y_vals, u, v)
+    Makie.arrows2d(x_vals, y_vals, u, v)
     viz!(nodes_boundary; color = :green, kwargs...)
     Makie.current_figure()
 end
