@@ -25,7 +25,7 @@ TrixiTest = "0a316866-cbd0-4425-8bcb-08103b2c1f26"
 [compat]
 ADTypes = "1.13"
 Aqua = "0.8.3"
-CairoMakie = "0.13, 0.14"
+CairoMakie = "0.14"
 ExplicitImports = "1.6"
 FastGaussQuadrature = "1"
 ForwardDiff = "0.10, 1"
