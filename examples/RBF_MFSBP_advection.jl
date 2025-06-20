@@ -25,28 +25,3 @@ analysis_callback = AnalysisCallback(semi; dt = 0.01)
 saveat = range(tspan..., length = 100)
 kwargs = (; save_everystep = false, saveat = saveat, callback = analysis_callback)
 sol = solve(ode, alg; kwargs...)
-
-# using Plots: Plots, scatter, scatter!, pythonplot, mp4, savefig, @animate
-# import PythonPlot
-# using Printf
-# pythonplot()
-# OUT = joinpath("out", "images", "MFSBP_rectangle")
-# ispath(OUT) || mkpath(OUT)
-
-# nodes = grid(D)
-# # anim = @animate for i in eachindex(sol)
-# #     t = sol.t[i]
-# #     scatter(first.(nodes), last.(nodes), sol[i], label = "numerical")
-# #     scatter!(first.(nodes), last.(nodes), u.(nodes, Ref(t)), label = "analytical",
-# #              xlabel = "x", ylabel = "y", zlabel = "u",
-# #              title = @sprintf("t = %.2f", t), zrange = (-0.5, 1.1), legend = :topright,
-# #              dpi = 170)
-# # end
-# # mp4(anim, joinpath(OUT, "rectangle_advection_$file.mp4"), fps = 10)
-# t = sol.t[end]
-# scatter(first.(nodes), last.(nodes), sol[end], label = "numerical")
-# scatter!(first.(nodes), last.(nodes), u.(nodes, Ref(t)), label = "analytical",
-#          xlabel = "x", ylabel = "y", zlabel = "u",
-#          title = @sprintf("t = %.2f", t), zrange = (-0.5, 1.1), legend = :topright,
-#          dpi = 170)
-# savefig(joinpath(OUT, "rectangle_advection_$(file)_final.png"))
