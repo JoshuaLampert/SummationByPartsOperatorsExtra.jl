@@ -9,13 +9,12 @@ file = "Wendland_scattered_0.05_sparse_0.08_0.14"
 D = deserialize(joinpath(@__DIR__, "D_rectangle_$file.jls"))
 
 # equation
-advection_velocity = (1.0, 1.0)
+a = (1.0, 1.0)
 u0(x) = exp(-30 * norm(x .- (0.0, 0.0))^2)
-u(x, t) = u0(x .- advection_velocity .* t)
+u(x, t) = u0(x .- a .* t)
 # u(x, t) = u0(mod.(x .- a .* t .- xmin, xmax .- xmin) .+ xmin) # periodic boundary conditions
 g(x, t) = u(x, t) # boundary condition from the analytical solution
-semi = MultidimensionalLinearAdvectionNonperiodicSemidiscretization(D, advection_velocity,
-                                                                    g)
+semi = MultidimensionalLinearAdvectionNonperiodicSemidiscretization(D, a, g)
 
 # time integration
 tspan = (0.0, 0.5)
