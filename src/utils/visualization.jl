@@ -25,5 +25,9 @@ function plot_normals end
 """
     plot_sparsity_pattern(sparsity_pattern, nodes, node_index)
 
+Plot the `sparsity_pattern`, which is a boolean matrix of length `length(nodes) x length(nodes)`, where `nodes` is a
+set of nodes. The `node_index` is the index of the node in `nodes` that is used to plot the sparsity pattern around that node,
+i.e., it will be plotted as red, while all neighboring nodes according to the `sparsity_pattern` are plotted as green dots and
+the remaining nodes are plotted as blue dots.
 """
 function plot_sparsity_pattern end
