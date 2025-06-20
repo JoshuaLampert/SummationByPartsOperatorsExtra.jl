@@ -1,5 +1,4 @@
 @testsnippet Examples begin
-    using TrixiBase: trixi_include
     examples_dir() = pkgdir(SummationByPartsOperatorsExtra, "examples")
     include("test_util.jl")
 end

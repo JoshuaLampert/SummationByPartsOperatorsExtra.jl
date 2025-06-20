@@ -85,7 +85,7 @@ function analyze_quantities(disc::MultidimensionalLinearAdvectionNonperiodicSemi
     D = disc.derivative
     P = mass_matrix(D)
     m = sum(P * du)
-    # P * disc.B = a[1] * B_1 + a[2] * B_2
+    # P * disc.cache.B = a[1] * B_1 + a[2] * B_2
     # tmp1 are the boundary values of u
     m_boundary = m + sum(P * disc.cache.B * disc.cache.tmp1)
 

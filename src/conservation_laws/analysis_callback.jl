@@ -46,19 +46,13 @@ end
 
 Return the computed quantities for each time step.
 """
-function quantities(cb::DiscreteCallback{Condition,
-                                         Affect!}) where {Condition,
-                                                          Affect! <:
-                                                          AnalysisCallback}
+function quantities(cb::DiscreteCallback{<:Any, <:AnalysisCallback})
     analysis_callback = cb.affect!
     return analysis_callback.quantities
 end
 
-function quantities(cb::DiscreteCallback{Condition,
-                                         Affect!}) where {Condition,
-                                                          Affect! <:
-                                                          PeriodicCallbackAffect{AnalysisCallback}
-                                                          }
+function quantities(cb::DiscreteCallback{<:Any,
+                                         <:PeriodicCallbackAffect{<:AnalysisCallback}})
     analysis_callback = cb.affect!.affect!
     return analysis_callback.quantities
 end
@@ -68,19 +62,13 @@ end
 
 Return the time values that correspond to the saved values of the [`quantities`](@ref).
 """
-function tstops(cb::DiscreteCallback{Condition,
-                                     Affect!}) where {Condition,
-                                                      Affect! <:
-                                                      AnalysisCallback}
+function tstops(cb::DiscreteCallback{<:Any, <:AnalysisCallback})
     analysis_callback = cb.affect!
     return analysis_callback.tstops
 end
 
-function tstops(cb::DiscreteCallback{Condition,
-                                     Affect!}) where {Condition,
-                                                      Affect! <:
-                                                      PeriodicCallbackAffect{AnalysisCallback}
-                                                      }
+function tstops(cb::DiscreteCallback{<:Any,
+                                     <:PeriodicCallbackAffect{<:AnalysisCallback}})
     analysis_callback = cb.affect!.affect!
     return analysis_callback.tstops
 end

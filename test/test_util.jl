@@ -1,4 +1,5 @@
 using TrixiTest: @trixi_test_nowarn
+using TrixiBase: trixi_include
 
 # Use a macro to avoid world age issues when defining new initial conditions etc.
 # inside an example.
