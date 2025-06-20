@@ -39,7 +39,7 @@ include("conservation_laws/multidimensional_linear_advection.jl")
 export get_nsigma, get_optimization_entries, get_multidimensional_optimization_entries
 export get_sparsity_pattern, neighborhood_sparsity_pattern
 export compute_moments_boundary
-export plot_nodes, plot_normals
+export plot_nodes, plot_normals, plot_sparsity_pattern
 export GlaubitzIskeLampertÖffner2025, multidimensional_function_space_operator
 export SubcellOperator, GlaubitzLampertNordströmWinters2025, subcell_operator,
        derivative_matrix, grid_left, grid_right, mass_matrix_left, mass_matrix_right,
