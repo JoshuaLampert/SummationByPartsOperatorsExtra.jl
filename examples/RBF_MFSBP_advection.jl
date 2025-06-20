@@ -14,7 +14,8 @@ u0(x) = exp(-30 * norm(x .- (0.0, 0.0))^2)
 u(x, t) = u0(x .- advection_velocity .* t)
 # u(x, t) = u0(mod.(x .- a .* t .- xmin, xmax .- xmin) .+ xmin) # periodic boundary conditions
 g(x, t) = u(x, t) # boundary condition from the analytical solution
-semi = MultidimensionalLinearAdvectionNonperiodicSemidiscretization(D, advection_velocity, g)
+semi = MultidimensionalLinearAdvectionNonperiodicSemidiscretization(D, advection_velocity,
+                                                                    g)
 
 # time integration
 tspan = (0.0, 0.5)
