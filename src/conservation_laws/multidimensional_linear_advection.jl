@@ -5,7 +5,7 @@ A semidiscretization of the linear advection equation
     \$\\partial_t u(x, t) + a\\cdot \\nabla u(x, t) = 0\$
 with boundary conditions `bc(x, t)`.
 
-`D` is a multidimensional SBP derivative operator, and`a` is a tuple of the constant coefficients.
+`D` is a multidimensional SBP derivative operator, and `a` is a tuple of the constant coefficients.
 """
 @auto_hash_equals struct MultidimensionalLinearAdvectionNonperiodicSemidiscretization{Dim,
                                                                                       T,
