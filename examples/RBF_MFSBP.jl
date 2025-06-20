@@ -34,7 +34,18 @@ longer = 0.14
 ellipsoid_lengths = ((longer, shorter), (shorter, longer))
 kwargs = (; ellipsoid_lengths, verbose = true)
 
-D = multidimensional_function_space_operator(basis, geometry, sampler,
-                                             sampler_boundary,
-                                             GlaubitzIskeLampertÖffner2025();
-                                             kwargs..., opt_kwargs...)
+OUT = joinpath("out")
+ispath(OUT) || mkdir(OUT)
+file = "rectangle_Wendland_scattered_$(alpha)_sparse_$(shorter)_$(longer)"
+
+D = open(joinpath(OUT, "out_$file.txt"), "w") do file
+    redirect_stdout(file) do
+        D = multidimensional_function_space_operator(basis, geometry, sampler,
+                                                     sampler_boundary,
+                                                     GlaubitzIskeLampertÖffner2025();
+                                                     kwargs..., opt_kwargs...)
+    end
+end
+
+using Serialization: serialize
+serialize(joinpath(OUT, "D_$file.jls"), D)

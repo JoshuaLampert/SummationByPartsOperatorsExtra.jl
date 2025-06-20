@@ -64,4 +64,40 @@ end
     @test_nowarn plot_nodes(D_2; pointsize = 10)
     @test_nowarn plot_nodes(D_2; corner_indices = corner_indices, pointsize = 10)
     @test_nowarn plot_normals(D_2; pointsize = 10)
+    @test_nowarn plot_sparsity_pattern(get_sparsity_pattern(D_2)[1], grid(D_2), 6)
+end
+
+@testitem "AnalysisCallback" begin
+    N_x = N_y = 4
+    D = derivative_operator(MattssonNordström2004(), 1, 2, -1.0, 1.0, N_x)
+    D_2 = tensor_product_operator_2D(D)
+    a = (1.0, 1.0)
+    g(x, t) = 0.0
+    semi = MultidimensionalLinearAdvectionNonperiodicSemidiscretization(D_2, a, g)
+    analysis_callback = AnalysisCallback(semi; dt = 0.1)
+    for compact in (true, false)
+        show(IOContext(devnull, :compact => compact), analysis_callback)
+    end
+    @test length(tstops(analysis_callback)) == 0
+    @test length(quantities(analysis_callback)) == 0
+    analysis_callback = AnalysisCallback(semi; interval = 10)
+    for compact in (true, false)
+        show(IOContext(devnull, :compact => compact), analysis_callback)
+    end
+    @test length(tstops(analysis_callback)) == 0
+    @test length(quantities(analysis_callback)) == 0
+
+    @test_throws ArgumentError AnalysisCallback(semi; interval = 10, dt = 0.1)
+end
+
+@testitem "MultidimensionalLinearAdvectionNonperiodicSemidiscretization" begin
+    N_x = N_y = 4
+    D = derivative_operator(MattssonNordström2004(), 1, 2, -1.0, 1.0, N_x)
+    D_2 = tensor_product_operator_2D(D)
+    a = (1.0, 1.0)
+    g(x, t) = 0.0
+    semi = MultidimensionalLinearAdvectionNonperiodicSemidiscretization(D_2, a, g)
+    for compact in (true, false)
+        show(IOContext(devnull, :compact => compact), semi)
+    end
 end

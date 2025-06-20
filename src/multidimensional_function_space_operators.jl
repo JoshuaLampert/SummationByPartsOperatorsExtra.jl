@@ -89,3 +89,7 @@ See also [`GlaubitzIskeLampertÖffner2025`](@ref).
     This is an experimental feature and may change in future releases.
 """
 function multidimensional_function_space_operator end
+
+# To be able to call this function outside of the package, we define it here
+# and then extend it in the package extension.
+function compute_nodes_normals end

@@ -1,5 +1,6 @@
 module SummationByPartsOperatorsExtraMeshesMakieExt
 
+using LinearAlgebra: Symmetric
 using Meshes: Meshes, PointSet, coords, viz, viz!
 import Makie
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra, grid,
@@ -50,6 +51,24 @@ function SummationByPartsOperatorsExtra.plot_normals(D; kwargs...)
     nodes_boundary = PointSet(Tuple.(restrict_boundary(nodes, D)))
     normals = D.normals
     SummationByPartsOperatorsExtra.plot_normals(nodes_boundary, normals; kwargs...)
+end
+
+function SummationByPartsOperatorsExtra.plot_sparsity_pattern(sparsity_pattern, nodes,
+                                                              node_index)
+    sparsity_pattern = Symmetric(sparsity_pattern)
+    nodes = PointSet(nodes)
+    viz(nodes[node_index], color = :red, pointsize = 10)
+    for i in eachindex(nodes)
+        if i == node_index
+            continue
+        end
+        if sparsity_pattern[node_index, i]
+            viz!(nodes[i], color = :green, pointsize = 10)
+        else
+            viz!(nodes[i], color = :blue, pointsize = 10)
+        end
+    end
+    Makie.current_figure()
 end
 
 end
