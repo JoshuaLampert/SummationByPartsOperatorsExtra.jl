@@ -12,13 +12,13 @@ end
     # This example takes a long time to run, so we only test it with a small number of iterations.
     @test_trixi_include(joinpath(examples_dir(), "RBF_MFSBP.jl"),
                         iterations=20)
+    rm(OUT, recursive = true)
 end
 
 @testitem "RBF_MFSBP_advection.jl" setup=[Examples] begin
     # We need to run the example RBF_MFSBP.jl first to create the operator file
     @test_trixi_include(joinpath(examples_dir(), "RBF_MFSBP.jl"), iterations=5)
-    OUT = "out" # Using `trixi_include` instead of `include` `OUT` is not defined
-    filenames = readdir("out")
+    filenames = readdir(OUT)
     filter!(f -> startswith(f, "D_") && endswith(f, ".jls"), filenames)
     cp(joinpath(OUT, filenames[1]), joinpath(examples_dir(), filenames[1]))
     @test_trixi_include(joinpath(examples_dir(), "RBF_MFSBP_advection.jl"))
@@ -49,10 +49,12 @@ end
                         xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax,
                         sampler=sampler, sampler_boundary=sampler_boundary,
                         kwargs=kwargs, iterations=50)
+    rm(OUT, recursive = true)
 end
 
 @testitem "RBF_MFSBP_noisy_regular.jl" setup=[Examples] begin
     # This example takes a long time to run, so we only test it with a small number of iterations.
     @test_trixi_include(joinpath(examples_dir(), "RBF_MFSBP_noisy_regular.jl"),
                         iterations=20)
+    rm(OUT, recursive = true)
 end
