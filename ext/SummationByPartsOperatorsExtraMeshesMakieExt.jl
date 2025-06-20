@@ -53,18 +53,19 @@ function SummationByPartsOperatorsExtra.plot_normals(D; kwargs...)
     SummationByPartsOperatorsExtra.plot_normals(nodes_boundary, normals; kwargs...)
 end
 
-function SummationByPartsOperatorsExtra.plot_sparsity_pattern(sparsity_pattern, nodes, node_index)
+function SummationByPartsOperatorsExtra.plot_sparsity_pattern(sparsity_pattern, nodes,
+                                                              node_index)
     sparsity_pattern = Symmetric(sparsity_pattern)
     nodes = PointSet(nodes)
-    viz(nodes[node_index], color=:red, pointsize=10)
+    viz(nodes[node_index], color = :red, pointsize = 10)
     for i in eachindex(nodes)
         if i == node_index
             continue
         end
         if sparsity_pattern[node_index, i]
-            viz!(nodes[i], color=:green, pointsize=10)
+            viz!(nodes[i], color = :green, pointsize = 10)
         else
-            viz!(nodes[i], color=:blue, pointsize=10)
+            viz!(nodes[i], color = :blue, pointsize = 10)
         end
     end
     Makie.current_figure()
