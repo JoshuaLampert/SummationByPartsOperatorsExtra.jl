@@ -7,13 +7,38 @@
 end
 
 """
-    AnalysisCallback(semi)
+    AnalysisCallback(semi; interval = 0, dt = nothing)
 
+Analyze the numerical solution either every `interval` accepted time steps
+or every `dt` in terms of integration time. You can only pass either `interval`
+or `dt`, but not both at the same time.
+The analyzed quantities are computed by `analyze_quantities` defined for each
+equation type. The resulting quantities can be accessed via the
+[`quantities`](@ref) function, and the corresponding time values via the
+[`tstops`](@ref) function.
 """
-mutable struct AnalysisCallback
+mutable struct AnalysisCallback{IntervalType}
     semi::AbstractSemidiscretization
+    interval_or_dt::IntervalType
     tstops::Vector{Float64}
     quantities::Vector{Vector{Float64}}
+end
+
+function Base.show(io::IO, cb::DiscreteCallback{<:Any, <:AnalysisCallback})
+    @nospecialize cb # reduce precompilation time
+
+    analysis_callback = cb.affect!
+    print(io, "AnalysisCallback(interval=", analysis_callback.interval_or_dt,
+          ")")
+end
+
+function Base.show(io::IO,
+                   cb::DiscreteCallback{<:Any,
+                                        <:PeriodicCallbackAffect{<:AnalysisCallback}})
+    @nospecialize cb # reduce precompilation time
+
+    analysis_callback = cb.affect!.affect!
+    print(io, "AnalysisCallback(dt=", analysis_callback.interval_or_dt, ")")
 end
 
 """
@@ -76,10 +101,11 @@ function AnalysisCallback(semi; interval = 0, dt = nothing)
     #    (total #steps)       (#accepted steps)
     # We need to check the number of accepted steps since callbacks are not
     # activated after a rejected step.
-    condition = (u, t, integrator) -> interval > 0 &&
-        ((integrator.stats.naccept % interval == 0) || isfinished(integrator))
+    condition = (u, t, integrator) -> interval_or_dt > 0 &&
+        ((integrator.stats.naccept % interval_or_dt == 0) || isfinished(integrator))
 
     analysis_callback = AnalysisCallback(semi,
+                                         interval_or_dt,
                                          Vector{Float64}(),
                                          Vector{Vector{Float64}}())
 
