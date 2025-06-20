@@ -36,7 +36,7 @@ kwargs = (; ellipsoid_lengths, verbose = true)
 
 OUT = joinpath("out")
 ispath(OUT) || mkdir(OUT)
-file = "rectangle_Wendland_scattered_$(alpha)_sparse_$(shorter)_$(longer)_short"
+file = "rectangle_Wendland_scattered_$(alpha)_sparse_$(shorter)_$(longer)"
 
 D = open(joinpath(OUT, "out_$file.txt"), "w") do file
     redirect_stdout(file) do

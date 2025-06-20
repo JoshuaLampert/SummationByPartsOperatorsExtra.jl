@@ -30,7 +30,8 @@ function SummationByPartsOperatorsExtra.compute_nodes_normals(geometry, sampler,
 end
 
 # This function uses `sampler_boundary` to sample the boundary nodes
-function SummationByPartsOperatorsExtra.compute_nodes_normals(geometry, sampler, sampler_boundary)
+function SummationByPartsOperatorsExtra.compute_nodes_normals(geometry, sampler,
+                                                              sampler_boundary)
     geometry_boundary = boundary(geometry)
     # Allow sampling boundary nodes, but exclude them for `nodes_inner`
     nodes_inner_ = sample(geometry, sampler)
@@ -167,8 +168,9 @@ function SummationByPartsOperatorsExtra.multidimensional_function_space_operator
                                                                                  ellipsoid_lengths = nothing,
                                                                                  kwargs...)
     d = paramdim(geometry)
-    nodes, normals, boundary_indices = compute_nodes_normals(geometry, sampler,
-                                                             sampler_boundary)
+    nodes, normals, boundary_indices = SummationByPartsOperatorsExtra.compute_nodes_normals(geometry,
+                                                                                            sampler,
+                                                                                            sampler_boundary)
     corners = find_corners(boundary_indices)
     if !isnothing(ellipsoid_lengths)
         @assert length(ellipsoid_lengths)==d "ellipsoid_lengths has to be of length $(d)"

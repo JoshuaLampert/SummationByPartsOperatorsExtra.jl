@@ -64,4 +64,16 @@ end
     @test_nowarn plot_nodes(D_2; pointsize = 10)
     @test_nowarn plot_nodes(D_2; corner_indices = corner_indices, pointsize = 10)
     @test_nowarn plot_normals(D_2; pointsize = 10)
+    @test_nowarn plot_sparsity_pattern(sparsity_pattern(D_2), grid(D_2), 6)
+end
+
+@testitem "AnalysisCallback" begin
+    N_x = N_y = 4
+    D = derivative_operator(MattssonNordström2004(), 1, 2, -1.0, 1.0, N_x)
+    D_2 = tensor_product_operator_2D(D)
+    a = (1.0, 1.0)
+    g(x, t) = 0.0
+    semi = MultidimensionalLinearAdvectionNonperiodicSemidiscretization(D_2, a, g)
+    analysis_callback = AnalysisCallback(semi; dt = 0.1)
+    @test_nowarn println(analysis_callback)
 end
