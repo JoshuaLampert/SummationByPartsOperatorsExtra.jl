@@ -16,7 +16,7 @@ Meshes.Point(x::AbstractVector) = Point(Tuple(x))
 Meshes.PointSet(xs::Vector{<:AbstractVector}) = PointSet(Point.(xs))
 # This function samples in the whole geometry using `sampler` and uses
 # the boundary nodes as nodes on the boundary.
-function compute_nodes_normals(geometry, sampler, ::Nothing)
+function SummationByPartsOperatorsExtra.compute_nodes_normals(geometry, sampler, ::Nothing)
     nodes = PointSet(sample(geometry, sampler))
     _, _, boundary_indices = divide_into_inner_and_boundary(geometry, nodes)
     # Note: This will always be the same normal for all boundary nodes with the same location (corners),
@@ -30,7 +30,7 @@ function compute_nodes_normals(geometry, sampler, ::Nothing)
 end
 
 # This function uses `sampler_boundary` to sample the boundary nodes
-function compute_nodes_normals(geometry, sampler, sampler_boundary)
+function SummationByPartsOperatorsExtra.compute_nodes_normals(geometry, sampler, sampler_boundary)
     geometry_boundary = boundary(geometry)
     # Allow sampling boundary nodes, but exclude them for `nodes_inner`
     nodes_inner_ = sample(geometry, sampler)

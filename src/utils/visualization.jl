@@ -21,3 +21,9 @@ the normals are plotted as arrows. Additional keyword arguments are passed to `v
 The function returns the current figure.
 """
 function plot_normals end
+
+"""
+    plot_sparsity_pattern(sparsity_pattern, nodes, node_index)
+
+"""
+function plot_sparsity_pattern end
