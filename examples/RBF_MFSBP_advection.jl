@@ -3,24 +3,10 @@ using OrdinaryDiffEqLowStorageRK
 using LinearAlgebra: norm
 using Serialization: deserialize
 
+# Note: You need to run the example RBF_MFSBP.jl first to create the file D_rectangle_Wendland_scattered_0.05_sparse_0.08_0.14.jls
+# or use another .jls file containing a MultidimensionalFunctionSpaceOperator.
 file = "Wendland_scattered_0.05_sparse_0.08_0.14"
-# file = "thinplate_regular_20_20_sparse_2"
-# file = "Wendland_regular_40_40_sparse_2"
-# file = "Wendland_regular_noise_40_40_sparse_2"
 D = deserialize(joinpath(@__DIR__, "D_rectangle_$file.jls"))
-# file = "MattssonNordström2004_tensorproduct"
-# xmin, xmax = -1.0, 1.0
-# ymin, ymax = -1.0, 1.0
-# N_x, N_y = 40, 40
-
-# # Construct one-dimensional SBP operators
-# D_1 = derivative_operator(MattssonNordström2004(), derivative_order = 1, accuracy_order = 4,
-#                           xmin = xmin, xmax = xmax, N = N_x)
-# D_2 = derivative_operator(MattssonNordström2004(), derivative_order = 1, accuracy_order = 4,
-#                           xmin = ymin, xmax = ymax, N = N_y)
-
-# # Construct the two-dimensional SBP operator
-# D = tensor_product_operator_2D(D_1, D_2)
 
 # equation
 a = (1.0, 1.0)
