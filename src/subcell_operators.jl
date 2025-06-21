@@ -87,7 +87,7 @@ LinearAlgebra.issymmetric(D::SubcellOperator) = false
 
 SummationByPartsOperators.source_of_coefficients(D::SubcellOperator) = D.source
 
-function SummationByPartsOperators.integrate(func, u, D::SubcellOperator)
+function PolynomialBases.integrate(func, u, D::SubcellOperator)
     return integrate(func, u, weights(D))
 end
 
@@ -124,7 +124,7 @@ mass_matrix_left(D::SubcellOperator) = Diagonal(weights_left(D))
 Returns the mass matrix associated to the right part of the sub-cell operator `D`.
 """
 mass_matrix_right(D::SubcellOperator) = Diagonal(weights_right(D))
-SummationByPartsOperators.mass_matrix(D::SubcellOperator) = Diagonal(weights(D))
+PolynomialBases.mass_matrix(D::SubcellOperator) = Diagonal(weights(D))
 
 """
     mass_matrix_boundary_left(D::SubcellOperator)
@@ -139,7 +139,7 @@ Returns the mass matrix associated to the right boundary of the sub-cell operato
 """
 mass_matrix_boundary_right(D::SubcellOperator) = D.B_right
 # If e_L and e_R are the first and last unit vectors and e_M is the same in both sub-cells, this would always be diag(-1, 0, ..., 0, 1).
-SummationByPartsOperators.mass_matrix_boundary(D::SubcellOperator) = D.B_left + D.B_right
+PolynomialBases.mass_matrix_boundary(D::SubcellOperator) = D.B_left + D.B_right
 
 """
     left_projection_left(D::SubcellOperator)
@@ -159,7 +159,7 @@ right_projection_right(D::SubcellOperator) = D.e_R
 
 Returns the derivative matrix ``D = P^{-1}(Q_L + Q_R)`` associated to the sub-cell operator `Dop`.
 """
-derivative_matrix(D::SubcellOperator) = inv(mass_matrix(D)) * (D.Q_left + D.Q_right)
+PolynomialBases.derivative_matrix(D::SubcellOperator) = inv(mass_matrix(D)) * (D.Q_left + D.Q_right)
 
 Base.eltype(::SubcellOperator{T}) where {T} = T
 
