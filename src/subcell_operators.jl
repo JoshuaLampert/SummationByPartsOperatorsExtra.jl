@@ -159,7 +159,8 @@ right_projection_right(D::SubcellOperator) = D.e_R
 
 Returns the derivative matrix ``D = P^{-1}(Q_L + Q_R)`` associated to the sub-cell operator `Dop`.
 """
-PolynomialBases.derivative_matrix(D::SubcellOperator) = inv(mass_matrix(D)) * (D.Q_left + D.Q_right)
+PolynomialBases.derivative_matrix(D::SubcellOperator) = inv(mass_matrix(D)) *
+                                                        (D.Q_left + D.Q_right)
 
 Base.eltype(::SubcellOperator{T}) where {T} = T
 
