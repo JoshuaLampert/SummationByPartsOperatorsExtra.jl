@@ -17,6 +17,7 @@ using ArgCheck: @argcheck
 using DiffEqCallbacks: PeriodicCallback, PeriodicCallbackAffect
 using LinearAlgebra: LinearAlgebra, Diagonal, UpperTriangular, diag, dot
 import LinearAlgebra: mul!, diagind, norm
+using PolynomialBases: PolynomialBases
 using Reexport: @reexport
 import SciMLBase: u_modified!, get_tmp_cache
 @reexport using SummationByPartsOperators
@@ -42,8 +43,9 @@ export compute_moments_boundary
 export plot_nodes, plot_normals, plot_sparsity_pattern
 export GlaubitzIskeLampertÖffner2025, multidimensional_function_space_operator
 export SubcellOperator, GlaubitzLampertNordströmWinters2025, subcell_operator,
-       derivative_matrix, grid_left, grid_right, mass_matrix_left, mass_matrix_right,
-       mass_matrix_boundary_left, mass_matrix_boundary_right,
+       derivative_matrix, grid, grid_left, grid_right,
+       mass_matrix, mass_matrix_left, mass_matrix_right,
+       mass_matrix_boundary, mass_matrix_boundary_left, mass_matrix_boundary_right,
        left_projection_left, left_projection_right,
        right_projection_left, right_projection_right
 export AnalysisCallback, tstops, quantities
