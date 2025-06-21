@@ -143,15 +143,27 @@ PolynomialBases.mass_matrix_boundary(D::SubcellOperator) = D.B_left + D.B_right
 
 """
     left_projection_left(D::SubcellOperator)
-    left_projection_right(D::SubcellOperator)
-    right_projection_left(D::SubcellOperator)
-    right_projection_right(D::SubcellOperator)
 
-Returns the left and right projection operators associated to the left and right parts of the sub-cell operator `D`.
+Returns the left projection operator ``e_L`` associated to the left part of the sub-cell operator `D`.
 """
 left_projection_left(D::SubcellOperator) = D.e_L
+"""
+    left_projection_right(D::SubcellOperator)
+
+Returns the right projection operator ``e_{M_L}`` associated to the left part of the sub-cell operator `D`.
+"""
 left_projection_right(D::SubcellOperator) = D.e_M_L
+"""
+    right_projection_left(D::SubcellOperator)
+
+Returns the left projection operator ``e_{M_R}`` associated to the right part of the sub-cell operator `D`.
+"""
 right_projection_left(D::SubcellOperator) = D.e_M_R
+"""
+    right_projection_right(D::SubcellOperator)
+
+Returns the right projection operator ``e_R`` associated to the right part of the sub-cell operator `D`.
+"""
 right_projection_right(D::SubcellOperator) = D.e_R
 
 """
