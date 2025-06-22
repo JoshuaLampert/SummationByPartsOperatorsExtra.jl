@@ -32,7 +32,7 @@ end
                                              opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
                                              autodiff = :forward, x0 = nothing, verbose = false)
 
-Construct a [`MultidimensionalMatrixOperator`](@ref) that represents a first-derivative operator in a function
+Construct a [`SummationByPartsOperators.MultidimensionalMatrixDerivativeOperator`](@extref) that represents a first-derivative operator in a function
 space spanned by the `basis_functions`, which is an iterable of functions. The operator is constructed on the
 scattered nodes `nodes`. They should be provided as an iterable of `SVector{Dim, T}`. The `boundary_indices`
 is a vector of indies that indicates, which nodes are on the boundary. `normals` is a vector of `SVector{Dim, T}`
@@ -89,3 +89,7 @@ See also [`GlaubitzIskeLampertÖffner2025`](@ref).
     This is an experimental feature and may change in future releases.
 """
 function multidimensional_function_space_operator end
+
+# To be able to call this function outside of the package, we define it here
+# and then extend it in the package extension.
+function compute_nodes_normals end

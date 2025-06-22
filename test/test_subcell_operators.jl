@@ -1,6 +1,6 @@
 @testsnippet SubCell begin
     import Optim
-    using LinearAlgebra: issymmetric
+    using LinearAlgebra: issymmetric, dot
 end
 
 @testitem "Sub-cell operators" setup=[SubCell] begin
@@ -86,6 +86,16 @@ end
                                    atol = 1e-14)
                 end
             end
+
+            # projections
+            e_L = left_projection_left(Dop)
+            e_M_L = left_projection_right(Dop)
+            e_M_R = right_projection_left(Dop)
+            e_R = right_projection_right(Dop)
+            @test isapprox(dot(e_L, u), u[begin])
+            @test isapprox(dot(e_R, u), u[end])
+            @test B_L ≈ e_M_L * e_M_L' - e_L * e_L'
+            @test B_R ≈ e_R * e_R' - e_M_R * e_M_R'
 
             # exactness of derivative operator
             fs = [f.(nodes) for f in basis_functions]

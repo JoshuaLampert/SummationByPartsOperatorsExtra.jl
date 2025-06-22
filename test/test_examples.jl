@@ -1,17 +1,28 @@
 @testsnippet Examples begin
-    using TrixiBase: trixi_include
-    using TrixiTest: @trixi_test_nowarn
     examples_dir() = pkgdir(SummationByPartsOperatorsExtra, "examples")
+    include("test_util.jl")
 end
 
 @testitem "RBF_FSBP_advection.jl" setup=[Examples] begin
-    @trixi_test_nowarn trixi_include(joinpath(examples_dir(), "RBF_FSBP_advection.jl"))
+    @test_trixi_include(joinpath(examples_dir(), "RBF_FSBP_advection.jl"))
 end
 
 @testitem "RBF_MFSBP.jl" setup=[Examples] begin
     # This example takes a long time to run, so we only test it with a small number of iterations.
-    @trixi_test_nowarn trixi_include(joinpath(examples_dir(), "RBF_MFSBP.jl"),
-                                     iterations = 20)
+    @test_trixi_include(joinpath(examples_dir(), "RBF_MFSBP.jl"),
+                        iterations=20)
+    rm(OUT, recursive = true)
+end
+
+@testitem "RBF_MFSBP_advection.jl" setup=[Examples] begin
+    # We need to run the example RBF_MFSBP.jl first to create the operator file
+    @test_trixi_include(joinpath(examples_dir(), "RBF_MFSBP.jl"), iterations=5)
+    filenames = readdir(OUT)
+    filter!(f -> startswith(f, "D_") && endswith(f, ".jls"), filenames)
+    cp(joinpath(OUT, filenames[1]), joinpath(examples_dir(), filenames[1]))
+    @test_trixi_include(joinpath(examples_dir(), "RBF_MFSBP_advection.jl"))
+    rm(OUT, recursive = true)
+    rm(joinpath(examples_dir(), filenames[1]))
 end
 
 @testitem "RBF_MFSBP.jl with regular sampling" setup=[Examples] begin
@@ -33,9 +44,16 @@ end
     kwargs = (; ellipsoid_lengths = ((longer, shorter), (shorter, longer)), verbose = true)
 
     # This example takes a long time to run, so we only test it with a small number of iterations.
-    @trixi_test_nowarn trixi_include(joinpath(examples_dir(), "RBF_MFSBP.jl"),
-                                     xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax,
-                                     sampler = sampler, sampler_boundary = sampler_boundary,
-                                     kwargs = kwargs,
-                                     iterations = 50)
+    @test_trixi_include(joinpath(examples_dir(), "RBF_MFSBP.jl"),
+                        xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax,
+                        sampler=sampler, sampler_boundary=sampler_boundary,
+                        kwargs=kwargs, iterations=50)
+    rm(OUT, recursive = true)
+end
+
+@testitem "RBF_MFSBP_noisy_regular.jl" setup=[Examples] begin
+    # This example takes a long time to run, so we only test it with a small number of iterations.
+    @test_trixi_include(joinpath(examples_dir(), "RBF_MFSBP_noisy_regular.jl"),
+                        iterations=20)
+    rm(OUT, recursive = true)
 end

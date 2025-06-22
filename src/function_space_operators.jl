@@ -2,6 +2,7 @@
 """
     function_space_operator(basis_functions, nodes, source;
                             derivative_order = 1, accuracy_order = 0,
+                            basis_functions_weights = ones(length(basis_functions)),
                             bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
                             different_values = true, sparsity_pattern = nothing,
                             opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
@@ -29,6 +30,11 @@ The initial guess for the optimization problem can be passed with the keyword ar
 If `nothing` is passed, a default initial guess (zeros for the entries of the differentiation matrix and
 equal values for all the weights) is used.
 
+You can weight each basis function with the keyword argument `basis_functions_weights`, which is a vector of
+weights for each basis function. The default is a vector of ones, which means that all basis functions
+are equally weighted. This can be used to, e.g., enforce exactness for certain basis functions (high weights),
+but allow non-exactness for others only minimizing the error (low weights).
+
 There are two alternative ways to enforce sparsity of the resulting operator. The first is by passing
 a matrix `sparsity_pattern` that is a matrix of zeros and ones, where the ones indicate the non-zero
 entries of the operator. This matrix should be symmetric or `UpperTriangular` and have zeros on the diagonal.
@@ -48,10 +54,10 @@ argument `different_values` is ignored for dense operators.
 The keyword argument `verbose` can be set to `true` to print information about the optimization process.
 
 The operator that is returned follows the general interface. Currently, it is wrapped in a
-[`MatrixDerivativeOperator`](@ref), but this might change in the future.
+[`SummationByPartsOperators.MatrixDerivativeOperator`](@extref), but this might change in the future.
 In order to use this function, the package `Optim` must be loaded.
 
-See also [`GlaubitzNordströmÖffner2023`](@ref).
+See also [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref).
 
 !!! compat "Julia 1.9"
     This function requires at least Julia 1.9.
@@ -61,5 +67,16 @@ See also [`GlaubitzNordströmÖffner2023`](@ref).
 """
 function function_space_operator end
 
-# Just to be able to call it from outside
+# We need to define these functions here, because we dispatch on the type of `source` in the
+# different extensions
+# Placeholder for constructing a function space operator. This method is extended in backend-specific implementations.
+function construct_function_space_operator end
+
+# Placeholder for providing the default optimization algorithm. This method is extended in backend-specific implementations.
+function default_opt_alg end
+
+# Placeholder for providing the default optimization options. This method is extended in backend-specific implementations.
+function default_options end
+
+# Placeholder for creating the matrix S. This method is extended in backend-specific implementations.
 function create_S end

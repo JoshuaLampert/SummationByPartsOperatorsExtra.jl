@@ -23,7 +23,7 @@ end
 # with very specific corner indices. If we have another operator with other corner
 # indices, we can detect them and use a similar approach as done in SummationByPartsOperators.jl
 # to compute the boundary mass matrix.
-# Note that this assumes that the indices of the normals in x-direction are before the (smaller than) the
+# Note that this assumes that the indices of the normals in x-direction are before (i.e., smaller than) the
 # indices of the normals in y-direction! This is, e.g., not the case for the `TensorProductOperator`, but it is
 # the case if we use `find_corners!` from the Meshes.jl extension.
 function SummationByPartsOperators.mass_matrix_boundary(D::MultidimensionalMatrixDerivativeOperator{2},

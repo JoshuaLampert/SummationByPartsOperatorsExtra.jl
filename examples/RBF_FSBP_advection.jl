@@ -14,7 +14,11 @@ dx = step(nodes)
 # RBF-FSBP operator
 shape_parameter = 0.5
 kernel = WendlandKernel{1}(2, shape_parameter = shape_parameter)
-centers = NodeSet(LinRange(xmin, xmax, 5))
+# This is a hack to avoid evaluating derivatives of the kernels at 0,
+# see https://github.com/JuliaDiff/ForwardDiff.jl/issues/303.
+# We perturb the right node differently than the left node
+# to ensure 0.5 is not in the centers because it is also in the nodes.
+centers = NodeSet(LinRange(xmin + eps(), xmax - 2 * eps(), 5))
 basis = StandardBasis(centers, kernel)
 basis_functions = collect(basis)
 push!(basis_functions, one)
