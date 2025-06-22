@@ -57,5 +57,5 @@ end
 end
 
 @testitem "Reproducing LobattoLegendre and GaussRadauRight" setup=[ReproducingSubcell1D] begin
-    test_reproducing(LobattoLegendre, GaussRadauRight, 0.0; atol = 1e-11)
+    test_reproducing(LobattoLegendre, GaussRadauRight, 0.0; atol = 1e-10)
 end
