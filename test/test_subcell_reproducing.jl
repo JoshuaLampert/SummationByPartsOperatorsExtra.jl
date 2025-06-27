@@ -10,11 +10,11 @@
         # Nodes from PolynomialBases.jl are always defined on [-1, 1]
         a = -1.0
         b = 1.0
-        # Construct `D` on [c, d] with subcells [c, x_M] and [x_M, d]
-        c = -1.0
-        d = 1.0
-        jac_left = (b - a) / (x_M - c)
-        jac_right = (b - a) / (d - x_M)
+        # Construct `D` on [x_L, x_M] with subcells [x_L, x_M] and [x_M, x_R]
+        x_L = -1.0
+        x_R = 1.0
+        jac_left = (b - a) / (x_M - x_L)
+        jac_right = (b - a) / (x_R - x_M)
         source = GlaubitzLampertNordströmWinters2025()
         for p in 1:5
             n = p + 1  # Number of nodes
@@ -24,30 +24,36 @@
             # Map the reference nodes to the left part and
             # right parts, respectively
             nodes = [
-                linear_map.(grid(basis_left), a, b, c, x_M)...,
-                linear_map.(grid(basis_right), a, b, x_M, d)...
+                linear_map.(grid(basis_left), a, b, x_L, x_M)...,
+                linear_map.(grid(basis_right), a, b, x_M, x_R)...
             ]
             D = subcell_operator(basis, nodes, x_M, source;
                                  options = Optim.Options(; iterations = 10000,
                                                          g_tol = 1e-16))
+            D_coupled = couple_subcell(basis_left, basis_right, x_L, x_M, x_R)
 
+            # Test if all three options (optimization, directly the bases, and the coupled bases)
+            # give the same result
             weights_D = diag(mass_matrix(D))
             @test all(isapprox.(jac_left * weights_D[1:n],
                                 diag(mass_matrix(basis_left)), atol = atol))
             @test all(isapprox.(jac_right * weights_D[(n + 1):end],
                                 diag(mass_matrix(basis_right)), atol = atol))
+            @test all(isapprox.(weights_D, diag(mass_matrix(D_coupled)), atol = atol))
 
             D_D = derivative_matrix(D)
             @test all(isapprox.(1 / jac_left * D_D[1:n, 1:n],
                                 derivative_matrix(basis_left), atol = atol))
             @test all(isapprox.(1 / jac_right * D_D[(n + 1):end, (n + 1):end],
                                 derivative_matrix(basis_right), atol = atol))
+            @test all(isapprox.(D_D, derivative_matrix(D_coupled), atol = atol))
 
             B_D = mass_matrix_boundary(D)
             @test all(isapprox.(B_D[1:n, 1:n],
                                 mass_matrix_boundary(basis_left), atol = atol))
             @test all(isapprox.(B_D[(n + 1):end, (n + 1):end],
                                 mass_matrix_boundary(basis_right), atol = atol))
+            @test all(isapprox.(B_D, mass_matrix_boundary(D_coupled), atol = atol))
         end
     end
 end
