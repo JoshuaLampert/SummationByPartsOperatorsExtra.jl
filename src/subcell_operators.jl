@@ -19,7 +19,7 @@ grid.
 The whole operator follows the general interface of a derivative operator, e.g., implementing
 matrix-vector multiplication, integration, and the mass matrix. To obtain the derivative matrix
 ``D = P^{-1}(Q_L + Q_R)`` associated to the sub-cell operator, use the function
-[`derivative_matrix`](@ref).
+[`derivative_matrix`](@ref) or `Matrix`.
 The left and right mass matrices can be obtained with the functions
 [`mass_matrix_left`](@ref) and [`mass_matrix_right`](@ref), respectively. Similarly, the
 boundary mass matrices can be obtained with the functions
@@ -174,6 +174,8 @@ Returns the derivative matrix ``D = P^{-1}(Q_L + Q_R)`` associated to the sub-ce
 PolynomialBases.derivative_matrix(D::SubcellOperator) = inv(mass_matrix(D)) *
                                                         (D.Q_left + D.Q_right)
 
+Base.Matrix(D::SubcellOperator) = copy(derivative_matrix(D))
+
 Base.eltype(::SubcellOperator{T}) where {T} = T
 
 function SummationByPartsOperators.scale_by_mass_matrix!(u::AbstractVector,
@@ -258,7 +260,7 @@ end
 
 function mul!(dest::AbstractVector, Dop::SubcellOperator, u::AbstractVector,
               α = true, β = false)
-    D = derivative_matrix(Dop)
+    D = Matrix(Dop)
     N, _ = size(D)
     @boundscheck begin
         @argcheck N == length(u)

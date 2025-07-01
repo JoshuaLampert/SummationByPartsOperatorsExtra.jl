@@ -41,12 +41,12 @@
                                 diag(mass_matrix(basis_right)), atol = atol))
             @test all(isapprox.(weights_D, diag(mass_matrix(D_coupled)), atol = atol))
 
-            D_D = derivative_matrix(D)
+            D_D = Matrix(D)
             @test all(isapprox.(1 / jac_left * D_D[1:n, 1:n],
-                                derivative_matrix(basis_left), atol = atol))
+                                Matrix(basis_left), atol = atol))
             @test all(isapprox.(1 / jac_right * D_D[(n + 1):end, (n + 1):end],
-                                derivative_matrix(basis_right), atol = atol))
-            @test all(isapprox.(D_D, derivative_matrix(D_coupled), atol = atol))
+                                Matrix(basis_right), atol = atol))
+            @test all(isapprox.(D_D, Matrix(D_coupled), atol = atol))
 
             B_D = mass_matrix_boundary(D)
             @test all(isapprox.(B_D[1:n, 1:n],

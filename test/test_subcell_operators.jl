@@ -110,7 +110,8 @@ end
             Q_R = Dop.Q_right
             @test Q_L + Q_L' ≈ B_L
             @test Q_R + Q_R' ≈ B_R
-            D = derivative_matrix(Dop)
+            D = Matrix(Dop)
+            @test derivative_matrix(Dop) == D
             Q = M * D
             @test Q + Q' ≈ B
             @test Matrix(Dop) == D
@@ -210,7 +211,8 @@ end
     Q_R = Dop.Q_right
     @test Q_L + Q_L' ≈ B_L
     @test Q_R + Q_R' ≈ B_R
-    D = derivative_matrix(Dop)
+    D = Matrix(Dop)
+    @test derivative_matrix(Dop) == D
     Q = M * D
     @test Q + Q' ≈ B
     @test Matrix(Dop) == D
@@ -307,7 +309,8 @@ end
     Q_R = Dop.Q_right
     @test Q_L + Q_L' ≈ B_L
     @test Q_R + Q_R' ≈ B_R
-    D = derivative_matrix(Dop)
+    D = Matrix(Dop)
+    @test derivative_matrix(Dop) == D
     Q = M * D
     @test Q + Q' ≈ B
     @test Matrix(Dop) == D
