@@ -129,6 +129,8 @@ end
     D2 = legendre_derivative_operator(-1.0, 0.4, 3)
     x_M = -1.05
     Dop = @test_nowarn couple_subcell(D1, D2, x_M)
+    @test_throws ArgumentError couple_subcell(D1, D2, -2.0)
+    @test_throws ArgumentError couple_subcell(D1, D2, 0.0)
     nodes = grid(Dop)
 
     @test !issymmetric(Dop)
