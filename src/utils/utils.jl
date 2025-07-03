@@ -1,3 +1,4 @@
+include("interpolation.jl")
 include("optimization.jl")
 include("sparsity_patterns.jl")
 include("moments.jl")

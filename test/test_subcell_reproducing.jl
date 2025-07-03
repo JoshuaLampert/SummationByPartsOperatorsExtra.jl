@@ -30,7 +30,9 @@
             D = subcell_operator(basis, nodes, x_M, source;
                                  options = Optim.Options(; iterations = 10000,
                                                          g_tol = 1e-16))
-            D_coupled = couple_subcell(basis_left, basis_right, x_L, x_M, x_R)
+            D_left = polynomialbases_derivative_operator(basis_left_type, x_L, x_M, n)
+            D_right = polynomialbases_derivative_operator(basis_right_type, x_M, x_R, n)
+            D_coupled = couple_subcell(D_left, D_right, x_M)
 
             # Test if all three options (optimization, directly the bases, and the coupled bases)
             # give the same result

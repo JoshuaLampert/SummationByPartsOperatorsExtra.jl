@@ -334,72 +334,13 @@ function couple_subcell(D_left::AbstractNonperiodicDerivativeOperator,
     B_right = [zeros(T, N_L, N_L) zeros(T, N_L, N_R)
                zeros(T, N_R, N_L) B_right_]
 
-    # We assume that all operators in SummationByPartsOperators.jl contain the boundary nodes
-    e_L = zeros(T, N_L + N_R)
-    e_L[1] = 1.0
-    e_M_L = zeros(T, N_L + N_R)
-    e_M_L[N_L] = 1.0
-    e_M_R = zeros(T, N_L + N_R)
-    e_M_R[N_L + 1] = 1.0
-    e_R = zeros(T, N_L + N_R)
-    e_R[end] = 1.0
-    acc_order = min(accuracy_order(D_left), accuracy_order(D_right))
-    source = GlaubitzLampertNordströmWinters2025()
-    return SubcellOperator(nodes, x_M, weights_left_, weights_right_,
-                           Q_left, Q_right, B_left, B_right,
-                           e_L, e_M_L, e_M_R, e_R,
-                           acc_order, source)
-end
-
-"""
-    couple_subcell(basis_left::PolynomialBases.NodalBasis{Line},
-                   basis_right::PolynomialBases.NodalBasis{Line},
-                   x_L, x_M, x_R)
-
-Construct a sub-cell operator from two nodal bases `basis_left` and `basis_right` from
-PolynomialBases.jl. `basis_left` is defined on the left sub-cell, which is the interval
-``[x_L, x_M]`` and `basis_right` is defined on the right sub-cell, which is the interval
-``[x_M, x_R]``.
-"""
-function couple_subcell(basis_left::PolynomialBases.NodalBasis{PolynomialBases.Line},
-                        basis_right::PolynomialBases.NodalBasis{PolynomialBases.Line},
-                        x_L, x_M, x_R)
-    T = promote_type(eltype(basis_left), eltype(basis_right))
-    grid_left = grid(basis_left)
-    N_L = length(grid_left)
-    grid_right = grid(basis_right)
-    N_R = length(grid_right)
-    a, b = -1, 1
-    linear_map(x, a, b, c, d) = c + (x - a) / (b - a) * (d - c)
-    # Bases in PolynomialBases.jl are always defined on [-1, 1].
-    nodes = vcat(linear_map.(collect(grid_left), a, b, x_L, x_M),
-                 linear_map.(collect(grid_right), a, b, x_M, x_R))
-    jac_left = (x_M - x_L) / (b - a)
-    jac_right = (x_R - x_M) / (b - a)
-    weights_left_ = diag(jac_left .* mass_matrix(basis_left))
-    weights_right_ = diag(jac_right .* mass_matrix(basis_right))
-
-    Q_left_ = mass_matrix(basis_left) * Matrix(basis_left)
-    Q_left = [Q_left_ zeros(T, N_L, N_R)
-              zeros(T, N_R, N_L) zeros(T, N_R, N_R)]
-    Q_right_ = mass_matrix(basis_right) * Matrix(basis_right)
-    Q_right = [zeros(T, N_L, N_L) zeros(T, N_L, N_R)
-               zeros(T, N_R, N_L) Q_right_]
-
-    B_left_ = mass_matrix_boundary(basis_left)
-    B_left = [B_left_ zeros(T, N_L, N_R)
-              zeros(T, N_R, N_L) zeros(T, N_R, N_R)]
-    B_right_ = mass_matrix_boundary(basis_right)
-    B_right = [zeros(T, N_L, N_L) zeros(T, N_L, N_R)
-               zeros(T, N_R, N_L) B_right_]
-
-    R_left = interpolation_matrix([a, b], basis_left)
+    R_left = interpolation_matrix([D_left.xmin, D_left.xmax], D_left)
     e_L = [R_left[1, :]; zeros(T, N_R)]
     e_M_L = [R_left[2, :]; zeros(T, N_R)]
-    R_right = interpolation_matrix([a, b], basis_right)
+    R_right = interpolation_matrix([D_right.xmin, D_right.xmax], D_right)
     e_M_R = [zeros(T, N_L); R_right[1, :]]
     e_R = [zeros(T, N_L); R_right[2, :]]
-    acc_order = min(PolynomialBases.degree(basis_left), PolynomialBases.degree(basis_right))
+    acc_order = min(accuracy_order(D_left), accuracy_order(D_right))
     source = GlaubitzLampertNordströmWinters2025()
     return SubcellOperator(nodes, x_M, weights_left_, weights_right_,
                            Q_left, Q_right, B_left, B_right,
