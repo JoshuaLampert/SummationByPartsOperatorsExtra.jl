@@ -126,9 +126,11 @@ end
 
 @testitem "Couple SBP operators to sub-cell operators" setup=[SubCell] begin
     basis_functions = [one, identity, x -> 0.5 * x^2]
-    D1 = legendre_derivative_operator(-2.3, -1.1, 3)
-    D2 = legendre_derivative_operator(-1.0, 0.4, 3)
-    x_M = -1.05
+    x_L = -2.3
+    x_M = -1.0
+    x_R = 0.4
+    D1 = legendre_derivative_operator(x_L, x_M, 3)
+    D2 = legendre_derivative_operator(x_M, x_R, 3)
     Dop = @test_nowarn couple_subcell(D1, D2, x_M)
     @test_throws ArgumentError couple_subcell(D1, D2, -2.0)
     @test_throws ArgumentError couple_subcell(D1, D2, 0.0)
@@ -175,18 +177,18 @@ end
 
     # This test fails for the directly coupled operators and is why we need to construct them by the optimization process
     # It fails because both subcells include `x_M`.
-    # for f in basis_functions
-    #     ff = f.(nodes)
-    #     for g in basis_functions
-    #         gg = g.(nodes)
-    #         @test isapprox(ff' * B_L * gg, f(x_M) * g(x_M) - f(x_L) * g(x_L),
-    #                        atol = 1e-14)
-    #         @test isapprox(ff' * B_R * gg, f(x_R) * g(x_R) - f(x_M) * g(x_M),
-    #                        atol = 1e-14)
-    #         @test isapprox(ff' * B * gg, f(x_R) * g(x_R) - f(x_L) * g(x_L),
-    #                        atol = 1e-14)
-    #     end
-    # end
+    for f in basis_functions
+        ff = f.(nodes)
+        for g in basis_functions
+            gg = g.(nodes)
+            @test isapprox(ff' * B_L * gg, f(x_M) * g(x_M) - f(x_L) * g(x_L),
+                           atol = 1e-14)
+            @test isapprox(ff' * B_R * gg, f(x_R) * g(x_R) - f(x_M) * g(x_M),
+                           atol = 1e-14)
+            @test isapprox(ff' * B * gg, f(x_R) * g(x_R) - f(x_L) * g(x_L),
+                           atol = 1e-14)
+        end
+    end
 
     # projections
     e_L = left_projection_left(Dop)
