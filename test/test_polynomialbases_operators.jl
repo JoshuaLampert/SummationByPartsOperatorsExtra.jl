@@ -19,7 +19,7 @@ end
             @test issymmetric(D) == false
             @test eltype(D) == Float64
             @test SummationByPartsOperators.lower_bandwidth(D) == N - 1
-            @test SummationByPartsOperators.lower_bandwidth(D) == N - 1
+            @test SummationByPartsOperators.upper_bandwidth(D) == N - 1
             nodes = grid(D)
             @test accuracy_order(D) == p
             @test length(nodes) == N
@@ -50,6 +50,7 @@ end
             u_copy = copy(u)
             scale_by_mass_matrix!(u, D)
             @test_throws DimensionMismatch scale_by_mass_matrix!(ones(N + 1), D)
+            @test isapprox(integrate(u_copy, D), sum(u), atol = 1e-13)
             scale_by_inverse_mass_matrix!(u, D)
             @test_throws DimensionMismatch scale_by_mass_matrix!(ones(N + 1), D)
             @test all(isapprox(u, u_copy, atol = 1e-12))
