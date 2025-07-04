@@ -20,19 +20,17 @@
             n = p + 1  # Number of nodes
             basis_left = basis_left_type(p)
             basis_right = basis_right_type(p)
-            basis = [x -> x^(i - 1) for i in 1:n]
-            # Map the reference nodes to the left part and
-            # right parts, respectively
-            nodes = [
-                linear_map.(grid(basis_left), a, b, x_L, x_M)...,
-                linear_map.(grid(basis_right), a, b, x_M, x_R)...
-            ]
-            D = subcell_operator(basis, nodes, x_M, source;
-                                 options = Optim.Options(; iterations = 10000,
-                                                         g_tol = 1e-16))
+
             D_left = polynomialbases_derivative_operator(basis_left_type, x_L, x_M, n)
             D_right = polynomialbases_derivative_operator(basis_right_type, x_M, x_R, n)
             D_coupled = couple_subcell(D_left, D_right, x_M)
+            nodes = grid(D_coupled)
+            basis = [x -> x^(i - 1) for i in 1:n]
+
+            D = subcell_operator(basis, nodes, x_M, source;
+                                 options = Optim.Options(; iterations = 10000,
+                                                         g_tol = 1e-16),
+                                 opt_alg = Optim.BFGS())
 
             # Test if all three options (optimization, directly the bases, and the coupled bases)
             # give the same result
