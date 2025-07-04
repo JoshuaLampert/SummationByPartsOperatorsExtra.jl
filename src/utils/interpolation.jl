@@ -1,3 +1,4 @@
+# This is type piracy
 function PolynomialBases.interpolation_matrix(dest, D::AbstractNonperiodicDerivativeOperator)
     nodes = grid(D)
     baryweights = PolynomialBases.barycentric_weights(nodes)
