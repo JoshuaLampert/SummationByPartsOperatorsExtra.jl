@@ -17,9 +17,9 @@ using ArgCheck: @argcheck
 using DiffEqCallbacks: PeriodicCallback, PeriodicCallbackAffect
 using LinearAlgebra: LinearAlgebra, Diagonal, UpperTriangular, diag, dot
 import LinearAlgebra: mul!, diagind, norm
-using PolynomialBases: PolynomialBases
 using Reexport: @reexport
 import SciMLBase: u_modified!, get_tmp_cache
+@reexport using PolynomialBases
 @reexport using SummationByPartsOperators
 using SimpleUnPack: @unpack
 @reexport using StaticArrays: SVector
@@ -34,6 +34,7 @@ using SummationByPartsOperators: AbstractDerivativeOperator,
 include("utils/utils.jl")
 include("function_space_operators.jl")
 include("multidimensional_function_space_operators.jl")
+include("polynomialbases_operators.jl")
 include("subcell_operators.jl")
 include("conservation_laws/analysis_callback.jl")
 include("conservation_laws/multidimensional_linear_advection.jl")
@@ -42,6 +43,7 @@ export get_sparsity_pattern, neighborhood_sparsity_pattern
 export compute_moments_boundary
 export plot_nodes, plot_normals, plot_sparsity_pattern
 export GlaubitzIskeLampertÖffner2025, multidimensional_function_space_operator
+export PolynomialBasesDerivativeOperator, polynomialbases_derivative_operator
 export SubcellOperator, GlaubitzLampertNordströmWinters2025, subcell_operator,
        couple_subcell,
        derivative_matrix, grid, grid_left, grid_right,

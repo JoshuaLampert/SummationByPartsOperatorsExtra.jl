@@ -175,8 +175,6 @@ end
     B_R = mass_matrix_boundary_right(Dop)
     @test B ≈ B_L + B_R
 
-    # This test fails for the directly coupled operators and is why we need to construct them by the optimization process
-    # It fails because both subcells include `x_M`.
     for f in basis_functions
         ff = f.(nodes)
         for g in basis_functions
@@ -225,15 +223,15 @@ end
     @test M_R * D ≈ Q_R
 end
 
-@testitem "Couple bases to sub-cell operators" setup=[SubCell] begin
+@testitem "Couple polynomial bases operators to sub-cell operators" setup=[SubCell] begin
     p = 4
     basis_functions = [x -> x^(i - 1) for i in 1:(p + 1)]
-    basis_left = LobattoLegendre(p)
-    basis_right = GaussRadauRight(p)
     x_L = -2.3
     x_M = -1.1
     x_R = 0.4
-    Dop = @test_nowarn couple_subcell(basis_left, basis_right, x_L, x_M, x_R)
+    D1 = polynomialbases_derivative_operator(LobattoLegendre, x_L, x_M, p + 1)
+    D2 = polynomialbases_derivative_operator(GaussRadauRight, x_M, x_R, p + 1)
+    Dop = @test_nowarn couple_subcell(D1, D2, x_M)
     nodes = grid(Dop)
 
     @test !issymmetric(Dop)

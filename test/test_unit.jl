@@ -1,3 +1,18 @@
+@testitem "interpolation" begin
+    xmin = -1.0
+    xmax = 1.0
+    N = 4
+    D = derivative_operator(MattssonNordström2004(), 1, 2, xmin, xmax, N)
+    A = interpolation_matrix([xmin, xmax], D)
+    A_ref = zeros(2, N)
+    A_ref[1, 1] = 1.0
+    A_ref[end, end] = 1.0
+    @test isapprox(A, A_ref, atol = 1e-14)
+    A = zeros(2, N)
+    interpolation_matrix!(A, [xmin, xmax], D)
+    @test isapprox(A, A_ref, atol = 1e-14)
+end
+
 @testitem "moments" begin
     using StaticArrays: SVector
     D = derivative_operator(MattssonNordström2004(), 1, 4, -1.0, 1.0, 10)

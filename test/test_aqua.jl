@@ -16,7 +16,8 @@
                   piracies = false)
     @test isnothing(check_no_implicit_imports(SummationByPartsOperatorsExtra,
                                               skip = (Core, Base,
-                                                      SummationByPartsOperatorsExtra.SummationByPartsOperators)))
+                                                      SummationByPartsOperatorsExtra.SummationByPartsOperators,
+                                                      SummationByPartsOperatorsExtra.PolynomialBases)))
     @test isnothing(check_no_stale_explicit_imports(SummationByPartsOperatorsExtra))
     @test isnothing(check_all_qualified_accesses_via_owners(SummationByPartsOperatorsExtra;
                                                             ignore = (:ustrip,)))
