@@ -334,10 +334,10 @@ function couple_subcell(D_left::AbstractNonperiodicDerivativeOperator,
     B_right = [zeros(T, N_L, N_L) zeros(T, N_L, N_R)
                zeros(T, N_R, N_L) B_right_]
 
-    R_left = interpolation_matrix([D_left.xmin, D_left.xmax], D_left)
+    R_left = interpolation_matrix([boundary_left(D_left), boundary_right(D_left)], D_left)
     e_L = [R_left[1, :]; zeros(T, N_R)]
     e_M_L = [R_left[2, :]; zeros(T, N_R)]
-    R_right = interpolation_matrix([D_right.xmin, D_right.xmax], D_right)
+    R_right = interpolation_matrix([boundary_left(D_right), boundary_right(D_right)], D_right)
     e_M_R = [zeros(T, N_L); R_right[1, :]]
     e_R = [zeros(T, N_L); R_right[2, :]]
     acc_order = min(accuracy_order(D_left), accuracy_order(D_right))

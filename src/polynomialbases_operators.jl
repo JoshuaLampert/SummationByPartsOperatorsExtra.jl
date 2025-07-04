@@ -57,7 +57,7 @@ function polynomialbases_derivative_operator(basis_type, xmin::Real, xmax::Real,
 end
 
 function polynomialbases_derivative_operator(basis_type; xmin::Real, xmax::Real, N::Integer)
-    polynomialbases_derivative_operator(xmin, xmax, N)
+    polynomialbases_derivative_operator(basis_type, xmin, xmax, N)
 end
 
 SummationByPartsOperators.derivative_order(D::PolynomialBasesDerivativeOperator) = 1
@@ -65,10 +65,6 @@ LinearAlgebra.issymmetric(D::PolynomialBasesDerivativeOperator) = false
 
 function PolynomialBases.integrate(func, u, D::PolynomialBasesDerivativeOperator)
     D.Δx * integrate(func, u, D.basis)
-end
-function PolynomialBases.evaluate_coefficients(u, D::PolynomialBasesDerivativeOperator,
-                                               npoints = 2 * size(D, 2) + 1)
-    evaluate_coefficients(u, D.basis, npoints)
 end
 
 function PolynomialBases.mass_matrix(D::PolynomialBasesDerivativeOperator)
@@ -117,7 +113,7 @@ function SummationByPartsOperators.scale_by_inverse_mass_matrix!(u::AbstractVect
     u
 end
 
-function get_weight(D::PolynomialBasesDerivativeOperator, i::Int)
+function SummationByPartsOperators.get_weight(D::PolynomialBasesDerivativeOperator, i::Int)
     @unpack Δx, basis = D
     @unpack weights = basis
     N, _ = size(D)
@@ -128,7 +124,6 @@ function get_weight(D::PolynomialBasesDerivativeOperator, i::Int)
     ω
 end
 
-# TODO!
 function Base.show(io::IO, D::PolynomialBasesDerivativeOperator)
     if get(io, :compact, false)
         summary(io, D)
@@ -174,3 +169,6 @@ function SummationByPartsOperators.right_boundary_weight(D::PolynomialBasesDeriv
     @inbounds retval = D.Δx * D.basis.weights[end]
     retval
 end
+
+boundary_left(D::PolynomialBasesDerivativeOperator) = D.xmin
+boundary_right(D::PolynomialBasesDerivativeOperator) = D.xmax
