@@ -25,12 +25,12 @@ The left and right mass matrices can be obtained with the functions
 boundary mass matrices can be obtained with the functions
 [`mass_matrix_boundary_left`](@ref) and [`mass_matrix_boundary_right`](@ref).
 
-See also [`subcell_operator`](@ref) and [`GlaubitzIskeLampertÖffner2025`](@ref).
+See also [`subcell_operator`](@ref) and [`GlaubitzLampertWintersNordström2025`](@ref).
 
 References:
-- Glaubitz, Lampert, Nordström, Winters (2025):
-  Provable energy stable overset grid methods using sub-cell summation-by-parts
-  operators: One-dimensional linear advection equations.
+- Glaubitz, Lampert, Winters, Nordström (2025):
+  Towards provable energy stable overset grid methods using sub-cell
+  summation-by-parts operators.
   TODO
 """
 @auto_hash_equals struct SubcellOperator{T, QType <: AbstractMatrix{T},
@@ -297,11 +297,13 @@ end
                    D_right::AbstractNonperiodicDerivativeOperator,
                    x_M)
 
-Construct a sub-cell operator from two non-periodic derivative operators `D_left` and `D_right` from
+Construct a [`SubcellOperator`](@ref) from two non-periodic derivative operators `D_left` and `D_right` from
 SummationByPartsOperators.jl. `D_left` is defined on the left sub-cell, which is the interval
 ``[x_L, x_M]`` and `D_right` is defined on the right sub-cell, which is the interval ``[x_M, x_R]``,
 where `x_L` and `x_R` are the left and right boundaries of the grid of `D_left` and `D_right`, respectively.
 Note that `x_M` must be between the right boundary of `D_left` and the left boundary of `D_right`.
+
+See also [`GlaubitzLampertWintersNordström2025`](@ref).
 """
 function couple_subcell(D_left::AbstractNonperiodicDerivativeOperator,
                         D_right::AbstractNonperiodicDerivativeOperator, x_M)
@@ -342,7 +344,7 @@ function couple_subcell(D_left::AbstractNonperiodicDerivativeOperator,
     e_M_R = [zeros(T, N_L); R_right[1, :]]
     e_R = [zeros(T, N_L); R_right[2, :]]
     acc_order = min(accuracy_order(D_left), accuracy_order(D_right))
-    source = GlaubitzLampertNordströmWinters2025()
+    source = GlaubitzLampertWintersNordström2025()
     return SubcellOperator(nodes, x_M, weights_left_, weights_right_,
                            Q_left, Q_right, B_left, B_right,
                            e_L, e_M_L, e_M_R, e_R,
@@ -350,26 +352,26 @@ function couple_subcell(D_left::AbstractNonperiodicDerivativeOperator,
 end
 
 """
-    GlaubitzLampertNordströmWinters2025()
+    GlaubitzLampertWintersNordström2025()
 
 Sub-cell SBP operators given in
-- Glaubitz, Lampert, Nordström, Winters (2025):
-  Provable energy stable overset grid methods using sub-cell summation-by-parts
-  operators: One-dimensional linear advection equations.
+- Glaubitz, Lampert, Winters, Nordström (2025):
+  Towards provable energy stable overset grid methods using sub-cell
+  summation-by-parts operators.
   TODO
 
 See [`subcell_operator`](@ref).
 """
-struct GlaubitzLampertNordströmWinters2025 <: SourceOfCoefficients end
+struct GlaubitzLampertWintersNordström2025 <: SourceOfCoefficients end
 
-function Base.show(io::IO, source::GlaubitzLampertNordströmWinters2025)
+function Base.show(io::IO, source::GlaubitzLampertWintersNordström2025)
     if get(io, :compact, false)
         summary(io, source)
     else
         print(io,
-              "Glaubitz, Lampert, Nordström, Winters (2025) \n",
-              "  Provable energy stable overset grid methods using sub-cell summation-by-parts \n",
-              "  operators: One-dimensional linear advection equations. \n",
+              "Glaubitz, Lampert, Winters, Nordström (2025) \n",
+              "  Towards provable energy stable overset grid methods using sub-cell \n",
+              "  summation-by-parts operators. \n",
               "  TODO")
     end
 end
@@ -431,7 +433,7 @@ The keyword argument `verbose` can be set to `true` to print information about t
 
 Returns a [`SubcellOperator`](@ref) object.
 
-See also [`GlaubitzLampertNordströmWinters2025`](@ref).
+See also [`GlaubitzLampertWintersNordström2025`](@ref).
 
 !!! compat "Julia 1.9"
     This function requires at least Julia 1.9.

@@ -10,7 +10,7 @@ end
     x_M = -0.42
     x_R = last(nodes)
     basis_functions = [one, identity, x -> 0.5 * x^2]
-    source = GlaubitzLampertNordströmWinters2025()
+    source = GlaubitzLampertWintersNordström2025()
     for compact in (true, false)
         show(IOContext(devnull, :compact => compact), source)
     end

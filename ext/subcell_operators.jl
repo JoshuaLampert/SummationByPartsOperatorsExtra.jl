@@ -95,7 +95,7 @@ function create_P_right(rho, N, vol)
 end
 
 function construct_subcell_operator(basis_functions, nodes, x_M,
-                                    ::GlaubitzLampertNordströmWinters2025;
+                                    ::GlaubitzLampertWintersNordström2025;
                                     bandwidths = [0, 0],
                                     size_boundaries = [0, 0],
                                     different_values = [true, true],

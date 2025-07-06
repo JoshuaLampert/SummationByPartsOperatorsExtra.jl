@@ -15,7 +15,7 @@
         x_R = 1.0
         jac_left = (b - a) / (x_M - x_L)
         jac_right = (b - a) / (x_R - x_M)
-        source = GlaubitzLampertNordströmWinters2025()
+        source = GlaubitzLampertWintersNordström2025()
         for p in 1:5
             n = p + 1  # Number of nodes
             basis_left = basis_left_type(p)
