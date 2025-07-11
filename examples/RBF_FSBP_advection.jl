@@ -46,5 +46,6 @@ alg = SSPRK53()
 
 analysis_callback = AnalysisCallback(semi; dt = 0.01)
 saveat = range(tspan..., length = 100)
-kwargs = (; dt = dt, adaptive = false, save_everystep = false, saveat = saveat, callback = analysis_callback)
+kwargs = (; dt = dt, adaptive = false, save_everystep = false, saveat = saveat,
+          callback = analysis_callback)
 sol = solve(ode, alg; kwargs...)
