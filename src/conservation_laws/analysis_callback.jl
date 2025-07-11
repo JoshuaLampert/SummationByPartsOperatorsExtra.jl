@@ -139,22 +139,19 @@ function analyze_quantities(semi::VariableLinearAdvectionNonperiodicSemidiscreti
     P = mass_matrix(D)
     mass = sum(P * u)
     mass_rate = sum(P * du)
-    mass_rate_boundary = mass_rate
-    if a[1] > 0.0
-        mass_rate_boundary -= a[1] * (left_bc(t) - u[end])
-    end
-    if a[end] < 0.0
-        mass_rate_boundary -= a[end] * (u[1] - right_bc(t))
-    end
+    fnum_left = SummationByPartsOperators.godunov_flux_variablelinearadvection(left_bc(t),
+                                                                               u[1], a[1])
+    fnum_right = SummationByPartsOperators.godunov_flux_variablelinearadvection(u[end], right_bc(t), a[end])
+    mass_rate_boundary = mass_rate - fnum_left + fnum_right
 
     energy = 0.5 * sum(P * (u .^ 2)) # = 1/2 ||u||_P^2
     energy_rate = sum(P * (du .* u)) # = 1/2 d/dt||u||_P^2 = u' * P * du
-    energy_rate_boundary = energy_rate
+    energy_rate_boundary = energy_rate + 0.5 * (u.^2)' * P * (D * a)
     if a[1] > 0.0
-        energy_rate_boundary -= 0.5 * a[1] * (left_bc(t)^2 - u[end]^2)
+        energy_rate_boundary -= (0.5 * a[1] * left_bc(t)^2 - a[end] * u[end]^2)
     end
     if a[end] < 0.0
-        energy_rate_boundary -= 0.5 * a[end] * (u[1]^2 - right_bc(t)^2)
+        energy_rate_boundary -= (0.5 * a[1] * u[1]^2 - a[end] * right_bc(t)^2)
     end
     energy_rate_boundary_dissipation = energy_rate_boundary
     if a[1] > 0.0

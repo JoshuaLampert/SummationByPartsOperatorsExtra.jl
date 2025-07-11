@@ -34,7 +34,7 @@ u0(x) = tanh(50 * (x - 0.1))
 u(x, t) = u0(x - a(x) * t)
 bc_left(t) = u(xmin, t)
 bc_right(t) = 0.0 # This does not matter as a > 0
-semi = VariableLinearAdvectionNonperiodicSemidiscretization(D, nothing, a, Val(true),
+semi = VariableLinearAdvectionNonperiodicSemidiscretization(D, nothing, a, Val(false),
                                                             bc_left, bc_right)
 
 # time integration
