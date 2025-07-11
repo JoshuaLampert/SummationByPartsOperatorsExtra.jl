@@ -150,12 +150,17 @@ function analyze_quantities(semi::VariableLinearAdvectionNonperiodicSemidiscreti
     energy_rate = sum(P * (du .* u)) # = 1/2 d/dt||u||_P^2 = u' * P * du
     energy_rate_boundary = energy_rate + 0.5 * (u .^ 2)' * P * (D * a)
     if a[1] > 0.0
-        energy_rate_boundary -= (0.5 * a[1] * left_bc(t)^2 - a[end] * u[end]^2)
+        energy_rate_boundary += 0.5 * (-a[1] * left_bc(t)^2 + a[end] * u[end]^2)
     end
     if a[end] < 0.0
-        energy_rate_boundary -= (0.5 * a[1] * u[1]^2 - a[end] * right_bc(t)^2)
+        energy_rate_boundary += 0.5 * (-a[1] * u[1]^2 + a[end] * right_bc(t)^2)
     end
     energy_rate_boundary_dissipation = energy_rate_boundary
+    # We could also write `energy_rate_boundary_dissipation` as
+    # energy_rate_boundary_dissipation = energy_rate -
+    #                                    0.5 * (a[end] * u[end]^2 - a[1] * u[1]^2) -
+    #                                    u[1] * fnum_left + u[end] * fnum_right +
+    #                                    0.5 * (u .^ 2)' * P * (D * a)
     if a[1] > 0.0
         energy_rate_boundary_dissipation += 0.5 * a[1] * (u[1] - left_bc(t))^2
     end
