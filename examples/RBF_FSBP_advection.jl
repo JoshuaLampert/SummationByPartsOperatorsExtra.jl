@@ -34,7 +34,7 @@ u0(x) = tanh(50 * (x - 0.1))
 u(x, t) = u0(x - a(x) * t)
 bc_left(t) = u(xmin, t)
 bc_right(t) = 0.0 # This does not matter as a > 0
-semi = VariableLinearAdvectionNonperiodicSemidiscretization(D, nothing, a, Val(true),
+semi = VariableLinearAdvectionNonperiodicSemidiscretization(D, nothing, a, Val(false),
                                                             bc_left, bc_right)
 
 # time integration
@@ -44,6 +44,8 @@ tspan = (0.0, 0.5)
 ode = semidiscretize(u0, semi, tspan)
 alg = SSPRK53()
 
+analysis_callback = AnalysisCallback(semi; dt = 0.01)
 saveat = range(tspan..., length = 100)
-kwargs = (; dt = dt, adaptive = false, save_everystep = false, saveat = saveat)
+kwargs = (; dt = dt, adaptive = false, save_everystep = false, saveat = saveat,
+          callback = analysis_callback)
 sol = solve(ode, alg; kwargs...)

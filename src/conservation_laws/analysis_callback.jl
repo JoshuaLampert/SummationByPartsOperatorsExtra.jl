@@ -131,3 +131,42 @@ end
 
 # Fallback
 analyze_quantities(semi::AbstractSemidiscretization, du, u, p, t) = Float64[]
+
+function analyze_quantities(semi::VariableLinearAdvectionNonperiodicSemidiscretization, du,
+                            u, p, t)
+    @unpack a, left_bc, right_bc = semi
+    D = semi.derivative
+    P = mass_matrix(D)
+    mass = sum(P * u)
+    mass_rate = sum(P * du)
+    fnum_left = SummationByPartsOperators.godunov_flux_variablelinearadvection(left_bc(t),
+                                                                               u[1], a[1])
+    fnum_right = SummationByPartsOperators.godunov_flux_variablelinearadvection(u[end],
+                                                                                right_bc(t),
+                                                                                a[end])
+    mass_rate_boundary = mass_rate - fnum_left + fnum_right
+
+    energy = 0.5 * sum(P * (u .^ 2)) # = 1/2 ||u||_P^2
+    energy_rate = sum(P * (du .* u)) # = 1/2 d/dt||u||_P^2 = u' * P * du
+    energy_rate_boundary = energy_rate + 0.5 * (u .^ 2)' * P * (D * a)
+    if a[1] > 0.0
+        energy_rate_boundary += 0.5 * (-a[1] * left_bc(t)^2 + a[end] * u[end]^2)
+    end
+    if a[end] < 0.0
+        energy_rate_boundary += 0.5 * (-a[1] * u[1]^2 + a[end] * right_bc(t)^2)
+    end
+    energy_rate_boundary_dissipation = energy_rate_boundary
+    # We could also write `energy_rate_boundary_dissipation` as
+    # energy_rate_boundary_dissipation = energy_rate -
+    #                                    0.5 * (a[end] * u[end]^2 - a[1] * u[1]^2) -
+    #                                    u[1] * fnum_left + u[end] * fnum_right +
+    #                                    0.5 * (u .^ 2)' * P * (D * a)
+    if a[1] > 0.0
+        energy_rate_boundary_dissipation += 0.5 * a[1] * (u[1] - left_bc(t))^2
+    end
+    if a[end] < 0.0
+        energy_rate_boundary_dissipation += 0.5 * a[end] * (u[end] - right_bc(t))^2
+    end
+    return [mass, mass_rate, mass_rate_boundary,
+            energy, energy_rate, energy_rate_boundary, energy_rate_boundary_dissipation]
+end
