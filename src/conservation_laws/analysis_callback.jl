@@ -141,12 +141,14 @@ function analyze_quantities(semi::VariableLinearAdvectionNonperiodicSemidiscreti
     mass_rate = sum(P * du)
     fnum_left = SummationByPartsOperators.godunov_flux_variablelinearadvection(left_bc(t),
                                                                                u[1], a[1])
-    fnum_right = SummationByPartsOperators.godunov_flux_variablelinearadvection(u[end], right_bc(t), a[end])
+    fnum_right = SummationByPartsOperators.godunov_flux_variablelinearadvection(u[end],
+                                                                                right_bc(t),
+                                                                                a[end])
     mass_rate_boundary = mass_rate - fnum_left + fnum_right
 
     energy = 0.5 * sum(P * (u .^ 2)) # = 1/2 ||u||_P^2
     energy_rate = sum(P * (du .* u)) # = 1/2 d/dt||u||_P^2 = u' * P * du
-    energy_rate_boundary = energy_rate + 0.5 * (u.^2)' * P * (D * a)
+    energy_rate_boundary = energy_rate + 0.5 * (u .^ 2)' * P * (D * a)
     if a[1] > 0.0
         energy_rate_boundary -= (0.5 * a[1] * left_bc(t)^2 - a[end] * u[end]^2)
     end
