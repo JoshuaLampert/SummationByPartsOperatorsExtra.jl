@@ -92,20 +92,14 @@ function analyze_quantities(disc::MultidimensionalLinearAdvectionNonperiodicSemi
 
     energy = 0.5 * sum(P * (u .^ 2)) # = 1/2 ||u||_P^2
     energy_rate = sum(P * (du .* u)) # = 1/2 d/dt||u||_P^2 = u' * P * du
-    # This should compute the same as below, but we need the explicit loop for `e_boundary` anyway
-    # e_boundary_dissipation = e - u' * P * disc.cache.B * (u - 2 * disc.cache.tmp1)
+    energy_rate_boundary_dissipation = energy_rate - 0.5 * u' * P * disc.cache.B * (u - 2 * disc.cache.tmp1)
     energy_rate_boundary = energy_rate
-    energy_rate_boundary_dissipation = energy_rate
     for (i, node) in enumerate(restrict_boundary(grid(D), D))
         j = D.boundary_indices[i]
         normal = D.normals[i]
         an = dot(normal, disc.a)
         tau = SummationByPartsOperators.get_weight_boundary(D, i) * an
         energy_rate_boundary += 0.5 * tau * disc.cache.tmp1[j]^2
-        energy_rate_boundary_dissipation += 0.5 * tau * disc.cache.tmp1[j]^2
-        if an < 0 # inflow
-            energy_rate_boundary_dissipation -= 0.5 * tau * (u[j] - disc.bc(node, t))^2
-        end
     end
     return [mass, mass_rate, mass_rate_boundary,
             energy, energy_rate, energy_rate_boundary, energy_rate_boundary_dissipation]
