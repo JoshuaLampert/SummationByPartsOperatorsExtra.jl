@@ -49,6 +49,7 @@ export SubcellOperator, GlaubitzLampertWintersNordström2025, subcell_operator,
        derivative_matrix, grid, grid_left, grid_right,
        mass_matrix, mass_matrix_left, mass_matrix_right,
        mass_matrix_boundary, mass_matrix_boundary_left, mass_matrix_boundary_right,
+       integrate_left, integrate_right,
        left_projection_left, left_projection_right,
        right_projection_left, right_projection_right
 export AnalysisCallback, tstops, quantities

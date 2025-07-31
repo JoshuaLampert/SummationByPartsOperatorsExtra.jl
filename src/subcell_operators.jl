@@ -91,6 +91,13 @@ function PolynomialBases.integrate(func, u, D::SubcellOperator)
     return integrate(func, u, weights(D))
 end
 
+function integrate_left(func, u, D::SubcellOperator)
+    return integrate(func, u, weights_left(D))
+end
+function integrate_right(func, u, D::SubcellOperator)
+    return integrate(func, u, weights_right(D))
+end
+
 """
     grid_left(D::SubcellOperator)
 
