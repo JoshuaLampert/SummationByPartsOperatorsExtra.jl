@@ -92,7 +92,9 @@ function analyze_quantities(disc::MultidimensionalLinearAdvectionNonperiodicSemi
 
     energy = 0.5 * sum(P * (u .^ 2)) # = 1/2 ||u||_P^2
     energy_rate = sum(P * (du .* u)) # = 1/2 d/dt||u||_P^2 = u' * P * du
-    energy_rate_boundary_dissipation = energy_rate - 0.5 * u' * P * disc.cache.B * (u - 2 * disc.cache.tmp1)
+    energy_rate_boundary_dissipation = energy_rate -
+                                       0.5 * u' * P * disc.cache.B *
+                                       (u - 2 * disc.cache.tmp1)
     energy_rate_boundary = energy_rate
     for (i, node) in enumerate(restrict_boundary(grid(D), D))
         j = D.boundary_indices[i]

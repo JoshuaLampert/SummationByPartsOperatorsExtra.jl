@@ -159,6 +159,8 @@ end
     u = sin.(nodes)
     u_copy = copy(u)
     @test integrate(cos, u, Dop) == sum(M * cos.(u))
+    @test isapprox(integrate(cos, u, Dop),
+                   integrate_left(cos, u, Dop) + integrate_right(cos, u, Dop), atol = 1e-14)
     SummationByPartsOperators.scale_by_mass_matrix!(u, Dop)
     @test_throws DimensionMismatch SummationByPartsOperators.scale_by_mass_matrix!(@view(u[(begin + 1):(end - 1)]),
                                                                                    Dop)
