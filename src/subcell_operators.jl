@@ -319,10 +319,11 @@ function couple_subcell(D_left::AbstractNonperiodicDerivativeOperator,
     N_L = length(grid_left)
     grid_right = grid(D_right)
     N_R = length(grid_right)
-    if x_M < last(grid_left)
+    tol = 1e-11
+    if x_M < last(grid_left) - tol
         throw(ArgumentError("Left sub-cell must be to the left of x_M."))
     end
-    if x_M > first(grid_right)
+    if x_M > first(grid_right) + tol
         throw(ArgumentError("Right sub-cell must be to the right of x_M."))
     end
     nodes = vcat(collect(grid_left), collect(grid_right))
