@@ -205,8 +205,8 @@ end
                                               sparsity_pattern = nothing)
 
 Get the entries to optimize for in an optimization-based construction procedure of multidimensional summation-by-parts operators
-from a derivative operator `D`. It contains the entries of the skew-symmetric part of the operator `D`, the
-entries of the diagonal mass matrix `M`, and the entries of the diagonal boundary mass matrix. For more details,
+from a derivative operator `D`. It contains the entries of the skew-symmetric part of the operator ``D``, the
+entries of the diagonal mass matrix ``M``, and the entries of the diagonal boundary mass matrix. For more details,
 see [`multidimensional_function_space_operator`](@ref). The output can be passed as initial values to the optimization problem as `x0`.
 """
 function get_multidimensional_optimization_entries(D;
