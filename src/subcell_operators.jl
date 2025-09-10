@@ -29,7 +29,7 @@ See also [`subcell_operator`](@ref) and [`GlaubitzLampertWintersNordström2025`]
 
 References:
 - Glaubitz, Lampert, Winters, Nordström (2025):
-  Towards provable energy stable overset grid methods using sub-cell
+  Towards provable energy-stable overset grid methods using sub-cell
   summation-by-parts operators.
   TODO
 """
@@ -302,18 +302,30 @@ end
 """
     couple_subcell(D_left::AbstractNonperiodicDerivativeOperator,
                    D_right::AbstractNonperiodicDerivativeOperator,
-                   x_M)
+                   x_M, [coupling=Val(:no)])
 
 Construct a [`SubcellOperator`](@ref) from two non-periodic derivative operators `D_left` and `D_right` from
 SummationByPartsOperators.jl. `D_left` is defined on the left sub-cell, which is the interval
 ``[x_L, x_M]`` and `D_right` is defined on the right sub-cell, which is the interval ``[x_M, x_R]``,
 where `x_L` and `x_R` are the left and right boundaries of the grid of `D_left` and `D_right`, respectively.
 Note that `x_M` must be between the right boundary of `D_left` and the left boundary of `D_right`.
+If `coupling` is set to `Val(:no)`, the two operators are simply combined without any coupling at the
+interface `x_M`. If `coupling` is set to `Val(:central)`, `Val(:plus)`, or `Val(:minus)`, the two operators are coupled
+using a central, upwind, or downwind coupling, respectively, as described in Section 2.5 of Ranocha, Mitsotakis, Ketcheson (2021).
+In fact, the operators obtained are mathematically the same as obtained by using `couple_discontinuously` with
+two elements, but here in the context of sub-cell operators. However, this implementation allows for different
+left and right operators, which is not possible with `couple_discontinuously`. Therefore, the mesh also does not
+need to be homogeneous.
 
 See also [`GlaubitzLampertWintersNordström2025`](@ref).
+
+- Ranocha, Mitsotakis, Ketcheson (2021).
+  A Broad Class of Conservative Numerical Methods for Dispersive Wave Equations.
+  [DOI: 10.4208/cicp.OA-2020-0119](https://doi.org/10.4208/cicp.OA-2020-0119)
 """
 function couple_subcell(D_left::AbstractNonperiodicDerivativeOperator,
-                        D_right::AbstractNonperiodicDerivativeOperator, x_M)
+                        D_right::AbstractNonperiodicDerivativeOperator, x_M;
+                        coupling::Union{Val{:no}, Val{:central}, Val{:plus}, Val{:minus}} = Val(:no))
     T = promote_type(eltype(D_left), eltype(D_right))
     grid_left = grid(D_left)
     N_L = length(grid_left)
@@ -330,27 +342,61 @@ function couple_subcell(D_left::AbstractNonperiodicDerivativeOperator,
     weights_left_ = diag(mass_matrix(D_left))
     weights_right_ = diag(mass_matrix(D_right))
 
-    Q_left_ = mass_matrix(D_left) * Matrix(D_left)
-    Q_left = [Q_left_ zeros(T, N_L, N_R)
-              zeros(T, N_R, N_L) zeros(T, N_R, N_R)]
-    Q_right_ = mass_matrix(D_right) * Matrix(D_right)
-    Q_right = [zeros(T, N_L, N_L) zeros(T, N_L, N_R)
-               zeros(T, N_R, N_L) Q_right_]
-
-    B_left_ = mass_matrix_boundary(D_left)
-    B_left = [B_left_ zeros(T, N_L, N_R)
-              zeros(T, N_R, N_L) zeros(T, N_R, N_R)]
-    B_right_ = mass_matrix_boundary(D_right)
-    B_right = [zeros(T, N_L, N_L) zeros(T, N_L, N_R)
-               zeros(T, N_R, N_L) B_right_]
-
     R_left = interpolation_matrix([boundary_left(D_left), boundary_right(D_left)], D_left)
-    e_L = [R_left[1, :]; zeros(T, N_R)]
-    e_M_L = [R_left[2, :]; zeros(T, N_R)]
+    e_L_l = R_left[1, :]
+    e_R_l = R_left[2, :]
     R_right = interpolation_matrix([boundary_left(D_right), boundary_right(D_right)],
                                    D_right)
-    e_M_R = [zeros(T, N_L); R_right[1, :]]
-    e_R = [zeros(T, N_L); R_right[2, :]]
+    e_L_r = R_right[1, :]
+    e_R_r = R_right[2, :]
+
+    Q_left_ = mass_matrix(D_left) * Matrix(D_left)
+    Q_right_ = mass_matrix(D_right) * Matrix(D_right)
+    if coupling == Val(:no)
+        Q_left_upper_right = zeros(T, N_L, N_R)
+        Q_right_lower_left = zeros(T, N_R, N_L)
+    elseif coupling == Val(:central)
+        Q_left_ -= 0.5f0 * (e_R_l * e_R_l')
+        Q_left_upper_right = 0.5f0 * (e_R_l * e_L_r')
+        Q_right_ += 0.5f0 * (e_L_r * e_L_r')
+        Q_right_lower_left = -0.5f0 * (e_L_r * e_R_l')
+    elseif coupling == Val(:plus)
+        Q_left_ -= (e_R_l * e_R_l')
+        Q_left_upper_right = (e_R_l * e_L_r')
+        Q_right_lower_left = zeros(T, N_R, N_L)
+    elseif coupling == Val(:minus)
+        Q_left_upper_right = zeros(T, N_L, N_R)
+        Q_right_ += (e_L_r * e_L_r')
+        Q_right_lower_left = -(e_L_r * e_R_l')
+    else
+        throw(ArgumentError("Unknown coupling type $(coupling)."))
+    end
+    Q_left = [Q_left_ Q_left_upper_right
+              zeros(T, N_R, N_L) zeros(T, N_R, N_R)]
+    Q_right = [zeros(T, N_L, N_L) zeros(T, N_L, N_R)
+               Q_right_lower_left Q_right_]
+
+    # if coupling == Val(:no)
+    #     B_left_ = mass_matrix_boundary(D_left)
+    #     B_right_ = mass_matrix_boundary(D_right)
+    # else
+    #     B_left_ = zeros(T, N_L, N_L)
+    #     B_left_[1, 1] = -1
+    #     B_right_ = zeros(T, N_R, N_R)
+    #     B_right_[end, end] = 1
+    # end
+    # B_left = [B_left_ zeros(T, N_L, N_R)
+    #           zeros(T, N_R, N_L) zeros(T, N_R, N_R)]
+    # B_right = [zeros(T, N_L, N_L) zeros(T, N_L, N_R)
+    #            zeros(T, N_R, N_L) B_right_]
+    B_left = Q_left + Q_left'
+    B_right = Q_right + Q_right'
+
+    e_L = [e_L_l; zeros(T, N_R)]
+    e_M_L = [e_R_l; zeros(T, N_R)]
+
+    e_M_R = [zeros(T, N_L); e_L_r]
+    e_R = [zeros(T, N_L); e_R_r]
     acc_order = min(accuracy_order(D_left), accuracy_order(D_right))
     source = GlaubitzLampertWintersNordström2025()
     return SubcellOperator(nodes, x_M, weights_left_, weights_right_,
@@ -364,7 +410,7 @@ end
 
 Sub-cell SBP operators given in
 - Glaubitz, Lampert, Winters, Nordström (2025):
-  Towards provable energy stable overset grid methods using sub-cell
+  Towards provable energy-stable overset grid methods using sub-cell
   summation-by-parts operators.
   TODO
 
@@ -378,7 +424,7 @@ function Base.show(io::IO, source::GlaubitzLampertWintersNordström2025)
     else
         print(io,
               "Glaubitz, Lampert, Winters, Nordström (2025) \n",
-              "  Towards provable energy stable overset grid methods using sub-cell \n",
+              "  Towards provable energy-stable overset grid methods using sub-cell \n",
               "  summation-by-parts operators. \n",
               "  TODO")
     end
