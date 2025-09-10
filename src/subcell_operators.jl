@@ -376,19 +376,6 @@ function couple_subcell(D_left::AbstractNonperiodicDerivativeOperator,
     Q_right = [zeros(T, N_L, N_L) zeros(T, N_L, N_R)
                Q_right_lower_left Q_right_]
 
-    # if coupling == Val(:no)
-    #     B_left_ = mass_matrix_boundary(D_left)
-    #     B_right_ = mass_matrix_boundary(D_right)
-    # else
-    #     B_left_ = zeros(T, N_L, N_L)
-    #     B_left_[1, 1] = -1
-    #     B_right_ = zeros(T, N_R, N_R)
-    #     B_right_[end, end] = 1
-    # end
-    # B_left = [B_left_ zeros(T, N_L, N_R)
-    #           zeros(T, N_R, N_L) zeros(T, N_R, N_R)]
-    # B_right = [zeros(T, N_L, N_L) zeros(T, N_L, N_R)
-    #            zeros(T, N_R, N_L) B_right_]
     B_left = Q_left + Q_left'
     B_right = Q_right + Q_right'
 
