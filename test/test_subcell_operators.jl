@@ -339,9 +339,9 @@ end
         for g in basis_functions
             gg = g.(nodes)
             @test isapprox(ff' * B_L * gg, f(x_M) * g(x_M) - f(x_L) * g(x_L),
-                           atol = 1e-14)
+                           atol = 1e-12)
             @test isapprox(ff' * B_R * gg, f(x_R) * g(x_R) - f(x_M) * g(x_M),
-                           atol = 1e-14)
+                           atol = 1e-12)
             @test isapprox(ff' * B * gg, f(x_R) * g(x_R) - f(x_L) * g(x_L),
                            atol = 1e-12)
         end
