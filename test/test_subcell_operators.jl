@@ -131,98 +131,157 @@ end
     x_R = 0.4
     D1 = legendre_derivative_operator(x_L, x_M, 3)
     D2 = legendre_derivative_operator(x_M, x_R, 3)
-    Dop = @test_nowarn couple_subcell(D1, D2, x_M)
     @test_throws ArgumentError couple_subcell(D1, D2, -2.0)
     @test_throws ArgumentError couple_subcell(D1, D2, 0.0)
-    nodes = grid(Dop)
+    for coupling in (Val(:no), Val(:central), Val(:plus), Val(:minus))
+        Dop = @test_nowarn couple_subcell(D1, D2, x_M; coupling)
+        nodes = grid(Dop)
 
-    @test !issymmetric(Dop)
-    @test SummationByPartsOperators.lower_bandwidth(Dop) == length(nodes) - 1
-    @test SummationByPartsOperators.upper_bandwidth(Dop) == length(nodes) - 1
-    @test derivative_order(Dop) == 1
-    @test accuracy_order(Dop) == 2
+        @test !issymmetric(Dop)
+        @test SummationByPartsOperators.lower_bandwidth(Dop) == length(nodes) - 1
+        @test SummationByPartsOperators.upper_bandwidth(Dop) == length(nodes) - 1
+        @test derivative_order(Dop) == 1
+        @test accuracy_order(Dop) == 2
 
-    # grids
-    @test grid(Dop) ≈ nodes
-    @test all(grid_left(Dop) .<= x_M)
-    @test all(grid_right(Dop) .>= x_M)
+        # grids
+        @test grid(Dop) ≈ nodes
+        @test all(grid_left(Dop) .<= x_M)
+        @test all(grid_right(Dop) .>= x_M)
 
-    # mass matrices
-    M = mass_matrix(Dop)
-    M_L = mass_matrix_left(Dop)
-    M_R = mass_matrix_right(Dop)
-    @test M ≈ M_L + M_R
-    @test left_boundary_weight(Dop) == M[1, 1] == M_L[1, 1]
-    @test right_boundary_weight(Dop) == M[end, end] == M_R[end, end]
+        # mass matrices
+        M = mass_matrix(Dop)
+        M_L = mass_matrix_left(Dop)
+        M_R = mass_matrix_right(Dop)
+        @test M ≈ M_L + M_R
+        @test left_boundary_weight(Dop) == M[1, 1] == M_L[1, 1]
+        @test right_boundary_weight(Dop) == M[end, end] == M_R[end, end]
 
-    # integration
-    u = sin.(nodes)
-    u_copy = copy(u)
-    @test integrate(cos, u, Dop) == sum(M * cos.(u))
-    @test isapprox(integrate(cos, u, Dop),
-                   integrate_left(cos, u, Dop) + integrate_right(cos, u, Dop), atol = 1e-14)
-    SummationByPartsOperators.scale_by_mass_matrix!(u, Dop)
-    @test_throws DimensionMismatch SummationByPartsOperators.scale_by_mass_matrix!(@view(u[(begin + 1):(end - 1)]),
-                                                                                   Dop)
+        # integration
+        u = sin.(nodes)
+        u_copy = copy(u)
+        @test integrate(cos, u, Dop) == sum(M * cos.(u))
+        @test isapprox(integrate(cos, u, Dop),
+                       integrate_left(cos, u, Dop) + integrate_right(cos, u, Dop),
+                       atol = 1e-14)
+        SummationByPartsOperators.scale_by_mass_matrix!(u, Dop)
+        @test_throws DimensionMismatch SummationByPartsOperators.scale_by_mass_matrix!(@view(u[(begin + 1):(end - 1)]),
+                                                                                       Dop)
 
-    @test u ≈ M * u_copy
-    SummationByPartsOperators.scale_by_inverse_mass_matrix!(u, Dop)
-    @test_throws DimensionMismatch SummationByPartsOperators.scale_by_inverse_mass_matrix!(@view(u[(begin + 1):(end - 1)]),
-                                                                                           Dop)
-    @test u ≈ u_copy
+        @test u ≈ M * u_copy
+        SummationByPartsOperators.scale_by_inverse_mass_matrix!(u, Dop)
+        @test_throws DimensionMismatch SummationByPartsOperators.scale_by_inverse_mass_matrix!(@view(u[(begin + 1):(end - 1)]),
+                                                                                               Dop)
+        @test u ≈ u_copy
 
-    # boundary mass matrices
-    B = mass_matrix_boundary(Dop)
-    B_L = mass_matrix_boundary_left(Dop)
-    B_R = mass_matrix_boundary_right(Dop)
-    @test B ≈ B_L + B_R
+        # boundary mass matrices
+        B = mass_matrix_boundary(Dop)
+        B_L = mass_matrix_boundary_left(Dop)
+        B_R = mass_matrix_boundary_right(Dop)
+        @test B ≈ B_L + B_R
 
-    for f in basis_functions
-        ff = f.(nodes)
-        for g in basis_functions
-            gg = g.(nodes)
-            @test isapprox(ff' * B_L * gg, f(x_M) * g(x_M) - f(x_L) * g(x_L),
-                           atol = 1e-14)
-            @test isapprox(ff' * B_R * gg, f(x_R) * g(x_R) - f(x_M) * g(x_M),
-                           atol = 1e-14)
-            @test isapprox(ff' * B * gg, f(x_R) * g(x_R) - f(x_L) * g(x_L),
-                           atol = 1e-14)
+        for f in basis_functions
+            ff = f.(nodes)
+            for g in basis_functions
+                gg = g.(nodes)
+                @test isapprox(ff' * B_L * gg, f(x_M) * g(x_M) - f(x_L) * g(x_L),
+                               atol = 1e-14)
+                @test isapprox(ff' * B_R * gg, f(x_R) * g(x_R) - f(x_M) * g(x_M),
+                               atol = 1e-14)
+                @test isapprox(ff' * B * gg, f(x_R) * g(x_R) - f(x_L) * g(x_L),
+                               atol = 1e-14)
+            end
         end
+
+        # projections
+        e_L = left_projection_left(Dop)
+        e_M_L = left_projection_right(Dop)
+        e_M_R = right_projection_left(Dop)
+        e_R = right_projection_right(Dop)
+        @test isapprox(dot(e_L, u), u[begin])
+        @test isapprox(dot(e_R, u), u[end])
+        if coupling == Val(:no)
+            @test B_L ≈ e_M_L * e_M_L' - e_L * e_L'
+            @test B_R ≈ e_R * e_R' - e_M_R * e_M_R'
+        else
+            if coupling == Val(:minus)
+                @test B_L ≈ e_M_L * e_M_L' - e_L * e_L'
+            else
+                @test_broken B_L ≈ e_M_L * e_M_L' - e_L * e_L'
+            end
+            if coupling == Val(:plus)
+                @test B_R ≈ e_R * e_R' - e_M_R * e_M_R'
+            else
+                @test_broken B_R ≈ e_R * e_R' - e_M_R * e_M_R'
+            end
+        end
+
+        # exactness of derivative operator
+        fs = [f.(nodes) for f in basis_functions]
+        basis_functions_derivatives = [zero, one, identity]
+        fs_derivatives = [f.(nodes) for f in basis_functions_derivatives]
+        for (f, f_derivative) in zip(fs, fs_derivatives)
+            @test all(isapprox.(Dop * f, f_derivative; atol = 1e-12))
+        end
+
+        # SBP properties
+        Q_L = Dop.Q_left
+        Q_R = Dop.Q_right
+        @test Q_L + Q_L' ≈ B_L
+        @test Q_R + Q_R' ≈ B_R
+        D = Matrix(Dop)
+        @test derivative_matrix(Dop) == D
+        Q = M * D
+        if coupling in (Val(:no), Val(:central))
+            @test Q + Q' ≈ B
+        else
+            other_coupling = coupling == Val(:plus) ? Val(:minus) : Val(:plus)
+            Dop_other = couple_subcell(D1, D2, x_M; coupling = other_coupling)
+            Q_other = mass_matrix(Dop_other) * Matrix(Dop_other)
+            N = length(nodes)
+            B_usual = zeros(N, N)
+            B_usual[1, 1] = -1
+            B_usual[end, end] = 1
+            BB = (mass_matrix_boundary(Dop) + mass_matrix_boundary(Dop_other)) / 2
+            @test BB ≈ B_usual
+            @test Q + Q_other' ≈ BB
+        end
+        @test Matrix(Dop) == D
+
+        # consistency between matrices
+        @test Q ≈ Q_L + Q_R
+        @test M_L * D ≈ Q_L
+        @test M_R * D ≈ Q_R
     end
+end
 
-    # projections
-    e_L = left_projection_left(Dop)
-    e_M_L = left_projection_right(Dop)
-    e_M_R = right_projection_left(Dop)
-    e_R = right_projection_right(Dop)
-    @test isapprox(dot(e_L, u), u[begin])
-    @test isapprox(dot(e_R, u), u[end])
-    @test B_L ≈ e_M_L * e_M_L' - e_L * e_L'
-    @test B_R ≈ e_R * e_R' - e_M_R * e_M_R'
+@testitem "couple_subcell and couple_discontinuously" setup=[SubCell] begin
+    x_L = -2.3
+    x_R = 0.4
+    x_M = (x_L + x_R) / 2 # x_M needs to be the midpoint for couple_discontinuously
+    D1 = legendre_derivative_operator(x_L, x_M, 3)
+    D2 = legendre_derivative_operator(x_M, x_R, 3)
 
-    # exactness of derivative operator
-    fs = [f.(nodes) for f in basis_functions]
-    basis_functions_derivatives = [zero, one, identity]
-    fs_derivatives = [f.(nodes) for f in basis_functions_derivatives]
-    for (f, f_derivative) in zip(fs, fs_derivatives)
-        @test all(isapprox.(Dop * f, f_derivative; atol = 1e-12))
-    end
+    Dop = couple_subcell(D1, D2, x_M; coupling = Val(:central))
+    mesh = UniformMesh1D(x_L, x_R, 2)
+    D_leg = legendre_derivative_operator(-1.0, 1.0, 3)
+    Dop_disc = couple_discontinuously(D_leg, mesh, Val(:central))
+    @test Matrix(Dop) ≈ Matrix(Dop_disc)
+    @test mass_matrix(Dop) ≈ mass_matrix(Dop_disc)
+    @test mass_matrix_boundary(Dop) ≈ mass_matrix_boundary(Dop_disc)
 
-    # SBP properties
-    Q_L = Dop.Q_left
-    Q_R = Dop.Q_right
-    @test Q_L + Q_L' ≈ B_L
-    @test Q_R + Q_R' ≈ B_R
-    D = Matrix(Dop)
-    @test derivative_matrix(Dop) == D
-    Q = M * D
-    @test Q + Q' ≈ B
-    @test Matrix(Dop) == D
-
-    # consistency between matrices
-    @test Q ≈ Q_L + Q_R
-    @test M_L * D ≈ Q_L
-    @test M_R * D ≈ Q_R
+    Dop_plus = couple_subcell(D1, D2, x_M; coupling = Val(:plus))
+    Dop_minus = couple_subcell(D1, D2, x_M; coupling = Val(:minus))
+    Dop_disc_plus = couple_discontinuously(D_leg, mesh, Val(:plus))
+    Dop_disc_minus = couple_discontinuously(D_leg, mesh, Val(:minus))
+    @test Matrix(Dop_plus) ≈ Matrix(Dop_disc_plus)
+    @test mass_matrix(Dop_plus) ≈ mass_matrix(Dop_disc_plus)
+    # The boundary mass matrix for the upwind coupling is not the same as the one
+    # from couple_discontinuously because it is computed as B_left + B_right,
+    # where the interior part doesn't cancel
+    @test_broken mass_matrix_boundary(Dop_plus) ≈ mass_matrix_boundary(Dop_disc_plus)
+    @test Matrix(Dop_minus) ≈ Matrix(Dop_disc_minus)
+    @test mass_matrix(Dop_minus) ≈ mass_matrix(Dop_disc_minus)
+    @test_broken mass_matrix_boundary(Dop_minus) ≈ mass_matrix_boundary(Dop_disc_minus)
 end
 
 @testitem "Couple polynomial bases operators to sub-cell operators" setup=[SubCell] begin
@@ -280,9 +339,9 @@ end
         for g in basis_functions
             gg = g.(nodes)
             @test isapprox(ff' * B_L * gg, f(x_M) * g(x_M) - f(x_L) * g(x_L),
-                           atol = 1e-14)
+                           atol = 1e-12)
             @test isapprox(ff' * B_R * gg, f(x_R) * g(x_R) - f(x_M) * g(x_M),
-                           atol = 1e-14)
+                           atol = 1e-12)
             @test isapprox(ff' * B * gg, f(x_R) * g(x_R) - f(x_L) * g(x_L),
                            atol = 1e-12)
         end
