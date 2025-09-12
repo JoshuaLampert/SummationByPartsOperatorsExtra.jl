@@ -342,11 +342,16 @@ function couple_subcell(D_left::AbstractNonperiodicDerivativeOperator,
     weights_left_ = diag(mass_matrix(D_left))
     weights_right_ = diag(mass_matrix(D_right))
 
-    R_left = interpolation_matrix([boundary_left(D_left), boundary_right(D_left)], D_left)
+    R_left = interpolation_matrix([
+                                      SummationByPartsOperators.xmin(D_left),
+                                      SummationByPartsOperators.xmax(D_left)
+                                  ], D_left)
     e_L_l = R_left[1, :]
     e_R_l = R_left[2, :]
-    R_right = interpolation_matrix([boundary_left(D_right), boundary_right(D_right)],
-                                   D_right)
+    R_right = interpolation_matrix([
+                                       SummationByPartsOperators.xmin(D_right),
+                                       SummationByPartsOperators.xmax(D_right)
+                                   ], D_right)
     e_L_r = R_right[1, :]
     e_R_r = R_right[2, :]
 

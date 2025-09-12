@@ -170,5 +170,5 @@ function SummationByPartsOperators.right_boundary_weight(D::PolynomialBasesDeriv
     retval
 end
 
-boundary_left(D::PolynomialBasesDerivativeOperator) = D.xmin
-boundary_right(D::PolynomialBasesDerivativeOperator) = D.xmax
+SummationByPartsOperators.xmin(D::PolynomialBasesDerivativeOperator) = D.xmin
+SummationByPartsOperators.xmax(D::PolynomialBasesDerivativeOperator) = D.xmax
