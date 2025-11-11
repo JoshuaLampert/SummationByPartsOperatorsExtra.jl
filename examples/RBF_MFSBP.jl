@@ -42,7 +42,7 @@ D = open(joinpath(OUT, "out_$file.txt"), "w") do file
     redirect_stdout(file) do
         D = multidimensional_function_space_operator(basis, geometry, sampler,
                                                      sampler_boundary,
-                                                     GlaubitzIskeLampertÖffner2025();
+                                                     GlaubitzIskeLampertÖffner2026();
                                                      kwargs..., opt_kwargs...)
     end
 end

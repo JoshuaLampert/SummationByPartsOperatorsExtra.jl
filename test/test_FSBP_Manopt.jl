@@ -7,7 +7,7 @@ end
     x_min = -1.0
     x_max = 1.0
     nodes = collect(range(x_min, x_max, length = N))
-    source = GlaubitzIskeLampertÖffner2025()
+    source = GlaubitzIskeLampertÖffner2025Basic()
     for compact in (true, false)
         show(IOContext(devnull, :compact => compact), source)
     end

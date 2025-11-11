@@ -62,7 +62,7 @@ D = open(joinpath(OUT, "out_$file.txt"), "w") do file
     redirect_stdout(file) do
         multidimensional_function_space_operator(basis, nodes,
                                                  boundary_indices, normals, moments, vol,
-                                                 GlaubitzIskeLampertÖffner2025();
+                                                 GlaubitzIskeLampertÖffner2026();
                                                  corners, sparsity_patterns,
                                                  verbose = true, opt_kwargs...)
     end

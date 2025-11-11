@@ -10,7 +10,7 @@ end
     nodes = SVector.(collect(range(xmin, xmax, length = N)))
     boundary_indices_ = [1, N]
     normals_ = [SVector(-1.0), SVector(1.0)]
-    source = GlaubitzIskeLampertÖffner2025()
+    source = GlaubitzIskeLampertÖffner2026()
     for compact in (true, false)
         show(IOContext(devnull, :compact => compact), source)
     end
@@ -96,7 +96,7 @@ end
     normals_ = normals(D_t)
     moments = compute_moments_boundary(basis_functions, D_t)
     vol = (xmax - xmin) * (ymax - ymin)
-    source = GlaubitzIskeLampertÖffner2025()
+    source = GlaubitzIskeLampertÖffner2026()
     sparsity_patterns = get_sparsity_pattern(D_t)
 
     corners_x_dir = [N_y + 1, # lower left corner

@@ -9,21 +9,21 @@ import SummationByPartsOperatorsExtra: construct_function_space_operator,
                                        default_opt_alg,
                                        default_options
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
-                                      GlaubitzIskeLampertÖffner2025,
+                                      GlaubitzIskeLampertÖffner2025Basic,
                                       MatrixDerivativeOperator
 
 include("utils.jl")
 include("function_space_operators.jl")
 
-default_opt_alg(::GlaubitzIskeLampertÖffner2025) = quasi_Newton
-function default_options(::GlaubitzIskeLampertÖffner2025, verbose)
+default_opt_alg(::GlaubitzIskeLampertÖffner2025Basic) = quasi_Newton
+function default_options(::GlaubitzIskeLampertÖffner2025Basic, verbose)
     if verbose
         debug = [:Iteration,
             :Time,
             " | ",
             (:Cost, "f(x): %.6e"),
             " | ",
-            (:GradientNorm, "∇ f(x): %.6e"),
+            (:GradientNorm, "||∇f(x)||: %.6e"),
             "\n",
             :Stop]
     else
@@ -37,7 +37,7 @@ function default_options(::GlaubitzIskeLampertÖffner2025, verbose)
 end
 
 function construct_function_space_operator(basis_functions, nodes,
-                                           source::GlaubitzIskeLampertÖffner2025;
+                                           source::GlaubitzIskeLampertÖffner2025Basic;
                                            basis_functions_weights = ones(eltype(nodes),
                                                                           length(basis_functions)),
                                            bandwidth = length(nodes) - 1,

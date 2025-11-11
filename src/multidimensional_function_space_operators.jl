@@ -1,22 +1,22 @@
 """
-    GlaubitzIskeLampertÖffner2025()
+    GlaubitzIskeLampertÖffner2026()
 
 Multidimensional function space SBP (MFSBP) operators given in
-- Glaubitz, Iske, Lampert, Öffner (2025)
+- Glaubitz, Iske, Lampert, Öffner (2026)
   Efficient construction and application of multi-dimensional summation-by-parts operators
   to global radial basis function methods
   TODO
 
 See [`multidimensional_function_space_operator`](@ref).
 """
-struct GlaubitzIskeLampertÖffner2025 <: SourceOfCoefficients end
+struct GlaubitzIskeLampertÖffner2026 <: SourceOfCoefficients end
 
-function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2025)
+function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026)
     if get(io, :compact, false)
         summary(io, source)
     else
         print(io,
-              "Glaubitz, Iske, Lampert, Öffner (2025) \n",
+              "Glaubitz, Iske, Lampert, Öffner (2026) \n",
               "  Efficient construction and application of multi-dimensional summation-by-parts operators \n",
               "  to global radial basis function methods \n",
               "  TODO.")
@@ -80,7 +80,7 @@ The keyword argument `verbose` can be set to `true` to print information about t
 
 In order to use this function, the package `Optim` must be loaded.
 
-See also [`GlaubitzIskeLampertÖffner2025`](@ref).
+See also [`GlaubitzIskeLampertÖffner2026`](@ref).
 
 !!! compat "Julia 1.9"
     This function requires at least Julia 1.9.

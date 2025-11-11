@@ -49,7 +49,7 @@ end
 function construct_multidimensional_function_space_operator(basis_functions, nodes,
                                                             boundary_indices, normals,
                                                             moments, vol,
-                                                            ::GlaubitzIskeLampertÖffner2025;
+                                                            ::GlaubitzIskeLampertÖffner2026;
                                                             basis_functions_weights = ones(typeof(basis_functions[1](nodes[1])),
                                                                                            length(basis_functions)),
                                                             bandwidth = length(nodes) - 1,

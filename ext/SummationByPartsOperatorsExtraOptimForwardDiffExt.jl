@@ -8,8 +8,8 @@ import SummationByPartsOperatorsExtra: construct_function_space_operator,
                                        default_options
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       GlaubitzNordströmÖffner2023,
-                                      GlaubitzIskeLampertÖffner2025,
                                       GlaubitzLampertWintersNordström2025,
+                                      GlaubitzIskeLampertÖffner2026,
                                       MatrixDerivativeOperator,
                                       MultidimensionalMatrixDerivativeOperator,
                                       SubcellOperator

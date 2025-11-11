@@ -1,4 +1,50 @@
-# This function is extended in the package extension SummationByPartsOperatorsExtraOptimExt
+"""
+    GlaubitzIskeLampertÖffner2025Basic()
+
+Function space SBP operators constructed with optimization procedure given in
+- Glaubitz, Iske, Lampert, Öffner (2025):
+  Why summation by parts is not enough.
+  TODO
+
+See [`function_space_operator`](@ref).
+"""
+struct GlaubitzIskeLampertÖffner2025Basic <: SourceOfCoefficients end
+
+function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2025Basic)
+    if get(io, :compact, false)
+        summary(io, source)
+    else
+        print(io,
+              "Glaubitz, Iske, Lampert, Öffner (2025) \n",
+              "  Why summation by parts is not enough.\n",
+              "  TODO")
+    end
+end
+
+"""
+    GlaubitzIskeLampertÖffner2025Constrained()
+
+Function space SBP operators constructed with constrained optimization procedure given in
+- Glaubitz, Iske, Lampert, Öffner (2025):
+  Why summation by parts is not enough.
+  TODO
+
+See [`function_space_operator`](@ref).
+"""
+struct GlaubitzIskeLampertÖffner2025Constrained <: SourceOfCoefficients end
+
+function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2025Constrained)
+    if get(io, :compact, false)
+        summary(io, source)
+    else
+        print(io,
+              "Glaubitz, Iske, Lampert, Öffner (2025) \n",
+              "  Why summation by parts is not enough.\n",
+              "  TODO")
+    end
+end
+
+# This function is extended in the package extensions SummationByPartsOperatorsExtraOptimExt and SummationByPartsOperatorsExtraManifoldsManoptForwardDiffExt
 """
     function_space_operator(basis_functions, nodes, source;
                             derivative_order = 1, accuracy_order = 0,
