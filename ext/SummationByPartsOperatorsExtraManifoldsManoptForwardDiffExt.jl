@@ -4,6 +4,7 @@ using Manifolds: Manifolds, SkewSymmetricMatrices, PositiveVectors, ProductManif
                  check_point
 using Manopt: quasi_Newton, interior_point_Newton, ApproxHessianBFGS,
               ManifoldGradientObjective, ConstrainedManifoldObjective,
+              DebugFeasibility,
               StopAfterIteration, StopWhenGradientNormLess, StopWhenCostLess
 import RecursiveArrayTools: ArrayPartition
 import ForwardDiff
@@ -20,8 +21,7 @@ include("function_space_operators.jl")
 
 default_opt_alg(::GlaubitzIskeLampertÖffner2025Basic) = quasi_Newton
 default_opt_alg(::GlaubitzIskeLampertÖffner2025Constrained) = interior_point_Newton
-function default_options(::Union{GlaubitzIskeLampertÖffner2025Basic,
-                                 GlaubitzIskeLampertÖffner2025Constrained},
+function default_options(::GlaubitzIskeLampertÖffner2025Basic,
                          verbose)
     if verbose
         debug = [:Iteration,
@@ -38,6 +38,28 @@ function default_options(::Union{GlaubitzIskeLampertÖffner2025Basic,
     return (;
             debug = debug,
             stopping_criterion = StopAfterIteration(10000) |
+                                 StopWhenGradientNormLess(1e-16) |
+                                 StopWhenCostLess(1e-28))
+end
+function default_options(::GlaubitzIskeLampertÖffner2025Constrained,
+                         verbose)
+    if verbose
+        debug = [:Iteration,
+            :Time,
+            " | ",
+            (:Cost, "f(x): %.6e"),
+            " | ",
+            (:GradientNorm, "||∇f(x)||: %.6e"),
+            " | ",
+            DebugFeasibility(["feasible: ", :Feasible, ", total violation: ", :TotalEq]),
+            "\n",
+            :Stop]
+    else
+        debug = []
+    end
+    return (;
+            debug = debug,
+            stopping_criterion = StopAfterIteration(10) |
                                  StopWhenGradientNormLess(1e-16) |
                                  StopWhenCostLess(1e-28))
 end
