@@ -49,6 +49,7 @@ end
     function_space_operator(basis_functions, nodes, source;
                             derivative_order = 1, accuracy_order = 0,
                             basis_functions_weights = ones(length(basis_functions)),
+                            regularization_functions = nothing,
                             bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
                             different_values = true, sparsity_pattern = nothing,
                             opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),

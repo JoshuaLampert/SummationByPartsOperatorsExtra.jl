@@ -9,6 +9,7 @@ function construct_function_space_operator(basis_functions, nodes,
                                            source::GlaubitzNordströmÖffner2023;
                                            basis_functions_weights = ones(eltype(nodes),
                                                                           length(basis_functions)),
+                                           regularization_functions = nothing,
                                            bandwidth = length(nodes) - 1,
                                            size_boundary = 2 * bandwidth,
                                            different_values = true,

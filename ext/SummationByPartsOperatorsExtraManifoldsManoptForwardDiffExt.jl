@@ -2,7 +2,9 @@ module SummationByPartsOperatorsExtraManifoldsManoptForwardDiffExt
 
 using Manifolds: Manifolds, SkewSymmetricMatrices, PositiveVectors, ProductManifold,
                  check_point
-using Manopt: quasi_Newton, StopAfterIteration, StopWhenGradientNormLess, StopWhenCostLess
+using Manopt: quasi_Newton, interior_point_Newton, ApproxHessianBFGS,
+              ManifoldGradientObjective, ConstrainedManifoldObjective,
+              StopAfterIteration, StopWhenGradientNormLess, StopWhenCostLess
 import RecursiveArrayTools: ArrayPartition
 import ForwardDiff
 import SummationByPartsOperatorsExtra: construct_function_space_operator,
@@ -10,13 +12,17 @@ import SummationByPartsOperatorsExtra: construct_function_space_operator,
                                        default_options
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       GlaubitzIskeLampertÖffner2025Basic,
+                                      GlaubitzIskeLampertÖffner2025Constrained,
                                       MatrixDerivativeOperator
 
 include("utils.jl")
 include("function_space_operators.jl")
 
 default_opt_alg(::GlaubitzIskeLampertÖffner2025Basic) = quasi_Newton
-function default_options(::GlaubitzIskeLampertÖffner2025Basic, verbose)
+default_opt_alg(::GlaubitzIskeLampertÖffner2025Constrained) = interior_point_Newton
+function default_options(::Union{GlaubitzIskeLampertÖffner2025Basic,
+                                 GlaubitzIskeLampertÖffner2025Constrained},
+                         verbose)
     if verbose
         debug = [:Iteration,
             :Time,
@@ -37,9 +43,11 @@ function default_options(::GlaubitzIskeLampertÖffner2025Basic, verbose)
 end
 
 function construct_function_space_operator(basis_functions, nodes,
-                                           source::GlaubitzIskeLampertÖffner2025Basic;
+                                           source::Union{GlaubitzIskeLampertÖffner2025Basic,
+                                                         GlaubitzIskeLampertÖffner2025Constrained};
                                            basis_functions_weights = ones(eltype(nodes),
                                                                           length(basis_functions)),
+                                           regularization_functions = nothing,
                                            bandwidth = length(nodes) - 1,
                                            size_boundary = 2 * bandwidth,
                                            different_values = true,
@@ -58,6 +66,12 @@ function construct_function_space_operator(basis_functions, nodes,
         sparsity_pattern = UpperTriangular(sparsity_pattern)
     end
     assert_correct_length_basis_functions_weights(basis_functions_weights, basis_functions)
+    if source isa GlaubitzIskeLampertÖffner2025Constrained
+        @assert !isnothing(regularization_functions) "regularization_functions must be provided for GlaubitzIskeLampertÖffner2025Constrained"
+        regularization_functions_derivatives = [x -> ForwardDiff.derivative(regularization_function,
+                                                                            x)
+                                                for regularization_function in regularization_functions]
+    end
     L = get_nsigma(N; bandwidth, size_boundary, different_values, sparsity_pattern)
 
     basis_functions_derivatives = [x -> ForwardDiff.derivative(basis_functions[i], x)
@@ -96,17 +110,17 @@ function construct_function_space_operator(basis_functions, nodes,
     x0 = ArrayPartition(S0, p0)
 
     param = (; V, V_x, R)
-    f(M, x) = optimization_function_function_space_operator(M, x, param)
-
-    function optimization_gradient_function_space_operator(M, x, autodiff)
-        b = Manifolds.TangentDiffBackend(autodiff)
-        return Manifolds.gradient(M, x -> f(M, x), x, b)
+    if source isa GlaubitzIskeLampertÖffner2025Constrained
+        G = vandermonde_matrix(regularization_functions, nodes)
+        G_x = vandermonde_matrix(regularization_functions_derivatives, nodes)
+        R_G = B * G / 2
+        param = (; param..., G, G_x, R_G)
     end
     if autodiff == :forward
         autodiff = Manifolds.ManifoldDiff.AutoForwardDiff()
     end
-    grad_f(M, x) = optimization_gradient_function_space_operator(M, x, autodiff)
-    x = opt_alg(M, f, grad_f, x0; options...)
+    objective = get_objective_function(source, param, autodiff)
+    x = opt_alg(M, objective, x0; options...)
 
     S, p = x.x
     weights = p
@@ -115,11 +129,50 @@ function construct_function_space_operator(basis_functions, nodes,
     return weights, D
 end
 
+function optimization_gradient_function_space_operator(M, f, x, autodiff)
+    b = Manifolds.ManifoldDiff.TangentDiffBackend(autodiff)
+    return Manifolds.ManifoldDiff.gradient(M, x -> f(M, x), x, b)
+end
+
+# function optimization_hessian_function_space_operator(M, f, x, autodiff)
+#     b = Manifolds.ManifoldDiff.TangentDiffBackend(autodiff)
+#     return Manifolds.ManifoldDiff.hessian(M, x -> f(M, x), x, b)
+# end
+
+function get_objective_function(::GlaubitzIskeLampertÖffner2025Basic,
+                                param, autodiff)
+    f(M, x) = optimization_function_function_space_operator(M, x, param)
+    grad_f(M, x) = optimization_gradient_function_space_operator(M, f, x, autodiff)
+    return ManifoldGradientObjective(f, grad_f)
+end
+function get_objective_function(::GlaubitzIskeLampertÖffner2025Constrained,
+                                param, autodiff)
+    f(M, x) = optimization_function_function_space_operator_G(M, x, param)
+    grad_f(M, x) = optimization_gradient_function_space_operator(M, f, x, autodiff)
+    hess_f(M, p, Xp) = ApproxHessianBFGS(M, p, grad_f)(M, p, Xp)
+
+    h(M, x) = optimization_function_function_space_operator(M, x, param)
+    grad_h(M, x) = optimization_gradient_function_space_operator(M, h, x, autodiff)
+    hess_h(M, p, Xp) = ApproxHessianBFGS(M, p, grad_h)(M, p, Xp)
+    return ConstrainedManifoldObjective(f, grad_f; hess_f = hess_f,
+                                        h = h, grad_h = grad_h, hess_h = hess_h,
+                                        g = nothing, grad_g = nothing,
+                                        equality_constraints = 1)
+end
+
 function optimization_function_function_space_operator(M, x, param)
     (; V, V_x, R) = param
     S, p = x.x
 
     A = S * V - Diagonal(p) * V_x + R
+    return sum(abs2, A)
+end
+
+function optimization_function_function_space_operator_G(M, x, param)
+    (; G, G_x, R_G) = param
+    S, p = x.x
+
+    A = S * G - Diagonal(p) * G_x + R_G
     return sum(abs2, A)
 end
 
