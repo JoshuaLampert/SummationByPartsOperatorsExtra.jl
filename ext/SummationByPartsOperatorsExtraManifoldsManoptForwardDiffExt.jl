@@ -173,8 +173,9 @@ function get_objective_function(::GlaubitzIskeLampertÖffner2025Constrained,
     grad_f(M, x) = optimization_gradient_function_space_operator(M, f, x, autodiff)
     hess_f(M, p, Xp) = ApproxHessianBFGS(M, p, grad_f)(M, p, Xp)
 
-    h(M, x) = optimization_function_function_space_operator(M, x, param)
-    grad_h(M, x) = optimization_gradient_function_space_operator(M, h, x, autodiff)
+    h1(M, x) = optimization_function_function_space_operator(M, x, param)
+    h(M, x) = [h1(M, x)]
+    grad_h(M, x) = [optimization_gradient_function_space_operator(M, h1, x, autodiff)]
     hess_h(M, p, Xp) = ApproxHessianBFGS(M, p, grad_h)(M, p, Xp)
     return ConstrainedManifoldObjective(f, grad_f; hess_f = hess_f,
                                         h = h, grad_h = grad_h, hess_h = hess_h,
