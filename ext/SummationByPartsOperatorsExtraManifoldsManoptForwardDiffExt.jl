@@ -156,11 +156,6 @@ function optimization_gradient_function_space_operator(M, f, x, autodiff)
     return Manifolds.ManifoldDiff.gradient(M, x -> f(M, x), x, b)
 end
 
-# function optimization_hessian_function_space_operator(M, f, x, autodiff)
-#     b = Manifolds.ManifoldDiff.TangentDiffBackend(autodiff)
-#     return Manifolds.ManifoldDiff.hessian(M, x -> f(M, x), x, b)
-# end
-
 function get_objective_function(::GlaubitzIskeLampertÖffner2025Basic,
                                 param, autodiff)
     f(M, x) = optimization_function_function_space_operator(M, x, param)
