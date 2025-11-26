@@ -13,14 +13,14 @@ import SummationByPartsOperatorsExtra: construct_function_space_operator,
                                        default_options
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       GlaubitzIskeLampertÖffner2025Basic,
-                                      GlaubitzIskeLampertÖffner2025Constrained,
+                                      GlaubitzIskeLampertÖffner2025Regularized,
                                       MatrixDerivativeOperator
 
 include("utils.jl")
 include("function_space_operators.jl")
 
 default_opt_alg(::GlaubitzIskeLampertÖffner2025Basic) = quasi_Newton
-default_opt_alg(::GlaubitzIskeLampertÖffner2025Constrained) = interior_point_Newton
+default_opt_alg(::GlaubitzIskeLampertÖffner2025Regularized) = augmented_Lagrangian_method
 function default_options(::GlaubitzIskeLampertÖffner2025Basic,
                          verbose)
     if verbose
@@ -41,7 +41,7 @@ function default_options(::GlaubitzIskeLampertÖffner2025Basic,
                                  StopWhenGradientNormLess(1e-16) |
                                  StopWhenCostLess(1e-28))
 end
-function default_options(::GlaubitzIskeLampertÖffner2025Constrained,
+function default_options(::GlaubitzIskeLampertÖffner2025Regularized,
                          verbose)
     if verbose
         debug = [:Iteration,
@@ -59,14 +59,14 @@ function default_options(::GlaubitzIskeLampertÖffner2025Constrained,
     end
     return (;
             debug = debug,
-            stopping_criterion = StopAfterIteration(10) |
+            stopping_criterion = StopAfterIteration(1000) |
                                  StopWhenGradientNormLess(1e-16) |
                                  StopWhenCostLess(1e-28))
 end
 
 function construct_function_space_operator(basis_functions, nodes,
                                            source::Union{GlaubitzIskeLampertÖffner2025Basic,
-                                                         GlaubitzIskeLampertÖffner2025Constrained};
+                                                         GlaubitzIskeLampertÖffner2025Regularized};
                                            basis_functions_weights = ones(eltype(nodes),
                                                                           length(basis_functions)),
                                            regularization_functions = nothing,
@@ -88,8 +88,8 @@ function construct_function_space_operator(basis_functions, nodes,
         sparsity_pattern = UpperTriangular(sparsity_pattern)
     end
     assert_correct_length_basis_functions_weights(basis_functions_weights, basis_functions)
-    if source isa GlaubitzIskeLampertÖffner2025Constrained
-        @assert !isnothing(regularization_functions) "regularization_functions must be provided for GlaubitzIskeLampertÖffner2025Constrained"
+    if source isa GlaubitzIskeLampertÖffner2025Regularized
+        @assert !isnothing(regularization_functions) "regularization_functions must be provided for GlaubitzIskeLampertÖffner2025Regularized"
         regularization_functions_derivatives = [x -> ForwardDiff.derivative(regularization_function,
                                                                             x)
                                                 for regularization_function in regularization_functions]
@@ -113,6 +113,10 @@ function construct_function_space_operator(basis_functions, nodes,
     x_length = last(nodes) - first(nodes)
 
     if isnothing(x0)
+        # TODO: This does not satisfy the constraints for the constrained case and will therefore fail.
+        # In this case, should we run the unconstrained optimization first to get a good initial guess?
+        # Or should we just enforce the user to pass a suitable initial guess, e.g., by first running the
+        # unconstrained case with the same nodes and basis, but without the regularization?
         x0 = [zeros(T, L); invsig.(1 / N * ones(T, N))]
     else
         n_total = L + N
@@ -132,7 +136,7 @@ function construct_function_space_operator(basis_functions, nodes,
     x0 = ArrayPartition(S0, p0)
 
     param = (; V, V_x, R)
-    if source isa GlaubitzIskeLampertÖffner2025Constrained
+    if source isa GlaubitzIskeLampertÖffner2025Regularized
         G = vandermonde_matrix(regularization_functions, nodes)
         G_x = vandermonde_matrix(regularization_functions_derivatives, nodes)
         R_G = B * G / 2
@@ -162,7 +166,7 @@ function get_objective_function(::GlaubitzIskeLampertÖffner2025Basic,
     grad_f(M, x) = optimization_gradient_function_space_operator(M, f, x, autodiff)
     return ManifoldGradientObjective(f, grad_f)
 end
-function get_objective_function(::GlaubitzIskeLampertÖffner2025Constrained,
+function get_objective_function(::GlaubitzIskeLampertÖffner2025Regularized,
                                 param, autodiff)
     f(M, x) = optimization_function_function_space_operator_G(M, x, param)
     grad_f(M, x) = optimization_gradient_function_space_operator(M, f, x, autodiff)
@@ -175,7 +179,8 @@ function get_objective_function(::GlaubitzIskeLampertÖffner2025Constrained,
     return ConstrainedManifoldObjective(f, grad_f; hess_f = hess_f,
                                         h = h, grad_h = grad_h, hess_h = hess_h,
                                         g = nothing, grad_g = nothing,
-                                        equality_constraints = 1)
+                                        equality_constraints = 1,
+                                        atol = 1e-28)
 end
 
 function optimization_function_function_space_operator(M, x, param)

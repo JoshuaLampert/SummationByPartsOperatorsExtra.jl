@@ -22,18 +22,18 @@ function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2025Basic)
 end
 
 """
-    GlaubitzIskeLampertÖffner2025Constrained()
+    GlaubitzIskeLampertÖffner2025Regularized()
 
-Function space SBP operators constructed with constrained optimization procedure given in
+Function space SBP operators constructed with regularized constrained optimization procedure given in
 - Glaubitz, Iske, Lampert, Öffner (2025):
   Why summation by parts is not enough.
   TODO
 
 See [`function_space_operator`](@ref).
 """
-struct GlaubitzIskeLampertÖffner2025Constrained <: SourceOfCoefficients end
+struct GlaubitzIskeLampertÖffner2025Regularized <: SourceOfCoefficients end
 
-function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2025Constrained)
+function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2025Regularized)
     if get(io, :compact, false)
         summary(io, source)
     else
