@@ -2,18 +2,21 @@ module SummationByPartsOperatorsExtraManifoldsManoptForwardDiffExt
 
 using Manifolds: Manifolds, SkewSymmetricMatrices, PositiveVectors, ProductManifold,
                  check_point
-using Manopt: quasi_Newton, interior_point_Newton, ApproxHessianBFGS,
-              ManifoldGradientObjective, ConstrainedManifoldObjective,
+using Manopt: quasi_Newton, interior_point_Newton, augmented_Lagrangian_method,
+              ApproxHessianBFGS, ManifoldGradientObjective, ConstrainedManifoldObjective,
               DebugFeasibility,
               StopAfterIteration, StopWhenGradientNormLess, StopWhenCostLess
+using LinearAlgebra: eigvals, Symmetric
 import RecursiveArrayTools: ArrayPartition
 import ForwardDiff
+import DifferentiableEigen
 import SummationByPartsOperatorsExtra: construct_function_space_operator,
                                        default_opt_alg,
                                        default_options
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       GlaubitzIskeLampertÖffner2025Basic,
                                       GlaubitzIskeLampertÖffner2025Regularized,
+                                      GlaubitzIskeLampertÖffner2025EigenvalueProperty,
                                       MatrixDerivativeOperator
 
 include("utils.jl")
@@ -21,6 +24,9 @@ include("function_space_operators.jl")
 
 default_opt_alg(::GlaubitzIskeLampertÖffner2025Basic) = quasi_Newton
 default_opt_alg(::GlaubitzIskeLampertÖffner2025Regularized) = augmented_Lagrangian_method
+function default_opt_alg(::GlaubitzIskeLampertÖffner2025EigenvalueProperty)
+    augmented_Lagrangian_method
+end
 function default_options(::GlaubitzIskeLampertÖffner2025Basic,
                          verbose)
     if verbose
@@ -63,10 +69,33 @@ function default_options(::GlaubitzIskeLampertÖffner2025Regularized,
                                  StopWhenGradientNormLess(1e-16) |
                                  StopWhenCostLess(1e-28))
 end
+function default_options(::GlaubitzIskeLampertÖffner2025EigenvalueProperty,
+                         verbose)
+    if verbose
+        debug = [:Iteration,
+            :Time,
+            " | ",
+            (:Cost, "f(x): %.6e"),
+            " | ",
+            (:GradientNorm, "||∇f(x)||: %.6e"),
+            " | ",
+            DebugFeasibility(["feasible: ", :Feasible, ", total violation: ", :TotalInEq]),
+            "\n",
+            :Stop]
+    else
+        debug = []
+    end
+    return (;
+            debug = debug,
+            stopping_criterion = StopAfterIteration(1000) |
+                                 StopWhenGradientNormLess(1e-16) |
+                                 StopWhenCostLess(1e-28))
+end
 
 function construct_function_space_operator(basis_functions, nodes,
                                            source::Union{GlaubitzIskeLampertÖffner2025Basic,
-                                                         GlaubitzIskeLampertÖffner2025Regularized};
+                                                         GlaubitzIskeLampertÖffner2025Regularized,
+                                                         GlaubitzIskeLampertÖffner2025EigenvalueProperty};
                                            basis_functions_weights = ones(eltype(nodes),
                                                                           length(basis_functions)),
                                            regularization_functions = nothing,
@@ -135,7 +164,7 @@ function construct_function_space_operator(basis_functions, nodes,
     p0 = diag(create_P(rho0, x_length))
     x0 = ArrayPartition(S0, p0)
 
-    param = (; V, V_x, R)
+    param = (; V, V_x, R, B)
     if source isa GlaubitzIskeLampertÖffner2025Regularized
         G = vandermonde_matrix(regularization_functions, nodes)
         G_x = vandermonde_matrix(regularization_functions_derivatives, nodes)
@@ -159,6 +188,10 @@ function optimization_gradient_function_space_operator(M, f, x, autodiff)
     b = Manifolds.ManifoldDiff.TangentDiffBackend(autodiff)
     return Manifolds.ManifoldDiff.gradient(M, x -> f(M, x), x, b)
 end
+function optimization_jacobian_function_space_operator(M, f, x, autodiff)
+    b = Manifolds.ManifoldDiff.TangentDiffBackend(autodiff)
+    return Manifolds.ManifoldDiff.gradient(M, x -> f(M, x), x, b)
+end
 
 function get_objective_function(::GlaubitzIskeLampertÖffner2025Basic,
                                 param, autodiff)
@@ -177,9 +210,26 @@ function get_objective_function(::GlaubitzIskeLampertÖffner2025Regularized,
     grad_h(M, x) = [optimization_gradient_function_space_operator(M, h1, x, autodiff)]
     hess_h(M, p, Xp) = ApproxHessianBFGS(M, p, grad_h)(M, p, Xp)
     return ConstrainedManifoldObjective(f, grad_f; hess_f = hess_f,
-                                        h = h, grad_h = grad_h, hess_h = hess_h,
-                                        g = nothing, grad_g = nothing,
+                                        g = nothing, grad_g = nothing, h = h,
+                                        grad_h = grad_h, hess_h = hess_h,
                                         equality_constraints = 1,
+                                        atol = 1e-28)
+end
+function get_objective_function(::GlaubitzIskeLampertÖffner2025EigenvalueProperty,
+                                param, autodiff)
+    N, N = size(param.V)
+    f(M, x) = optimization_function_function_space_operator(M, x, param)
+    grad_f(M, x) = optimization_gradient_function_space_operator(M, f, x, autodiff)
+    hess_f(M, p, Xp) = ApproxHessianBFGS(M, p, grad_f)(M, p, Xp)
+
+    g1(M, x) = eigenvalue_property(M, x, param)
+    g(M, x) = [g1(M, x)]
+    grad_g(M, x) = [optimization_gradient_function_space_operator(M, g1, x, autodiff)]
+    hess_g(M, p, Xp) = ApproxHessianBFGS(M, p, grad_g)(M, p, Xp)
+    return ConstrainedManifoldObjective(f, grad_f; hess_f = hess_f,
+                                        g = g, grad_g = grad_g, hess_g = hess_g,
+                                        h = nothing, grad_h = nothing,
+                                        inequality_constraints = 1,
                                         atol = 1e-28)
 end
 
@@ -197,6 +247,20 @@ function optimization_function_function_space_operator_G(M, x, param)
 
     A = S * G - Diagonal(p) * G_x + R_G
     return sum(abs2, A)
+end
+
+# The eigenvalue property is satisifed if each value in the vector of the
+# return value of this function is non-positive.
+function eigenvalue_property(M, x, param)
+    (; B) = param
+    S, p = x.x
+
+    Q = S + B / 2
+    D = inv(Diagonal(p)) * Q
+    sigma = 1.0
+    D[1, 1] += sigma / p[1]
+    lambdas = DifferentiableEigen.eigen(D)[1]
+    return -minimum(real(lambdas))
 end
 
 end

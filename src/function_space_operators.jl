@@ -44,6 +44,30 @@ function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2025Regularized)
     end
 end
 
+"""
+    GlaubitzIskeLampertÖffner2025EigenvalueProperty()
+
+Function space SBP operators constructed with constrained optimization procedure satisfying an eigenvalue
+property given in
+- Glaubitz, Iske, Lampert, Öffner (2025):
+  Why summation by parts is not enough.
+  TODO
+
+See [`function_space_operator`](@ref).
+"""
+struct GlaubitzIskeLampertÖffner2025EigenvalueProperty <: SourceOfCoefficients end
+
+function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2025EigenvalueProperty)
+    if get(io, :compact, false)
+        summary(io, source)
+    else
+        print(io,
+              "Glaubitz, Iske, Lampert, Öffner (2025) \n",
+              "  Why summation by parts is not enough.\n",
+              "  TODO")
+    end
+end
+
 # This function is extended in the package extensions SummationByPartsOperatorsExtraOptimExt and SummationByPartsOperatorsExtraManifoldsManoptForwardDiffExt
 """
     function_space_operator(basis_functions, nodes, source;

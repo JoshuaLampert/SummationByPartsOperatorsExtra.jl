@@ -1,7 +1,7 @@
 name = "SummationByPartsOperatorsExtra"
 uuid = "213abaa5-c2d1-49c7-a86b-a2b7aa43ec15"
-authors = ["Joshua Lampert <joshua.lampert@uni-hamburg.de> and contributors"]
 version = "0.1.0-DEV"
+authors = ["Joshua Lampert <joshua.lampert@uni-hamburg.de> and contributors"]
 
 [deps]
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
@@ -19,6 +19,7 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 SummationByPartsOperators = "9f78cca6-572e-554e-b819-917d2f1cf240"
 
 [weakdeps]
+DifferentiableEigen = "73a20539-4e65-4dcb-a56d-dc20f210a01b"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 Manifolds = "1cead3c2-87b3-11e9-0ccd-23c62b72b94e"
@@ -29,7 +30,7 @@ Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
 
 [extensions]
-SummationByPartsOperatorsExtraManifoldsManoptForwardDiffExt = ["Manifolds", "Manopt", "ForwardDiff", "RecursiveArrayTools"]
+SummationByPartsOperatorsExtraManifoldsManoptForwardDiffExt = ["Manifolds", "Manopt", "ForwardDiff", "RecursiveArrayTools", "DifferentiableEigen"]
 SummationByPartsOperatorsExtraMeshIntegralsExt = ["Meshes", "MeshIntegrals"]
 SummationByPartsOperatorsExtraMeshesExt = "Meshes"
 SummationByPartsOperatorsExtraMeshesMakieExt = ["Meshes", "Makie"]
@@ -39,6 +40,7 @@ SummationByPartsOperatorsExtraOptimForwardDiffExt = ["Optim", "ForwardDiff"]
 ArgCheck = "1, 2"
 AutoHashEquals = "0.2, 1, 2"
 DiffEqCallbacks = "4"
+DifferentiableEigen = "0.2.1"
 ForwardDiff = "0.10, 1"
 LinearAlgebra = "1"
 Makie = "0.23, 0.24"
