@@ -6,10 +6,9 @@ using Manopt: quasi_Newton, interior_point_Newton, augmented_Lagrangian_method,
               ApproxHessianBFGS, ManifoldGradientObjective, ConstrainedManifoldObjective,
               DebugFeasibility,
               StopAfterIteration, StopWhenGradientNormLess, StopWhenCostLess
-using LinearAlgebra: eigvals, Symmetric
+using LinearAlgebra: LinearAlgebra, eigen, Eigen
 import RecursiveArrayTools: ArrayPartition
 import ForwardDiff
-import DifferentiableEigen
 import SummationByPartsOperatorsExtra: construct_function_space_operator,
                                        default_opt_alg,
                                        default_options
@@ -249,6 +248,37 @@ function optimization_function_function_space_operator_G(M, x, param)
     return sum(abs2, A)
 end
 
+# Make `eigen` differentiable with ForwardDiff.jl
+# See https://github.com/JuliaManifolds/Manifolds.jl/pull/27#issuecomment-536305950
+function make_eigen_dual(val::Real, partial)
+    ForwardDiff.Dual{ForwardDiff.tagtype(partial)}(val, partial.partials)
+end
+
+function make_eigen_dual(val::Complex, partial::Complex)
+    Complex(ForwardDiff.Dual{ForwardDiff.tagtype(real(partial))}(real(val), real(partial).partials),
+        ForwardDiff.Dual{ForwardDiff.tagtype(imag(partial))}(imag(val), imag(partial).partials))
+end
+
+function LinearAlgebra.eigen(A::StridedMatrix{<:ForwardDiff.Dual})
+    A_values = map(d -> d.value, A)
+    A_values_eig = eigen(A_values)
+    UinvAU = A_values_eig.vectors \ A * A_values_eig.vectors
+    vals_diff = diag(UinvAU)
+    F = similar(A_values, eltype(A_values_eig.values))
+    for i in axes(A_values, 1), j in axes(A_values, 2)
+        if i == j
+            F[i, j] = 0
+        else
+            F[i, j] = inv(A_values_eig.values[j] - A_values_eig.values[i])
+        end
+    end
+    vectors_diff = A_values_eig.vectors * (F .* UinvAU)
+    for i in eachindex(vectors_diff)
+        vectors_diff[i] = make_eigen_dual(A_values_eig.vectors[i], vectors_diff[i])
+    end
+    return Eigen(vals_diff, vectors_diff)
+end
+
 # The eigenvalue property is satisifed if each value in the vector of the
 # return value of this function is non-positive.
 function eigenvalue_property(M, x, param)
@@ -256,11 +286,11 @@ function eigenvalue_property(M, x, param)
     S, p = x.x
 
     Q = S + B / 2
-    D = inv(Diagonal(p)) * Q
+    D_tilde = inv(Diagonal(p)) * Q
     sigma = 1.0
-    D[1, 1] += sigma / p[1]
-    lambdas = DifferentiableEigen.eigen(D)[1]
-    return -minimum(real(lambdas))
+    D_tilde[1, 1] += sigma / p[1]
+    lambdas = eigen(D_tilde).values
+    return -minimum(real(lambdas) .- 0.1)
 end
 
 end
