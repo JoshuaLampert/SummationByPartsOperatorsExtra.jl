@@ -98,6 +98,7 @@ function construct_function_space_operator(basis_functions, nodes,
                                            basis_functions_weights = ones(eltype(nodes),
                                                                           length(basis_functions)),
                                            regularization_functions = nothing,
+                                           min_real_eigen = 0.1,
                                            bandwidth = length(nodes) - 1,
                                            size_boundary = 2 * bandwidth,
                                            different_values = true,
@@ -163,7 +164,7 @@ function construct_function_space_operator(basis_functions, nodes,
     p0 = diag(create_P(rho0, x_length))
     x0 = ArrayPartition(S0, p0)
 
-    param = (; V, V_x, R, B)
+    param = (; V, V_x, R, B, min_real_eigen)
     if source isa GlaubitzIskeLampertÖffner2025Regularized
         G = vandermonde_matrix(regularization_functions, nodes)
         G_x = vandermonde_matrix(regularization_functions_derivatives, nodes)
@@ -279,10 +280,10 @@ function LinearAlgebra.eigen(A::StridedMatrix{<:ForwardDiff.Dual})
     return Eigen(vals_diff, vectors_diff)
 end
 
-# The eigenvalue property is satisifed if each value in the vector of the
+# The eigenvalue property is satisified if each value in the vector of the
 # return value of this function is non-positive.
 function eigenvalue_property(M, x, param)
-    (; B) = param
+    (; B, min_real_eigen) = param
     S, p = x.x
 
     Q = S + B / 2
@@ -290,7 +291,7 @@ function eigenvalue_property(M, x, param)
     sigma = 1.0
     D_tilde[1, 1] += sigma / p[1]
     lambdas = eigen(D_tilde).values
-    return -minimum(real(lambdas) .- 0.1)
+    return -minimum(real(lambdas) .- min_real_eigen)
 end
 
 end

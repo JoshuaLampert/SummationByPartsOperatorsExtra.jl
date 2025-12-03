@@ -4,6 +4,7 @@ function SummationByPartsOperatorsExtra.function_space_operator(basis_functions,
                                                                 basis_functions_weights = ones(T,
                                                                                                length(basis_functions)),
                                                                 regularization_functions = nothing,
+                                                                min_real_eigen = 0.1,
                                                                 derivative_order = 1,
                                                                 accuracy_order = 0,
                                                                 bandwidth = length(nodes) -
@@ -26,6 +27,7 @@ function SummationByPartsOperatorsExtra.function_space_operator(basis_functions,
     weights, D = construct_function_space_operator(basis_functions, nodes, source;
                                                    basis_functions_weights,
                                                    regularization_functions,
+                                                   min_real_eigen,
                                                    bandwidth, size_boundary,
                                                    different_values, sparsity_pattern,
                                                    opt_alg, options, autodiff, x0, verbose)
