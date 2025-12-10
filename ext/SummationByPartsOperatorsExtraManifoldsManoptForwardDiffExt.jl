@@ -288,8 +288,8 @@ function eigenvalue_property(M, x, param)
 
     Q = S + B / 2
     D_tilde = inv(Diagonal(p)) * Q
-    sigma = 1.0
-    D_tilde[1, 1] += sigma / p[1]
+    nu = 1.0
+    D_tilde[1, 1] += nu / p[1]
     lambdas = eigen(D_tilde).values
     return -minimum(real(lambdas) .- min_real_eigen)
 end
