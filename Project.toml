@@ -1,7 +1,7 @@
 name = "SummationByPartsOperatorsExtra"
 uuid = "213abaa5-c2d1-49c7-a86b-a2b7aa43ec15"
-authors = ["Joshua Lampert <joshua.lampert@uni-hamburg.de> and contributors"]
 version = "0.1.0-DEV"
+authors = ["Joshua Lampert <joshua.lampert@uni-hamburg.de> and contributors"]
 
 [deps]
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
@@ -45,7 +45,7 @@ Makie = "0.23, 0.24"
 Manifolds = "0.10, 0.11"
 Manopt = "0.5"
 MeshIntegrals = "0.16, 0.17"
-Meshes = "0.53, 0.54, 0.55"
+Meshes = "0.53, 0.54, 0.55, 0.56"
 Optim = "1.12"
 PolynomialBases = "0.4.25"
 PreallocationTools = "0.4.26"
