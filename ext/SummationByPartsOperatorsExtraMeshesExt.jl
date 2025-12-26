@@ -140,7 +140,7 @@ function push_to_boundary_indices!(boundary_indices, boundary_geometry::Ring, no
 end
 
 function push_to_boundary_indices!(boundary_indices, boundary_geometry, node, i)
-    push!(boundary_indices, i)
+    return push!(boundary_indices, i)
 end
 
 function divide_into_inner_and_boundary(geometry, nodes)

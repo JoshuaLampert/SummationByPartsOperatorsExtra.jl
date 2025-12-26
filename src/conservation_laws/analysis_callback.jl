@@ -28,8 +28,8 @@ function Base.show(io::IO, cb::DiscreteCallback{<:Any, <:AnalysisCallback})
     @nospecialize cb # reduce precompilation time
 
     analysis_callback = cb.affect!
-    print(io, "AnalysisCallback(interval=", analysis_callback.interval_or_dt,
-          ")")
+    print(io, "AnalysisCallback(interval=", analysis_callback.interval_or_dt, ")")
+    return nothing
 end
 
 function Base.show(io::IO,
@@ -39,6 +39,7 @@ function Base.show(io::IO,
 
     analysis_callback = cb.affect!.affect!
     print(io, "AnalysisCallback(dt=", analysis_callback.interval_or_dt, ")")
+    return nothing
 end
 
 """

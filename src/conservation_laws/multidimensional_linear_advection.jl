@@ -37,7 +37,7 @@ with boundary conditions `bc(x, t)`.
         B = invP * (a[1] * B_x + a[2] * B_y)
         tmp1 = zeros(T, size(derivative, 1))
         cache = (; A, B, tmp1)
-        new{Dim, T, Derivative, BC, typeof(cache)}(derivative, a, bc, cache)
+        return new{Dim, T, Derivative, BC, typeof(cache)}(derivative, a, bc, cache)
     end
 end
 
@@ -77,7 +77,7 @@ function (disc::MultidimensionalLinearAdvectionNonperiodicSemidiscretization)(du
     set_bc!(tmp1, u, a, bc, derivative, t)
     du .= -A * u + B * (u - tmp1)
 
-    nothing
+    return nothing
 end
 
 function analyze_quantities(disc::MultidimensionalLinearAdvectionNonperiodicSemidiscretization,

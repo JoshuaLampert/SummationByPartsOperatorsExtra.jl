@@ -72,13 +72,15 @@ References:
         if length(nodes) != length(weights_left) + length(weights_right)
             throw(ArgumentError("If `x_M` is not in `nodes`, then the length of `nodes` must be equal to the sum of the lengths of `weights_left` and `weights_right`."))
         end
-        new{T, QType, BType, ProjectionType, SourceOfCoefficients}(nodes, x_M,
-                                                                   weights_left,
-                                                                   weights_right,
-                                                                   Q_left, Q_right,
-                                                                   B_left, B_right,
-                                                                   e_L, e_M_L, e_M_R, e_R,
-                                                                   accuracy_order, source)
+        return new{T, QType, BType, ProjectionType, SourceOfCoefficients}(nodes, x_M,
+                                                                          weights_left,
+                                                                          weights_right,
+                                                                          Q_left, Q_right,
+                                                                          B_left, B_right,
+                                                                          e_L, e_M_L,
+                                                                          e_M_R, e_R,
+                                                                          accuracy_order,
+                                                                          source)
     end
 end
 
@@ -214,7 +216,7 @@ function SummationByPartsOperators.scale_by_inverse_mass_matrix!(u::AbstractVect
         u[i] = factor * u[i] / get_weight(D, i)
     end
 
-    u
+    return u
 end
 
 function get_weight_left(D::SubcellOperator, i::Int)
@@ -229,7 +231,7 @@ function get_weight_left(D::SubcellOperator, i::Int)
     else
         ω = zero(eltype(D))
     end
-    ω
+    return ω
 end
 
 function get_weight_right(D::SubcellOperator, i::Int)
@@ -244,7 +246,7 @@ function get_weight_right(D::SubcellOperator, i::Int)
     else
         ω = zero(eltype(D))
     end
-    ω
+    return ω
 end
 
 get_weight(D::SubcellOperator, i::Int) = get_weight_left(D, i) + get_weight_right(D, i)
@@ -274,29 +276,29 @@ function mul!(dest::AbstractVector, Dop::SubcellOperator, u::AbstractVector,
         @argcheck N == length(dest)
     end
 
-    mul!(dest, D, u, α, β)
+    return mul!(dest, D, u, α, β)
 end
 
 function SummationByPartsOperators.lower_bandwidth(D::SubcellOperator)
-    size(D, 1) - 1
+    return size(D, 1) - 1
 end
 
 function SummationByPartsOperators.upper_bandwidth(D::SubcellOperator)
-    size(D, 1) - 1
+    return size(D, 1) - 1
 end
 
 function SummationByPartsOperators.accuracy_order(D::SubcellOperator)
-    D.accuracy_order
+    return D.accuracy_order
 end
 
 function SummationByPartsOperators.left_boundary_weight(D::SubcellOperator)
     @inbounds retval = D.weights_left[begin]
-    retval
+    return retval
 end
 
 function SummationByPartsOperators.right_boundary_weight(D::SubcellOperator)
     @inbounds retval = D.weights_right[end]
-    retval
+    return retval
 end
 
 """
