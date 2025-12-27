@@ -63,15 +63,15 @@ end
 
 function set_S_left!(S_L, sigma_L, N_L, bandwidth, size_boundary,
                      different_values, sparsity_pattern)
-    set_S!(view(S_L, 1:N_L, 1:N_L), sigma_L, bandwidth, size_boundary,
-           different_values, sparsity_pattern)
+    return set_S!(view(S_L, 1:N_L, 1:N_L), sigma_L, bandwidth, size_boundary,
+                  different_values, sparsity_pattern)
 end
 
 function set_S_right!(S_R, sigma_R, N_R, bandwidth, size_boundary,
                       different_values, sparsity_pattern)
     N = size(S_R, 1)
-    set_S!(view(S_R, (N - N_R + 1):N, (N - N_R + 1):N), sigma_R, bandwidth,
-           size_boundary, different_values, sparsity_pattern)
+    return set_S!(view(S_R, (N - N_R + 1):N, (N - N_R + 1):N), sigma_R, bandwidth,
+                  size_boundary, different_values, sparsity_pattern)
 end
 
 function create_P_left(rho, N, vol)

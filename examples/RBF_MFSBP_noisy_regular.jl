@@ -60,11 +60,12 @@ file = "rectangle_Wendland_regular_noise_$(N_x)_$(N_y)_sparse_$(shorter)_$(longe
 
 D = open(joinpath(OUT, "out_$file.txt"), "w") do file
     redirect_stdout(file) do
-        multidimensional_function_space_operator(basis, nodes,
-                                                 boundary_indices, normals, moments, vol,
-                                                 GlaubitzIskeLampertÖffner2026();
-                                                 corners, sparsity_patterns,
-                                                 verbose = true, opt_kwargs...)
+        D = multidimensional_function_space_operator(basis, nodes,
+                                                     boundary_indices, normals, moments,
+                                                     vol, GlaubitzIskeLampertÖffner2026();
+                                                     corners, sparsity_patterns,
+                                                     verbose = true, opt_kwargs...)
+        return D
     end
 end
 

@@ -26,7 +26,7 @@ A derivative operator on a nonperiodic grid with scalar type
         jac = 2 / (xmax - xmin)
         Δx = inv(jac)
 
-        new{T, BasisType}(jac, Δx, xmin, xmax, grid, basis)
+        return new{T, BasisType}(jac, Δx, xmin, xmax, grid, basis)
     end
 end
 
@@ -42,7 +42,7 @@ function PolynomialBasesDerivativeOperator(basis_type, xmin::T, xmax::T,
 
     basis = basis_type(N - 1, T)
 
-    PolynomialBasesDerivativeOperator(xmin, xmax, basis)
+    return PolynomialBasesDerivativeOperator(xmin, xmax, basis)
 end
 
 """
@@ -53,30 +53,30 @@ Construct the `PolynomialBasesDerivativeOperator` on a uniform grid between `xmi
 `xmax` using `N` nodes and `N-1` Legendre modes.
 """
 function polynomialbases_derivative_operator(basis_type, xmin::Real, xmax::Real, N::Integer)
-    PolynomialBasesDerivativeOperator(basis_type, promote(xmin, xmax)..., N)
+    return PolynomialBasesDerivativeOperator(basis_type, promote(xmin, xmax)..., N)
 end
 
 function polynomialbases_derivative_operator(basis_type; xmin::Real, xmax::Real, N::Integer)
-    polynomialbases_derivative_operator(basis_type, xmin, xmax, N)
+    return polynomialbases_derivative_operator(basis_type, xmin, xmax, N)
 end
 
 SummationByPartsOperators.derivative_order(D::PolynomialBasesDerivativeOperator) = 1
 LinearAlgebra.issymmetric(D::PolynomialBasesDerivativeOperator) = false
 
 function PolynomialBases.integrate(func, u, D::PolynomialBasesDerivativeOperator)
-    D.Δx * integrate(func, u, D.basis)
+    return D.Δx * integrate(func, u, D.basis)
 end
 
 function PolynomialBases.mass_matrix(D::PolynomialBasesDerivativeOperator)
-    Diagonal(D.Δx * D.basis.weights)
+    return Diagonal(D.Δx * D.basis.weights)
 end
 
 function PolynomialBases.mass_matrix_boundary(D::PolynomialBasesDerivativeOperator)
-    mass_matrix_boundary(D.basis)
+    return mass_matrix_boundary(D.basis)
 end
 
 function Base.eltype(::PolynomialBasesDerivativeOperator{T}) where {T}
-    T
+    return T
 end
 
 function SummationByPartsOperators.scale_by_mass_matrix!(u::AbstractVector,
@@ -110,7 +110,7 @@ function SummationByPartsOperators.scale_by_inverse_mass_matrix!(u::AbstractVect
         u[i] = factor * u[i] / (Δx * basis.weights[i])
     end
 
-    u
+    return u
 end
 
 function SummationByPartsOperators.get_weight(D::PolynomialBasesDerivativeOperator, i::Int)
@@ -121,7 +121,7 @@ function SummationByPartsOperators.get_weight(D::PolynomialBasesDerivativeOperat
         @argcheck 1 <= i <= N
     end
     @inbounds ω = Δx * weights[i]
-    ω
+    return ω
 end
 
 function Base.show(io::IO, D::PolynomialBasesDerivativeOperator)
@@ -145,29 +145,29 @@ function mul!(dest::AbstractVector, D::PolynomialBasesDerivativeOperator, u::Abs
         @argcheck N == length(dest)
     end
 
-    mul!(dest, basis.D, u, α * jac, β)
+    return mul!(dest, basis.D, u, α * jac, β)
 end
 
 function SummationByPartsOperators.lower_bandwidth(D::PolynomialBasesDerivativeOperator)
-    size(D, 1) - 1
+    return size(D, 1) - 1
 end
 
 function SummationByPartsOperators.upper_bandwidth(D::PolynomialBasesDerivativeOperator)
-    size(D, 1) - 1
+    return size(D, 1) - 1
 end
 
 function SummationByPartsOperators.accuracy_order(D::PolynomialBasesDerivativeOperator)
-    size(D, 1) - 1
+    return size(D, 1) - 1
 end
 
 function SummationByPartsOperators.left_boundary_weight(D::PolynomialBasesDerivativeOperator)
     @inbounds retval = D.Δx * D.basis.weights[1]
-    retval
+    return retval
 end
 
 function SummationByPartsOperators.right_boundary_weight(D::PolynomialBasesDerivativeOperator)
     @inbounds retval = D.Δx * D.basis.weights[end]
-    retval
+    return retval
 end
 
 SummationByPartsOperators.xmin(D::PolynomialBasesDerivativeOperator) = D.xmin

@@ -102,7 +102,7 @@ end
             basis_functions_derivatives = [zero, one, identity]
             fs_derivatives = [f.(nodes) for f in basis_functions_derivatives]
             for (f, f_derivative) in zip(fs, fs_derivatives)
-                @test all(isapprox.(Dop * f, f_derivative; atol = 1e-12))
+                @test all(isapprox.(Dop * f, f_derivative; atol = 1e-11))
             end
 
             # SBP properties

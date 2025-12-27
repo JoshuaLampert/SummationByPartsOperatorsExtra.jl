@@ -44,6 +44,7 @@ D = open(joinpath(OUT, "out_$file.txt"), "w") do file
                                                      sampler_boundary,
                                                      GlaubitzIskeLampertÖffner2026();
                                                      kwargs..., opt_kwargs...)
+        return D
     end
 end
 
