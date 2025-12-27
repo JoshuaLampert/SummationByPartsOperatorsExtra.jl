@@ -40,7 +40,7 @@ function compute_moments_boundary(functions,
                 M[k, l] = integrate_boundary(f, nodes, D, i)
             end
         end
-        M
+        return M
     end
     return moments
 end

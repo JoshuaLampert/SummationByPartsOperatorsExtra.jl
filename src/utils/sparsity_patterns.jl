@@ -5,11 +5,11 @@ function to_S(P, D)
 end
 
 function to_S(D::AbstractNonperiodicDerivativeOperator)
-    to_S(mass_matrix(D), Matrix(D))
+    return to_S(mass_matrix(D), Matrix(D))
 end
 
 function to_S(D::AbstractMultidimensionalMatrixDerivativeOperator{1})
-    to_S(mass_matrix(D), Matrix(D[1]))
+    return to_S(mass_matrix(D), Matrix(D[1]))
 end
 
 """

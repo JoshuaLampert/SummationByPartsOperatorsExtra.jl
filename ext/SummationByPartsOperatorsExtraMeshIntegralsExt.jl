@@ -14,7 +14,7 @@ function SummationByPartsOperatorsExtra.integrate_boundary(func,
     return Meshes.ustrip(integral(func, geometry, MeshIntegrals.GaussLegendre(100)))
 end
 function SummationByPartsOperatorsExtra.integrate_boundary(func, geometry::Geometry)
-    integrate_boundary(func, boundary(geometry))
+    return integrate_boundary(func, boundary(geometry))
 end
 
 function SummationByPartsOperatorsExtra.compute_moments_boundary(functions,

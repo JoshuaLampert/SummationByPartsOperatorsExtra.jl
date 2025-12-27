@@ -2,7 +2,7 @@ include("function_space_operators.jl")
 
 default_opt_alg(::GlaubitzNordströmÖffner2023) = LBFGS()
 function default_options(::GlaubitzNordströmÖffner2023, verbose)
-    Options(g_tol = 1e-16, iterations = 10000, show_trace = verbose)
+    return Options(g_tol = 1e-16, iterations = 10000, show_trace = verbose)
 end
 
 function construct_function_space_operator(basis_functions, nodes,

@@ -3,7 +3,7 @@ using LinearAlgebra: normalize
 using Base.ScopedValues: with
 
 function outer_normal(geometry::Union{Ngon, Box, Ball}, point)
-    outer_normal(boundary(geometry), point)
+    return outer_normal(boundary(geometry), point)
 end
 
 # This assumes that the vertices are ordered counter-clockwise!
