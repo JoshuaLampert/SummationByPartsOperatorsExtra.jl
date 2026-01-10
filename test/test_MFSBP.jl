@@ -1,5 +1,5 @@
 @testsnippet MFSBP begin
-    import Optim
+    import Optim, ForwardDiff
     using StaticArrays: SVector
 end
 

@@ -1,5 +1,5 @@
 @testsnippet SubCell begin
-    import Optim
+    import Optim, ForwardDiff
     using LinearAlgebra: issymmetric, dot
 end
 

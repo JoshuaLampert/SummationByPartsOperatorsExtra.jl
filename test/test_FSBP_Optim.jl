@@ -1,5 +1,5 @@
 @testsnippet FSBP_Optim begin
-    import Optim
+    import Optim, ForwardDiff
 end
 
 @testitem "FSBP with Optim.jl" setup=[FSBP_Optim] begin

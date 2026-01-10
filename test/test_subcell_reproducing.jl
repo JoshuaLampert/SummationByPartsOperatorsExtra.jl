@@ -1,5 +1,5 @@
 @testsnippet ReproducingSubcell1D begin
-    using Optim: Optim
+    using Optim: Optim, ForwardDiff
     using LinearAlgebra: diag
     using PolynomialBases: GaussRadauLeft, GaussRadauRight
 
