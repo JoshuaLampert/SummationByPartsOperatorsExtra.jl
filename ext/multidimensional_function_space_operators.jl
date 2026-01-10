@@ -5,23 +5,9 @@ function SummationByPartsOperatorsExtra.multidimensional_function_space_operator
                                                                                  moments,
                                                                                  vol,
                                                                                  source::SourceOfCoefficients;
-                                                                                 basis_functions_weights = ones(typeof(basis_functions[1](nodes[1])),
-                                                                                                                length(basis_functions)),
                                                                                  derivative_order = 1,
                                                                                  accuracy_order = 0,
-                                                                                 bandwidth = length(nodes) -
-                                                                                             1,
-                                                                                 size_boundary = 2 *
-                                                                                                 bandwidth,
-                                                                                 different_values = true,
-                                                                                 sparsity_patterns = nothing,
-                                                                                 corners = nothing,
-                                                                                 opt_alg = LBFGS(),
-                                                                                 options = Options(g_tol = 1e-14,
-                                                                                                   iterations = 10000),
-                                                                                 autodiff = :forward,
-                                                                                 x0 = nothing,
-                                                                                 verbose = false) where {SourceOfCoefficients}
+                                                                                 kwargs...) where {SourceOfCoefficients}
     assert_first_derivative_order(derivative_order)
     weights, weights_boundary, Ds = construct_multidimensional_function_space_operator(basis_functions,
                                                                                        nodes,
@@ -30,17 +16,7 @@ function SummationByPartsOperatorsExtra.multidimensional_function_space_operator
                                                                                        moments,
                                                                                        vol,
                                                                                        source;
-                                                                                       basis_functions_weights,
-                                                                                       bandwidth,
-                                                                                       size_boundary,
-                                                                                       different_values,
-                                                                                       sparsity_patterns,
-                                                                                       corners,
-                                                                                       opt_alg,
-                                                                                       options,
-                                                                                       autodiff,
-                                                                                       x0,
-                                                                                       verbose)
+                                                                                       kwargs...)
     return MultidimensionalMatrixDerivativeOperator(nodes, boundary_indices, normals,
                                                     weights, weights_boundary, Ds,
                                                     accuracy_order, source)
@@ -60,7 +36,7 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
                                                             opt_alg = LBFGS(),
                                                             options = Options(g_tol = 1e-14,
                                                                               iterations = 10000),
-                                                            autodiff = :forward,
+                                                            autodiff = Optim.ADTypes.AutoForwardDiff(),
                                                             x0 = nothing, verbose = false)
     T = typeof(basis_functions[1](nodes[1]))
     d = length(first(nodes))

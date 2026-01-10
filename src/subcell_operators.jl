@@ -432,7 +432,7 @@ end
                      different_values = [true, true], sparsity_patterns = [nothing, nothing],
                      M_local_approximation = [N_L, N_R],
                      opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
-                     autodiff = :forward, x0 = nothing, verbose = false)
+                     autodiff = ADTypes.AutoForwardDiff(), x0 = nothing, verbose = false)
 
 Construct a sub-cell operator in a function space spanned by the `basis_functions`, which is an
 iterable of functions. The operator is constructed on the interval `[x_min, x_max]` with the nodes `nodes`,

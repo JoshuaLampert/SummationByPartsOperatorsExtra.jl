@@ -30,7 +30,7 @@ end
                                              bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
                                              different_values = true, sparsity_pattern = nothing,
                                              opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
-                                             autodiff = :forward, x0 = nothing, verbose = false)
+                                             autodiff = ADTypes.AutoForwardDiff(), x0 = nothing, verbose = false)
 
 Construct a [`SummationByPartsOperators.MultidimensionalMatrixDerivativeOperator`](@extref) that represents a first-derivative operator in a function
 space spanned by the `basis_functions`, which is an iterable of functions. The operator is constructed on the
