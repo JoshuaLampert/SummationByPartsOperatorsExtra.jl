@@ -23,7 +23,7 @@ function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2025)
     end
 end
 
-# This function is extended in the package extension SummationByPartsOperatorsExtraOptimExt
+# This function is extended in the package extension SummationByPartsOperatorsExtraOptimForwardDiffExt
 """
     multidimensional_function_space_operator(basis_functions, nodes, boundary_indices, normals, moments, vol, source;
                                              derivative_order = 1, accuracy_order = 0,
@@ -78,7 +78,7 @@ is not provided.
 
 The keyword argument `verbose` can be set to `true` to print information about the optimization process.
 
-In order to use this function, the package `Optim` must be loaded.
+In order to use this function, the packages `Optim` and `ForwardDiff` must be loaded.
 
 See also [`GlaubitzIskeLampertÖffner2025`](@ref).
 

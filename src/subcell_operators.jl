@@ -424,7 +424,7 @@ function Base.show(io::IO, source::GlaubitzLampertWintersNordström2025)
     end
 end
 
-# This function is extended in the package extension SummationByPartsOperatorsExtraOptimExt
+# This function is extended in the package extension SummationByPartsOperatorsExtraOptimForwardDiffExt
 """
     subcell_operator(basis_functions, nodes, x_M, source;
                      derivative_order = 1, accuracy_order = 0,
@@ -480,6 +480,8 @@ To use an interpolation, you can set `M_local_approximation` to `[K, K]`, where 
 The keyword argument `verbose` can be set to `true` to print information about the optimization process.
 
 Returns a [`SubcellOperator`](@ref) object.
+
+In order to use this function, the packages `Optim` and `ForwardDiff` must be loaded.
 
 See also [`GlaubitzLampertWintersNordström2025`](@ref).
 
