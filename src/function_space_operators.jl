@@ -1,4 +1,4 @@
-# This function is extended in the package extension SummationByPartsOperatorsExtraOptimExt
+# This function is extended in the package extension SummationByPartsOperatorsExtraOptimForwardDiffExt
 """
     function_space_operator(basis_functions, nodes, source;
                             derivative_order = 1, accuracy_order = 0,
@@ -6,7 +6,7 @@
                             bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
                             different_values = true, sparsity_pattern = nothing,
                             opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
-                            autodiff = :forward, x0 = nothing, verbose = false)
+                            autodiff = ADTypes.AutoForwardDiff(), x0 = nothing, verbose = false)
 
 Construct an operator that represents a first-derivative operator in a function space spanned by
 the `basis_functions`, which is an iterable of functions. The operator is constructed on the
@@ -55,7 +55,8 @@ The keyword argument `verbose` can be set to `true` to print information about t
 
 The operator that is returned follows the general interface. Currently, it is wrapped in a
 [`SummationByPartsOperators.MatrixDerivativeOperator`](@extref), but this might change in the future.
-In order to use this function, the package `Optim` must be loaded.
+
+In order to use this function, the packages `Optim` and `ForwardDiff` must be loaded.
 
 See also [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref).
 

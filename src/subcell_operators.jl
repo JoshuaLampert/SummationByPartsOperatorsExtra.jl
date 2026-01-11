@@ -424,7 +424,7 @@ function Base.show(io::IO, source::GlaubitzLampertWintersNordström2025)
     end
 end
 
-# This function is extended in the package extension SummationByPartsOperatorsExtraOptimExt
+# This function is extended in the package extension SummationByPartsOperatorsExtraOptimForwardDiffExt
 """
     subcell_operator(basis_functions, nodes, x_M, source;
                      derivative_order = 1, accuracy_order = 0,
@@ -432,7 +432,7 @@ end
                      different_values = [true, true], sparsity_patterns = [nothing, nothing],
                      M_local_approximation = [N_L, N_R],
                      opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
-                     autodiff = :forward, x0 = nothing, verbose = false)
+                     autodiff = ADTypes.AutoForwardDiff(), x0 = nothing, verbose = false)
 
 Construct a sub-cell operator in a function space spanned by the `basis_functions`, which is an
 iterable of functions. The operator is constructed on the interval `[x_min, x_max]` with the nodes `nodes`,
@@ -480,6 +480,8 @@ To use an interpolation, you can set `M_local_approximation` to `[K, K]`, where 
 The keyword argument `verbose` can be set to `true` to print information about the optimization process.
 
 Returns a [`SubcellOperator`](@ref) object.
+
+In order to use this function, the packages `Optim` and `ForwardDiff` must be loaded.
 
 See also [`GlaubitzLampertWintersNordström2025`](@ref).
 

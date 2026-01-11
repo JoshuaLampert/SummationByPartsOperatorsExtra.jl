@@ -44,7 +44,7 @@ function construct_function_space_operator(basis_functions, nodes,
                                            size_boundary = 2 * bandwidth,
                                            different_values = true,
                                            sparsity_pattern = nothing,
-                                           autodiff = :forward,
+                                           autodiff = Manifolds.ManifoldDiff.AutoForwardDiff(),
                                            x0 = nothing, verbose = false,
                                            opt_alg = default_opt_alg(source),
                                            options = default_options(source, verbose))
@@ -102,9 +102,7 @@ function construct_function_space_operator(basis_functions, nodes,
         b = Manifolds.TangentDiffBackend(autodiff)
         return Manifolds.gradient(M, x -> f(M, x), x, b)
     end
-    if autodiff == :forward
-        autodiff = Manifolds.ManifoldDiff.AutoForwardDiff()
-    end
+
     grad_f(M, x) = optimization_gradient_function_space_operator(M, x, autodiff)
     x = opt_alg(M, f, grad_f, x0; options...)
 
