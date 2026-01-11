@@ -1,5 +1,6 @@
 @testsnippet Reproducing1D begin
     using Optim: Optim, BFGS
+    import ForwardDiff
     using StaticArrays: SVector
 
     xmin = -2.0

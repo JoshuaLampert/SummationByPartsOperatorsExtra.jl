@@ -103,7 +103,7 @@ function construct_function_space_operator(basis_functions, nodes,
                                            size_boundary = 2 * bandwidth,
                                            different_values = true,
                                            sparsity_pattern = nothing,
-                                           autodiff = :forward,
+                                           autodiff = Manifolds.ManifoldDiff.AutoForwardDiff(),
                                            x0 = nothing, verbose = false,
                                            opt_alg = default_opt_alg(source),
                                            options = default_options(source, verbose))
@@ -171,9 +171,7 @@ function construct_function_space_operator(basis_functions, nodes,
         R_G = B * G / 2
         param = (; param..., G, G_x, R_G)
     end
-    if autodiff == :forward
-        autodiff = Manifolds.ManifoldDiff.AutoForwardDiff()
-    end
+
     objective = get_objective_function(source, param, autodiff)
     x = opt_alg(M, objective, x0; options...)
 

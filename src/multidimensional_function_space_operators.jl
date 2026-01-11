@@ -23,14 +23,14 @@ function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026)
     end
 end
 
-# This function is extended in the package extension SummationByPartsOperatorsExtraOptimExt
+# This function is extended in the package extension SummationByPartsOperatorsExtraOptimForwardDiffExt
 """
     multidimensional_function_space_operator(basis_functions, nodes, boundary_indices, normals, moments, vol, source;
                                              derivative_order = 1, accuracy_order = 0,
                                              bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
                                              different_values = true, sparsity_pattern = nothing,
                                              opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
-                                             autodiff = :forward, x0 = nothing, verbose = false)
+                                             autodiff = ADTypes.AutoForwardDiff(), x0 = nothing, verbose = false)
 
 Construct a [`SummationByPartsOperators.MultidimensionalMatrixDerivativeOperator`](@extref) that represents a first-derivative operator in a function
 space spanned by the `basis_functions`, which is an iterable of functions. The operator is constructed on the
@@ -78,7 +78,7 @@ is not provided.
 
 The keyword argument `verbose` can be set to `true` to print information about the optimization process.
 
-In order to use this function, the package `Optim` must be loaded.
+In order to use this function, the packages `Optim` and `ForwardDiff` must be loaded.
 
 See also [`GlaubitzIskeLampertÖffner2026`](@ref).
 

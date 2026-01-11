@@ -4,20 +4,9 @@ function SummationByPartsOperatorsExtra.subcell_operator(basis_functions,
                                                          source::SourceOfCoefficients;
                                                          derivative_order = 1,
                                                          accuracy_order = 0,
-                                                         bandwidths = [0, 0],
-                                                         size_boundaries = [0, 0],
-                                                         different_values = [true, true],
-                                                         sparsity_patterns = [nothing,
-                                                             nothing],
-                                                         M_local_approximation = [0, 0],
-                                                         opt_alg = LBFGS(),
-                                                         options = Options(g_tol = 1e-14,
-                                                                           iterations = 10000),
-                                                         autodiff = :forward,
-                                                         x0 = nothing,
-                                                         verbose = false) where {T,
-                                                                                 SourceOfCoefficients
-                                                                                 }
+                                                         kwargs...) where {T,
+                                                                           SourceOfCoefficients
+                                                                           }
     assert_first_derivative_order(derivative_order)
     sort!(nodes)
     x_L = first(nodes)
@@ -29,16 +18,7 @@ function SummationByPartsOperatorsExtra.subcell_operator(basis_functions,
                                                                                                                        nodes,
                                                                                                                        x_M,
                                                                                                                        source;
-                                                                                                                       bandwidths,
-                                                                                                                       size_boundaries,
-                                                                                                                       different_values,
-                                                                                                                       sparsity_patterns,
-                                                                                                                       M_local_approximation,
-                                                                                                                       opt_alg,
-                                                                                                                       options,
-                                                                                                                       autodiff,
-                                                                                                                       x0,
-                                                                                                                       verbose)
+                                                                                                                       kwargs...)
     return SubcellOperator(nodes, x_M, weights_left, weights_right, Q_left, Q_right,
                            B_left, B_right, e_L, e_M_L, e_M_R, e_R, accuracy_order, source)
 end
@@ -104,7 +84,7 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
                                     opt_alg = LBFGS(),
                                     options = Options(g_tol = 1e-14,
                                                       iterations = 10000),
-                                    autodiff = :forward,
+                                    autodiff = Optim.ADTypes.AutoForwardDiff(),
                                     x0 = nothing, verbose = false)
     T = eltype(nodes)
     K = length(basis_functions)

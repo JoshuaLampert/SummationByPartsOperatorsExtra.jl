@@ -36,7 +36,7 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
                                                             opt_alg = LBFGS(),
                                                             options = Options(g_tol = 1e-14,
                                                                               iterations = 10000),
-                                                            autodiff = :forward,
+                                                            autodiff = Optim.ADTypes.AutoForwardDiff(),
                                                             x0 = nothing, verbose = false)
     T = typeof(basis_functions[1](nodes[1]))
     d = length(first(nodes))

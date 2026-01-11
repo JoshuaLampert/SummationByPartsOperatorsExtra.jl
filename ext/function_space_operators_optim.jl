@@ -14,7 +14,7 @@ function construct_function_space_operator(basis_functions, nodes,
                                            size_boundary = 2 * bandwidth,
                                            different_values = true,
                                            sparsity_pattern = nothing,
-                                           autodiff = :forward,
+                                           autodiff = Optim.ADTypes.AutoForwardDiff(),
                                            x0 = nothing, verbose = false,
                                            opt_alg = default_opt_alg(source),
                                            options = default_options(source, verbose))
