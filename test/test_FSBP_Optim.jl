@@ -16,7 +16,8 @@ end
         nodes = collect(LinRange{T}(x_min, x_max, N))
         let basis_functions = [x -> x^i for i in 0:3]
             D = function_space_operator(basis_functions, nodes, source;
-                                        Optim.Options(g_tol = eps(T), iterations = 10000),
+                                        options = Optim.Options(g_tol = eps(T),
+                                                                iterations = 10000),
                                         verbose = true)
 
             @test eltype(D) == T
