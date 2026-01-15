@@ -6,6 +6,7 @@ end
 
 @testitem "MFSBP 1D" setup=[MFSBP] begin
     N = 5
+    source = GlaubitzIskeLampertÖffner2025()
     for compact in (true, false)
         show(IOContext(devnull, :compact => compact), source)
     end
@@ -16,7 +17,6 @@ end
         vol = xmax - xmin
         boundary_indices_ = [1, N]
         normals_ = [SVector(T(-1.0)), SVector(T(1.0))]
-        source = GlaubitzIskeLampertÖffner2025()
 
         basis_functions = [x -> one(x[1]), x -> x[1], x -> exp(x[1])]
         nodes = SVector.(collect(LinRange{T}(xmin, xmax, N)))
