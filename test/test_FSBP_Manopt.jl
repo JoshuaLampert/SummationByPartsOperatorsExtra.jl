@@ -1,51 +1,70 @@
 @testsnippet FSBP_Manopt begin
-    import Manifolds, Manopt, ForwardDiff
+    using Manopt
+    import Manifolds, ForwardDiff
+    using DoubleFloats: Double64
 end
 
 @testitem "FSBP with Manopt.jl" setup=[FSBP_Manopt] begin
     N = 5
     x_min = -1.0
     x_max = 1.0
-    nodes = collect(range(x_min, x_max, length = N))
     source = GlaubitzIskeLampertÖffner2025()
     for compact in (true, false)
         show(IOContext(devnull, :compact => compact), source)
     end
-    let basis_functions = [x -> x^i for i in 0:3]
-        D = function_space_operator(basis_functions, nodes, source; verbose = true)
-        # Test errors
-        @test_throws ArgumentError function_space_operator(basis_functions, nodes,
-                                                           source; derivative_order = 2)
-        @test_throws ArgumentError function_space_operator(basis_functions, nodes,
-                                                           source;
-                                                           sparsity_pattern = ones(Bool, N,
-                                                                                   N))
-        @test_throws ArgumentError function_space_operator(basis_functions, nodes,
-                                                           source;
-                                                           bandwidth = 2)
-        @test_throws ArgumentError function_space_operator(basis_functions, nodes, source;
-                                                           x0 = zeros(3))
-        @test_throws ArgumentError function_space_operator(basis_functions, nodes, source;
-                                                           basis_functions_weights = ones(3))
 
-        @test grid(D) ≈ nodes
-        @test all(isapprox.(D * ones(N), zeros(N); atol = 1e-13))
-        @test D * nodes ≈ ones(N)
-        @test D * (nodes .^ 2) ≈ 2 * nodes
-        @test D * (nodes .^ 3) ≈ 3 * (nodes .^ 2)
-        M = mass_matrix(D)
-        @test M * D.D + D.D' * M ≈ mass_matrix_boundary(D)
-    end
+    for T in (Float32, Float64, Double64)
+        nodes = collect(LinRange{T}(x_min, x_max, N))
+        debug = SummationByPartsOperatorsExtra.default_options(source, true).debug
+        options = (;
+                   debug = debug,
+                   stopping_criterion = StopAfterIteration(1000) |
+                                        StopWhenGradientNormLess(eps(T)))
+        let basis_functions = [x -> x^i for i in 0:3]
+            # Test errors
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source; derivative_order = 2)
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source;
+                                                               sparsity_pattern = ones(Bool,
+                                                                                       N,
+                                                                                       N))
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source; bandwidth = 2)
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source;
+                                                               x0 = zeros(3))
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source;
+                                                               basis_functions_weights = ones(3))
 
-    let basis_functions = [one, identity, exp]
-        D = function_space_operator(basis_functions, nodes, source)
+            D = function_space_operator(basis_functions, nodes, source; options = options)
 
-        @test grid(D) ≈ nodes
-        @test all(isapprox.(D * ones(N), zeros(N); atol = 1e-13))
-        @test D * nodes ≈ ones(N)
-        @test D * exp.(nodes) ≈ exp.(nodes)
-        M = mass_matrix(D)
-        @test M * D.D + D.D' * M ≈ mass_matrix_boundary(D)
+            @test eltype(D) == T
+            @test grid(D) ≈ nodes
+            # Manopt.jl seems to have issues to get the gradient accurate enough with Double64
+            eps_ = T == Double64 ? eps(Float64) : eps(T)
+            @test all(isapprox.(D * ones(N), zeros(N); atol = 10 * eps_))
+            @test D * nodes ≈ ones(N)
+            @test D * (nodes .^ 2) ≈ 2 * nodes
+            @test D * (nodes .^ 3) ≈ 3 * (nodes .^ 2)
+            M = mass_matrix(D)
+            @test M * D.D + D.D' * M ≈ mass_matrix_boundary(D)
+        end
+
+        let basis_functions = [one, identity, exp]
+            D = function_space_operator(basis_functions, nodes, source; options = options)
+
+            @test eltype(D) == T
+            @test grid(D) ≈ nodes
+            # Manopt.jl seems to have issues to get the gradient accurate enough with Double64
+            eps_ = T == Double64 ? eps(Float64) : eps(T)
+            @test all(isapprox.(D * ones(N), zeros(N); atol = 1e4 * eps_))
+            @test all(isapprox.(D * nodes, ones(N); atol = 1e5 * eps_))
+            @test all(isapprox.(D * exp.(nodes), exp.(nodes); atol = 1e5 * eps_))
+            M = mass_matrix(D)
+            @test M * D.D + D.D' * M ≈ mass_matrix_boundary(D)
+        end
     end
 
     # test non-equidistant nodes generated by `nodes = [0.0, rand(8)..., 1.0]`
