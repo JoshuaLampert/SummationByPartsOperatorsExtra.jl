@@ -48,7 +48,9 @@ end
         end
 
         let basis_functions = [one, identity, exp]
-            D = function_space_operator(basis_functions, nodes, source)
+            D = function_space_operator(basis_functions, nodes, source;
+                                        options = Optim.Options(g_tol = eps(T),
+                                                                iterations = 10000))
 
             @test eltype(D) == T
             @test grid(D) ≈ nodes
