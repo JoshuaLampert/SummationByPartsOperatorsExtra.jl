@@ -48,12 +48,7 @@ end
 
             @test eltype(D) == T
             @test grid(D) ≈ nodes
-            if T == Double64
-                # Manopt.jl seems to have issues to get the gradient accurate enough with Double64
-                eps_ = eps(Float64)
-            else
-                eps_ = eps(T)
-            end
+            # Manopt.jl seems to have issues to get the gradient accurate enough with Double64
             @test all(isapprox.(D * ones(N), zeros(N); atol = 10 * eps_))
             @test D * nodes ≈ ones(N)
             @test D * (nodes .^ 2) ≈ 2 * nodes
@@ -67,12 +62,8 @@ end
 
             @test eltype(D) == T
             @test grid(D) ≈ nodes
-            if T == Double64
-                # Manopt.jl seems to have issues to get the gradient accurate enough with Double64
-                eps_ = eps(Float64)
-            else
-                eps_ = eps(T)
-            end
+            # Manopt.jl seems to have issues to get the gradient accurate enough with Double64
+            eps_ = T == Double64 ? eps(Float64) : eps(T)
             @test all(isapprox.(D * ones(N), zeros(N); atol = 1e4 * eps_))
             @test all(isapprox.(D * nodes, ones(N); atol = 1e5 * eps_))
             @test all(isapprox.(D * exp.(nodes), exp.(nodes); atol = 1e5 * eps_))
