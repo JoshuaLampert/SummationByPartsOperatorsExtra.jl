@@ -15,15 +15,9 @@ end
 
     for T in (Float32, Float64, Double64)
         nodes = collect(LinRange{T}(x_min, x_max, N))
+        debug = SummationByPartsOperatorsExtra.default_options(source, true).debug
         options = (;
-                   debug = [:Iteration,
-                       :Time,
-                       " | ",
-                       (:Cost, "f(x): %.6e"),
-                       " | ",
-                       (:GradientNorm, "∇ f(x): %.6e"),
-                       "\n",
-                       :Stop],
+                   debug = debug,
                    stopping_criterion = StopAfterIteration(1000) |
                                         StopWhenGradientNormLess(eps(T)))
         let basis_functions = [x -> x^i for i in 0:3]
