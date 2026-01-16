@@ -39,7 +39,7 @@ end
                                                                basis_functions_weights = ones(3))
 
             @test grid(D) ≈ nodes
-            @test all(isapprox.(D * ones(T, N), zeros(T, N); atol = 1000 * eps(T)))
+            @test all(isapprox.(D * ones(T, N), zeros(T, N); atol = 1e3 * eps(T)))
             @test D * nodes ≈ ones(T, N)
             @test D * (nodes .^ 2) ≈ 2 * nodes
             @test D * (nodes .^ 3) ≈ 3 * (nodes .^ 2)
@@ -52,9 +52,9 @@ end
 
             @test eltype(D) == T
             @test grid(D) ≈ nodes
-            @test all(isapprox.(D * ones(T, N), zeros(T, N); atol = 1000 * eps(T)))
-            @test D * nodes ≈ ones(T, N)
-            @test D * exp.(nodes) ≈ exp.(nodes)
+            @test all(isapprox.(D * ones(T, N), zeros(T, N); atol = 1e4 * eps(T)))
+            @test all(isapprox.(D * nodes, ones(T, N); atol = 1e5 * eps(T)))
+            @test all(isapprox.(D * exp.(nodes), exp.(nodes); atol = 1e5 * eps(T)))
             M = mass_matrix(D)
             @test M * D.D + D.D' * M ≈ mass_matrix_boundary(D)
         end

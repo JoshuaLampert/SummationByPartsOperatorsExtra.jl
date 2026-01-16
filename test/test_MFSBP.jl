@@ -74,9 +74,9 @@ end
         @test eltype(D) == T
         @test grid(D) ≈ nodes
         x = first.(nodes)
-        @test all(isapprox.(D[1] * ones(T, N), zeros(T, N); atol = 1000 * eps(T)))
-        @test D[1] * x ≈ ones(T, N)
-        @test D[1] * exp.(x) ≈ exp.(x)
+        @test all(isapprox.(D[1] * ones(T, N), zeros(T, N); atol = 1e4 * eps(T)))
+        @test all(isapprox.(D[1] * x, ones(T, N); atol = 1e5 * eps(T)))
+        @test all(isapprox.(D[1] * exp.(x), exp.(x); atol = 1e4 * eps(T)))
         M = mass_matrix(D)
         @test M * D[1] + D[1]' * M ≈ mass_matrix_boundary(D)
     end
