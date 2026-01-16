@@ -21,10 +21,14 @@ using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
 include("utils.jl")
 include("function_space_operators.jl")
 
-default_opt_alg(::GlaubitzIskeLampertÖffner2026Basic) = quasi_Newton
-default_opt_alg(::GlaubitzIskeLampertÖffner2026Regularized) = augmented_Lagrangian_method
+function default_opt_alg(::GlaubitzIskeLampertÖffner2026Basic)
+    return quasi_Newton
+end
+function default_opt_alg(::GlaubitzIskeLampertÖffner2026Regularized)
+    return interior_point_Newton
+end
 function default_opt_alg(::GlaubitzIskeLampertÖffner2026EigenvalueProperty)
-    augmented_Lagrangian_method
+    return augmented_Lagrangian_method
 end
 function default_options(::GlaubitzIskeLampertÖffner2026Basic,
                          verbose)
@@ -250,12 +254,14 @@ end
 # Make `eigen` differentiable with ForwardDiff.jl
 # See https://github.com/JuliaManifolds/Manifolds.jl/pull/27#issuecomment-536305950
 function make_eigen_dual(val::Real, partial)
-    ForwardDiff.Dual{ForwardDiff.tagtype(partial)}(val, partial.partials)
+    return ForwardDiff.Dual{ForwardDiff.tagtype(partial)}(val, partial.partials)
 end
 
 function make_eigen_dual(val::Complex, partial::Complex)
-    Complex(ForwardDiff.Dual{ForwardDiff.tagtype(real(partial))}(real(val), real(partial).partials),
-        ForwardDiff.Dual{ForwardDiff.tagtype(imag(partial))}(imag(val), imag(partial).partials))
+    return Complex(ForwardDiff.Dual{ForwardDiff.tagtype(real(partial))}(real(val),
+                                                                        real(partial).partials),
+                   ForwardDiff.Dual{ForwardDiff.tagtype(imag(partial))}(imag(val),
+                                                                        imag(partial).partials))
 end
 
 function LinearAlgebra.eigen(A::StridedMatrix{<:ForwardDiff.Dual})
