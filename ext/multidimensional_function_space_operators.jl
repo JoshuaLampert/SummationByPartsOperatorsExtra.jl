@@ -73,8 +73,8 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
 
     if isnothing(x0)
         # x0 = zeros(T, sum(Ls) + N + N_boundary)
-        x0 = [zeros(T, sum(Ls)); invsig.(1 / N * ones(T, N));
-              invsig_b(1 / N_boundary * ones(T, N_boundary))]
+        x0 = [zeros(T, sum(Ls)); invsig.(convert(T, 1 / N) * ones(T, N));
+              invsig_b.(convert(T, 1 / N_boundary) * ones(T, N_boundary))]
     else
         n_total = sum(Ls) + N + N_boundary
         if length(x0) != n_total

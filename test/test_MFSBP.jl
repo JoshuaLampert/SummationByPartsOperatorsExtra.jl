@@ -1,76 +1,85 @@
 @testsnippet MFSBP begin
     import Optim, ForwardDiff
     using StaticArrays: SVector
+    using DoubleFloats: Double64
 end
 
 @testitem "MFSBP 1D" setup=[MFSBP] begin
     N = 5
-    xmin = -1.0
-    xmax = 1.0
-    nodes = SVector.(collect(range(xmin, xmax, length = N)))
-    boundary_indices_ = [1, N]
-    normals_ = [SVector(-1.0), SVector(1.0)]
     source = GlaubitzIskeLampertÖffner2026()
     for compact in (true, false)
         show(IOContext(devnull, :compact => compact), source)
     end
-    basis_functions = [x -> one(x[1]), x -> x[1], x -> exp(x[1])]
-    moments = compute_moments_boundary(basis_functions, nodes, normals_)
-    vol = xmax - xmin
 
-    # Test errors
-    @test_throws ArgumentError multidimensional_function_space_operator(basis_functions,
-                                                                        nodes,
-                                                                        boundary_indices_,
-                                                                        normals_,
-                                                                        moments, vol,
-                                                                        source;
-                                                                        derivative_order = 2)
-    @test_throws ArgumentError multidimensional_function_space_operator(basis_functions,
-                                                                        nodes,
-                                                                        boundary_indices_,
-                                                                        normals_,
-                                                                        moments, vol,
-                                                                        source;
-                                                                        sparsity_patterns = (ones(Bool,
-                                                                                                  N,
-                                                                                                  N),))
-    @test_throws ArgumentError multidimensional_function_space_operator(basis_functions,
-                                                                        nodes,
-                                                                        boundary_indices_,
-                                                                        normals_,
-                                                                        moments, vol,
-                                                                        source;
-                                                                        bandwidth = 2)
-    @test_throws ArgumentError multidimensional_function_space_operator(basis_functions,
-                                                                        nodes,
-                                                                        boundary_indices_,
-                                                                        normals_,
-                                                                        moments, vol,
-                                                                        source;
-                                                                        x0 = zeros(3))
-    @test_throws ArgumentError multidimensional_function_space_operator(basis_functions,
-                                                                        nodes,
-                                                                        boundary_indices_,
-                                                                        normals_,
-                                                                        moments, vol,
-                                                                        source;
-                                                                        basis_functions_weights = ones(4))
+    for T in (Float32, Float64, Double64)
+        xmin = T(-1.0)
+        xmax = T(1.0)
+        vol = xmax - xmin
+        boundary_indices_ = [1, N]
+        normals_ = [SVector(T(-1.0)), SVector(T(1.0))]
 
-    D = multidimensional_function_space_operator(basis_functions, nodes,
-                                                 boundary_indices_, normals_,
-                                                 moments, vol, source)
-    for compact in (true, false)
-        show(IOContext(devnull, :compact => compact), D)
+        basis_functions = [x -> one(x[1]), x -> x[1], x -> exp(x[1])]
+        nodes = SVector.(collect(LinRange{T}(xmin, xmax, N)))
+        moments = compute_moments_boundary(basis_functions, nodes, normals_)
+
+        # Test errors
+        @test_throws ArgumentError multidimensional_function_space_operator(basis_functions,
+                                                                            nodes,
+                                                                            boundary_indices_,
+                                                                            normals_,
+                                                                            moments, vol,
+                                                                            source;
+                                                                            derivative_order = 2)
+        @test_throws ArgumentError multidimensional_function_space_operator(basis_functions,
+                                                                            nodes,
+                                                                            boundary_indices_,
+                                                                            normals_,
+                                                                            moments, vol,
+                                                                            source;
+                                                                            sparsity_patterns = (ones(Bool,
+                                                                                                      N,
+                                                                                                      N),))
+        @test_throws ArgumentError multidimensional_function_space_operator(basis_functions,
+                                                                            nodes,
+                                                                            boundary_indices_,
+                                                                            normals_,
+                                                                            moments, vol,
+                                                                            source;
+                                                                            bandwidth = 2)
+        @test_throws ArgumentError multidimensional_function_space_operator(basis_functions,
+                                                                            nodes,
+                                                                            boundary_indices_,
+                                                                            normals_,
+                                                                            moments, vol,
+                                                                            source;
+                                                                            x0 = zeros(3))
+        @test_throws ArgumentError multidimensional_function_space_operator(basis_functions,
+                                                                            nodes,
+                                                                            boundary_indices_,
+                                                                            normals_,
+                                                                            moments, vol,
+                                                                            source;
+                                                                            basis_functions_weights = ones(4))
+
+        D = multidimensional_function_space_operator(basis_functions, nodes,
+                                                     boundary_indices_, normals_,
+                                                     moments, vol, source;
+                                                     options = Optim.Options(g_tol = eps(T),
+                                                                             iterations = 10000),
+                                                     verbose = true)
+        for compact in (true, false)
+            show(IOContext(devnull, :compact => compact), D)
+        end
+
+        @test eltype(D) == T
+        @test grid(D) ≈ nodes
+        x = first.(nodes)
+        @test all(isapprox.(D[1] * ones(T, N), zeros(T, N); atol = 1e4 * eps(T)))
+        @test all(isapprox.(D[1] * x, ones(T, N); atol = 1e5 * eps(T)))
+        @test all(isapprox.(D[1] * exp.(x), exp.(x); atol = 1e4 * eps(T)))
+        M = mass_matrix(D)
+        @test M * D[1] + D[1]' * M ≈ mass_matrix_boundary(D)
     end
-
-    @test grid(D) ≈ nodes
-    x = first.(nodes)
-    @test all(isapprox.(D[1] * ones(N), zeros(N); atol = 1e-13))
-    @test D[1] * x ≈ ones(N)
-    @test D[1] * exp.(x) ≈ exp.(x)
-    M = mass_matrix(D)
-    @test M * D[1] + D[1]' * M ≈ mass_matrix_boundary(D)
 end
 
 @testitem "MFSBP 2D" setup=[MFSBP] begin

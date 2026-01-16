@@ -146,7 +146,7 @@ function construct_function_space_operator(basis_functions, nodes,
         # In this case, should we run the unconstrained optimization first to get a good initial guess?
         # Or should we just enforce the user to pass a suitable initial guess, e.g., by first running the
         # unconstrained case with the same nodes and basis, but without the regularization?
-        x0 = [zeros(T, L); invsig.(1 / N * ones(T, N))]
+        x0 = [zeros(T, L); invsig.(convert.(T, 1 / N * ones(T, N)))]
     else
         n_total = L + N
         if length(x0) != n_total

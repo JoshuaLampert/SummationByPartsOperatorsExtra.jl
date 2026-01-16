@@ -11,8 +11,9 @@ or a `Geometry` object from Meshes.jl. Note that the latter is defined in a pack
 therefore requires loading that package before.
 """
 function compute_moments_boundary(functions, nodes, normals)
+    T = eltype(nodes[1])
     K = length(functions)
-    M = zeros(K, K)
+    M = zeros(T, K, K)
     for i in 1:K
         for j in 1:K
             fi = functions[i]
