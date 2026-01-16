@@ -49,6 +49,7 @@ end
             @test eltype(D) == T
             @test grid(D) ≈ nodes
             # Manopt.jl seems to have issues to get the gradient accurate enough with Double64
+            eps_ = T == Double64 ? eps(Float64) : eps(T)
             @test all(isapprox.(D * ones(N), zeros(N); atol = 10 * eps_))
             @test D * nodes ≈ ones(N)
             @test D * (nodes .^ 2) ≈ 2 * nodes
