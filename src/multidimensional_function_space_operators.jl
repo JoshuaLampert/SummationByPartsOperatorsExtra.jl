@@ -1,5 +1,5 @@
 """
-    GlaubitzIskeLampertÖffner2026()
+    GlaubitzIskeLampertÖffner2026Multidimensional()
 
 Multidimensional function space SBP (MFSBP) operators given in
 - Glaubitz, Iske, Lampert, Öffner (2026)
@@ -9,9 +9,9 @@ Multidimensional function space SBP (MFSBP) operators given in
 
 See [`multidimensional_function_space_operator`](@ref).
 """
-struct GlaubitzIskeLampertÖffner2026 <: SourceOfCoefficients end
+struct GlaubitzIskeLampertÖffner2026Multidimensional <: SourceOfCoefficients end
 
-function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026)
+function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026Multidimensional)
     if get(io, :compact, false)
         summary(io, source)
     else
@@ -80,7 +80,7 @@ The keyword argument `verbose` can be set to `true` to print information about t
 
 In order to use this function, the packages `Optim` and `ForwardDiff` must be loaded.
 
-See also [`GlaubitzIskeLampertÖffner2026`](@ref).
+See also [`GlaubitzIskeLampertÖffner2026Multidimensional`](@ref).
 
 !!! compat "Julia 1.9"
     This function requires at least Julia 1.9.

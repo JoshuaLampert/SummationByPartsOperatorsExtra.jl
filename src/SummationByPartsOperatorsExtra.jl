@@ -42,9 +42,9 @@ export get_nsigma, get_optimization_entries, get_multidimensional_optimization_e
 export get_sparsity_pattern, neighborhood_sparsity_pattern
 export compute_moments_boundary
 export plot_nodes, plot_normals, plot_sparsity_pattern
-export GlaubitzIskeLampertÖffner2025Basic, GlaubitzIskeLampertÖffner2025Regularized,
-       GlaubitzIskeLampertÖffner2025EigenvalueProperty
-export GlaubitzIskeLampertÖffner2026, multidimensional_function_space_operator
+export GlaubitzIskeLampertÖffner2026Basic, GlaubitzIskeLampertÖffner2026Regularized,
+       GlaubitzIskeLampertÖffner2026EigenvalueProperty
+export GlaubitzIskeLampertÖffner2026Multidimensional, multidimensional_function_space_operator
 export PolynomialBasesDerivativeOperator, polynomialbases_derivative_operator
 export SubcellOperator, GlaubitzLampertWintersNordström2025, subcell_operator,
        couple_subcell,

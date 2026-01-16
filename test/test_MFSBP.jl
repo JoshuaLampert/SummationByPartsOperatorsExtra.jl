@@ -6,7 +6,7 @@ end
 
 @testitem "MFSBP 1D" setup=[MFSBP] begin
     N = 5
-    source = GlaubitzIskeLampertÖffner2026()
+    source = GlaubitzIskeLampertÖffner2026Multidimensional()
     for compact in (true, false)
         show(IOContext(devnull, :compact => compact), source)
     end
@@ -105,7 +105,7 @@ end
     normals_ = normals(D_t)
     moments = compute_moments_boundary(basis_functions, D_t)
     vol = (xmax - xmin) * (ymax - ymin)
-    source = GlaubitzIskeLampertÖffner2026()
+    source = GlaubitzIskeLampertÖffner2026Multidimensional()
     sparsity_patterns = get_sparsity_pattern(D_t)
 
     corners_x_dir = [N_y + 1, # lower left corner

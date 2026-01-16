@@ -1,5 +1,5 @@
 """
-    GlaubitzIskeLampertÖffner2025Basic()
+    GlaubitzIskeLampertÖffner2026Basic()
 
 Function space SBP operators constructed with optimization procedure given in
 - Glaubitz, Iske, Lampert, Öffner (2025):
@@ -8,61 +8,61 @@ Function space SBP operators constructed with optimization procedure given in
 
 See [`function_space_operator`](@ref).
 """
-struct GlaubitzIskeLampertÖffner2025Basic <: SourceOfCoefficients end
+struct GlaubitzIskeLampertÖffner2026Basic <: SourceOfCoefficients end
 
-function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2025Basic)
+function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026Basic)
     if get(io, :compact, false)
         summary(io, source)
     else
         print(io,
-              "Glaubitz, Iske, Lampert, Öffner (2025) \n",
+              "Glaubitz, Iske, Lampert, Öffner (2026) \n",
               "  Why summation by parts is not enough.\n",
               "  TODO")
     end
 end
 
 """
-    GlaubitzIskeLampertÖffner2025Regularized()
+    GlaubitzIskeLampertÖffner2026Regularized()
 
 Function space SBP operators constructed with regularized constrained optimization procedure given in
-- Glaubitz, Iske, Lampert, Öffner (2025):
+- Glaubitz, Iske, Lampert, Öffner (2026):
   Why summation by parts is not enough.
   TODO
 
 See [`function_space_operator`](@ref).
 """
-struct GlaubitzIskeLampertÖffner2025Regularized <: SourceOfCoefficients end
+struct GlaubitzIskeLampertÖffner2026Regularized <: SourceOfCoefficients end
 
-function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2025Regularized)
+function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026Regularized)
     if get(io, :compact, false)
         summary(io, source)
     else
         print(io,
-              "Glaubitz, Iske, Lampert, Öffner (2025) \n",
+              "Glaubitz, Iske, Lampert, Öffner (2026) \n",
               "  Why summation by parts is not enough.\n",
               "  TODO")
     end
 end
 
 """
-    GlaubitzIskeLampertÖffner2025EigenvalueProperty()
+    GlaubitzIskeLampertÖffner2026EigenvalueProperty()
 
 Function space SBP operators constructed with constrained optimization procedure satisfying an eigenvalue
 property given in
-- Glaubitz, Iske, Lampert, Öffner (2025):
+- Glaubitz, Iske, Lampert, Öffner (2026):
   Why summation by parts is not enough.
   TODO
 
 See [`function_space_operator`](@ref).
 """
-struct GlaubitzIskeLampertÖffner2025EigenvalueProperty <: SourceOfCoefficients end
+struct GlaubitzIskeLampertÖffner2026EigenvalueProperty <: SourceOfCoefficients end
 
-function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2025EigenvalueProperty)
+function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026EigenvalueProperty)
     if get(io, :compact, false)
         summary(io, source)
     else
         print(io,
-              "Glaubitz, Iske, Lampert, Öffner (2025) \n",
+              "Glaubitz, Iske, Lampert, Öffner (2026) \n",
               "  Why summation by parts is not enough.\n",
               "  TODO")
     end

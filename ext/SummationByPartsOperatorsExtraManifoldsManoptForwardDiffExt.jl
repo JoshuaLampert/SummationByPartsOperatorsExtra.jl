@@ -13,20 +13,20 @@ import SummationByPartsOperatorsExtra: construct_function_space_operator,
                                        default_opt_alg,
                                        default_options
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
-                                      GlaubitzIskeLampertÖffner2025Basic,
-                                      GlaubitzIskeLampertÖffner2025Regularized,
-                                      GlaubitzIskeLampertÖffner2025EigenvalueProperty,
+                                      GlaubitzIskeLampertÖffner2026Basic,
+                                      GlaubitzIskeLampertÖffner2026Regularized,
+                                      GlaubitzIskeLampertÖffner2026EigenvalueProperty,
                                       MatrixDerivativeOperator
 
 include("utils.jl")
 include("function_space_operators.jl")
 
-default_opt_alg(::GlaubitzIskeLampertÖffner2025Basic) = quasi_Newton
-default_opt_alg(::GlaubitzIskeLampertÖffner2025Regularized) = augmented_Lagrangian_method
-function default_opt_alg(::GlaubitzIskeLampertÖffner2025EigenvalueProperty)
+default_opt_alg(::GlaubitzIskeLampertÖffner2026Basic) = quasi_Newton
+default_opt_alg(::GlaubitzIskeLampertÖffner2026Regularized) = augmented_Lagrangian_method
+function default_opt_alg(::GlaubitzIskeLampertÖffner2026EigenvalueProperty)
     augmented_Lagrangian_method
 end
-function default_options(::GlaubitzIskeLampertÖffner2025Basic,
+function default_options(::GlaubitzIskeLampertÖffner2026Basic,
                          verbose)
     if verbose
         debug = [:Iteration,
@@ -46,7 +46,7 @@ function default_options(::GlaubitzIskeLampertÖffner2025Basic,
                                  StopWhenGradientNormLess(1e-16) |
                                  StopWhenCostLess(1e-28))
 end
-function default_options(::GlaubitzIskeLampertÖffner2025Regularized,
+function default_options(::GlaubitzIskeLampertÖffner2026Regularized,
                          verbose)
     if verbose
         debug = [:Iteration,
@@ -68,7 +68,7 @@ function default_options(::GlaubitzIskeLampertÖffner2025Regularized,
                                  StopWhenGradientNormLess(1e-16) |
                                  StopWhenCostLess(1e-28))
 end
-function default_options(::GlaubitzIskeLampertÖffner2025EigenvalueProperty,
+function default_options(::GlaubitzIskeLampertÖffner2026EigenvalueProperty,
                          verbose)
     if verbose
         debug = [:Iteration,
@@ -92,9 +92,9 @@ function default_options(::GlaubitzIskeLampertÖffner2025EigenvalueProperty,
 end
 
 function construct_function_space_operator(basis_functions, nodes,
-                                           source::Union{GlaubitzIskeLampertÖffner2025Basic,
-                                                         GlaubitzIskeLampertÖffner2025Regularized,
-                                                         GlaubitzIskeLampertÖffner2025EigenvalueProperty};
+                                           source::Union{GlaubitzIskeLampertÖffner2026Basic,
+                                                         GlaubitzIskeLampertÖffner2026Regularized,
+                                                         GlaubitzIskeLampertÖffner2026EigenvalueProperty};
                                            basis_functions_weights = ones(eltype(nodes),
                                                                           length(basis_functions)),
                                            regularization_functions = nothing,
@@ -117,8 +117,8 @@ function construct_function_space_operator(basis_functions, nodes,
         sparsity_pattern = UpperTriangular(sparsity_pattern)
     end
     assert_correct_length_basis_functions_weights(basis_functions_weights, basis_functions)
-    if source isa GlaubitzIskeLampertÖffner2025Regularized
-        @assert !isnothing(regularization_functions) "regularization_functions must be provided for GlaubitzIskeLampertÖffner2025Regularized"
+    if source isa GlaubitzIskeLampertÖffner2026Regularized
+        @assert !isnothing(regularization_functions) "regularization_functions must be provided for GlaubitzIskeLampertÖffner2026Regularized"
         regularization_functions_derivatives = [x -> ForwardDiff.derivative(regularization_function,
                                                                             x)
                                                 for regularization_function in regularization_functions]
@@ -165,7 +165,7 @@ function construct_function_space_operator(basis_functions, nodes,
     x0 = ArrayPartition(S0, p0)
 
     param = (; V, V_x, R, B, min_real_eigen)
-    if source isa GlaubitzIskeLampertÖffner2025Regularized
+    if source isa GlaubitzIskeLampertÖffner2026Regularized
         G = vandermonde_matrix(regularization_functions, nodes)
         G_x = vandermonde_matrix(regularization_functions_derivatives, nodes)
         R_G = B * G / 2
@@ -191,13 +191,13 @@ function optimization_jacobian_function_space_operator(M, f, x, autodiff)
     return Manifolds.ManifoldDiff.gradient(M, x -> f(M, x), x, b)
 end
 
-function get_objective_function(::GlaubitzIskeLampertÖffner2025Basic,
+function get_objective_function(::GlaubitzIskeLampertÖffner2026Basic,
                                 param, autodiff)
     f(M, x) = optimization_function_function_space_operator(M, x, param)
     grad_f(M, x) = optimization_gradient_function_space_operator(M, f, x, autodiff)
     return ManifoldGradientObjective(f, grad_f)
 end
-function get_objective_function(::GlaubitzIskeLampertÖffner2025Regularized,
+function get_objective_function(::GlaubitzIskeLampertÖffner2026Regularized,
                                 param, autodiff)
     f(M, x) = optimization_function_function_space_operator_G(M, x, param)
     grad_f(M, x) = optimization_gradient_function_space_operator(M, f, x, autodiff)
@@ -213,7 +213,7 @@ function get_objective_function(::GlaubitzIskeLampertÖffner2025Regularized,
                                         equality_constraints = 1,
                                         atol = 1e-28)
 end
-function get_objective_function(::GlaubitzIskeLampertÖffner2025EigenvalueProperty,
+function get_objective_function(::GlaubitzIskeLampertÖffner2026EigenvalueProperty,
                                 param, autodiff)
     N, N = size(param.V)
     f(M, x) = optimization_function_function_space_operator(M, x, param)

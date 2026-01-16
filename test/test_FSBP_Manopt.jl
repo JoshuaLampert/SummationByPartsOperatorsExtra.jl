@@ -8,7 +8,7 @@ end
     N = 5
     x_min = -1.0
     x_max = 1.0
-    source = GlaubitzIskeLampertÖffner2025Basic()
+    source = GlaubitzIskeLampertÖffner2026Basic()
     for compact in (true, false)
         show(IOContext(devnull, :compact => compact), source)
     end

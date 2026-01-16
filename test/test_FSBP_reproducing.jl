@@ -56,7 +56,7 @@ end
                 boundary_indices_ = [1, n]
                 normals_ = [SVector(-1.0), SVector(1.0)]
                 moments = compute_moments_boundary(basis, nodes, normals_)
-                source = GlaubitzIskeLampertÖffner2026()
+                source = GlaubitzIskeLampertÖffner2026Multidimensional()
                 D = multidimensional_function_space_operator(basis, nodes,
                                                              boundary_indices_,
                                                              normals_,
@@ -116,7 +116,7 @@ end
                 boundary_indices_ = [1, N]
                 normals_ = [SVector(-1.0), SVector(1.0)]
                 moments = compute_moments_boundary(basis, nodes, normals_)
-                source = GlaubitzIskeLampertÖffner2026()
+                source = GlaubitzIskeLampertÖffner2026Multidimensional()
                 D = multidimensional_function_space_operator(basis, nodes,
                                                              boundary_indices_,
                                                              normals_,
@@ -193,7 +193,7 @@ end
                 boundary_indices_ = [1, N]
                 normals_ = [SVector(-1.0), SVector(1.0)]
                 moments = compute_moments_boundary(basis, nodes, normals_)
-                source = GlaubitzIskeLampertÖffner2026()
+                source = GlaubitzIskeLampertÖffner2026Multidimensional()
                 D = multidimensional_function_space_operator(basis, nodes,
                                                              boundary_indices_,
                                                              normals_,
@@ -301,7 +301,7 @@ end
             boundary_indices_ = [1, N]
             normals_ = [SVector(-1.0), SVector(1.0)]
             moments = compute_moments_boundary(basis, nodes, normals_)
-            source = GlaubitzIskeLampertÖffner2026()
+            source = GlaubitzIskeLampertÖffner2026Multidimensional()
             D = multidimensional_function_space_operator(basis, nodes,
                                                          boundary_indices_,
                                                          normals_,
@@ -352,7 +352,7 @@ end
             boundary_indices_ = [1, N]
             normals_ = [SVector(-1.0), SVector(1.0)]
             moments = compute_moments_boundary(basis, nodes, normals_)
-            source = GlaubitzIskeLampertÖffner2026()
+            source = GlaubitzIskeLampertÖffner2026Multidimensional()
             D = multidimensional_function_space_operator(basis, nodes,
                                                          boundary_indices_,
                                                          normals_,
@@ -395,7 +395,7 @@ end
             boundary_indices_ = [1, N]
             normals_ = [SVector(-1.0), SVector(1.0)]
             moments = compute_moments_boundary(basis, nodes, normals_)
-            source = GlaubitzIskeLampertÖffner2026()
+            source = GlaubitzIskeLampertÖffner2026Multidimensional()
             D = multidimensional_function_space_operator(basis, nodes,
                                                          boundary_indices_,
                                                          normals_,
@@ -431,7 +431,7 @@ end
             boundary_indices_ = [1, N]
             normals_ = [SVector(-1.0), SVector(1.0)]
             moments = compute_moments_boundary(basis, nodes, normals_)
-            source = GlaubitzIskeLampertÖffner2026()
+            source = GlaubitzIskeLampertÖffner2026Multidimensional()
             D = multidimensional_function_space_operator(basis, nodes,
                                                          boundary_indices_,
                                                          normals_,
@@ -470,7 +470,7 @@ end
             normals_ = normals(D_t)
             moments = compute_moments_boundary(basis, D_t)
             vol = (xmax - xmin) * (ymax - ymin)
-            source = GlaubitzIskeLampertÖffner2026()
+            source = GlaubitzIskeLampertÖffner2026Multidimensional()
             sparsity_patterns = get_sparsity_pattern(D_t)
 
             corners_x_dir = [N_y + 1, # lower left corner

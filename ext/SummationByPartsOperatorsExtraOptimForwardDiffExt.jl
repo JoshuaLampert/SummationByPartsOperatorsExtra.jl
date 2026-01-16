@@ -9,7 +9,7 @@ import SummationByPartsOperatorsExtra: construct_function_space_operator,
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       GlaubitzNordströmÖffner2023,
                                       GlaubitzLampertWintersNordström2025,
-                                      GlaubitzIskeLampertÖffner2026,
+                                      GlaubitzIskeLampertÖffner2026Multidimensional,
                                       MatrixDerivativeOperator,
                                       MultidimensionalMatrixDerivativeOperator,
                                       SubcellOperator
