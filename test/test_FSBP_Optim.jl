@@ -14,13 +14,8 @@ end
 
     for T in (Float32, Float64, Double64)
         nodes = collect(LinRange{T}(x_min, x_max, N))
+        options = Optim.Options(g_tol = eps(T), iterations = 10000)
         let basis_functions = [x -> x^i for i in 0:3]
-            D = function_space_operator(basis_functions, nodes, source;
-                                        options = Optim.Options(g_tol = eps(T),
-                                                                iterations = 10000),
-                                        verbose = true)
-
-            @test eltype(D) == T
             # Test errors
             @test_throws ArgumentError function_space_operator(basis_functions, nodes,
                                                                source; derivative_order = 2)
@@ -38,6 +33,10 @@ end
                                                                source;
                                                                basis_functions_weights = ones(3))
 
+            D = function_space_operator(basis_functions, nodes, source; options = options,
+                                        verbose = true)
+
+            @test eltype(D) == T
             @test grid(D) ≈ nodes
             @test all(isapprox.(D * ones(T, N), zeros(T, N); atol = 1e3 * eps(T)))
             @test D * nodes ≈ ones(T, N)
@@ -48,9 +47,7 @@ end
         end
 
         let basis_functions = [one, identity, exp]
-            D = function_space_operator(basis_functions, nodes, source;
-                                        options = Optim.Options(g_tol = eps(T),
-                                                                iterations = 10000))
+            D = function_space_operator(basis_functions, nodes, source; options = options)
 
             @test eltype(D) == T
             @test grid(D) ≈ nodes

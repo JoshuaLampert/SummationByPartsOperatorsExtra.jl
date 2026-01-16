@@ -77,7 +77,7 @@ function construct_function_space_operator(basis_functions, nodes,
     x_length = last(nodes) - first(nodes)
 
     if isnothing(x0)
-        x0 = [zeros(T, L); invsig.(1 / N * ones(T, N))]
+        x0 = [zeros(T, L); invsig.(convert.(T, 1 / N * ones(T, N)))]
     else
         n_total = L + N
         if length(x0) != n_total
