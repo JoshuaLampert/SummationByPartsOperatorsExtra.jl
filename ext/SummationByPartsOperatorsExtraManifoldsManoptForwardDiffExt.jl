@@ -25,7 +25,7 @@ function default_opt_alg(::GlaubitzIskeLampertÖffner2026Basic)
     return quasi_Newton
 end
 function default_opt_alg(::GlaubitzIskeLampertÖffner2026Regularized)
-    return interior_point_Newton
+    return augmented_Lagrangian_method
 end
 function default_opt_alg(::GlaubitzIskeLampertÖffner2026EigenvalueProperty)
     return augmented_Lagrangian_method
