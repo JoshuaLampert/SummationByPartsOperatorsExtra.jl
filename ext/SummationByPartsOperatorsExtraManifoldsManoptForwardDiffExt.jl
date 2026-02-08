@@ -284,7 +284,7 @@ function LinearAlgebra.eigen(A::StridedMatrix{<:ForwardDiff.Dual})
     return Eigen(vals_diff, vectors_diff)
 end
 
-# The eigenvalue property is satisified if each value in the vector of the
+# The eigenvalue property is satisfied if each value in the vector of the
 # return value of this function is non-positive.
 function eigenvalue_property(M, x, param)
     (; B, min_real_eigen) = param
