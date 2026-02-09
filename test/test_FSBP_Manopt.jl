@@ -180,8 +180,7 @@ end
         let basis_functions = [x -> x^i for i in 0:3]
             # Test errors
             @test_throws AssertionError function_space_operator(basis_functions, nodes,
-                                                                source;
-                                                                derivative_order = 2)
+                                                                source)
 
             D_basic = function_space_operator(basis_functions, nodes,
                                               GlaubitzIskeLampertÖffner2026Basic())
