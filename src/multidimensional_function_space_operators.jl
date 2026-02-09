@@ -1,22 +1,22 @@
 """
-    GlaubitzIskeLampertÖffner2025()
+    GlaubitzIskeLampertÖffner2026Multidimensional()
 
 Multidimensional function space SBP (MFSBP) operators given in
-- Glaubitz, Iske, Lampert, Öffner (2025)
+- Glaubitz, Iske, Lampert, Öffner (2026)
   Efficient construction and application of multi-dimensional summation-by-parts operators
   to global radial basis function methods
   TODO
 
 See [`multidimensional_function_space_operator`](@ref).
 """
-struct GlaubitzIskeLampertÖffner2025 <: SourceOfCoefficients end
+struct GlaubitzIskeLampertÖffner2026Multidimensional <: SourceOfCoefficients end
 
-function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2025)
+function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026Multidimensional)
     if get(io, :compact, false)
         summary(io, source)
     else
         print(io,
-              "Glaubitz, Iske, Lampert, Öffner (2025) \n",
+              "Glaubitz, Iske, Lampert, Öffner (2026) \n",
               "  Efficient construction and application of multi-dimensional summation-by-parts operators \n",
               "  to global radial basis function methods \n",
               "  TODO.")
@@ -42,15 +42,15 @@ the moments of the basis functions in each direction. The total volume of the do
 The `accuracy_order` is the order of the accuracy of the operator, which can optionally be passed,
 but does not have any effect on the operator.
 
-The operator is constructed solving an optimization problem with Optim.jl. You can specify the
-optimization algorithm, the options for the optimization problem, and the `autodiff` mode with
+The operator is constructed solving an optimization problem with [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl).
+You can specify the optimization algorithm, the options for the optimization problem, and the `autodiff` mode with
 the keyword arguments `opt_alg`, `options`, and `autodiff` respectively, see also the documentation of
 Optim.jl about [configurable options](https://julianlsolvers.github.io/Optim.jl/stable/user/config/)
 and [automatic differentiation](https://julianlsolvers.github.io/Optim.jl/stable/user/gradientsandhessians/#Automatic-differentiation).
 In this case, reverse mode automatic differentiation is usually significantly faster than forward mode.
 We recommend using `autodiff = ADTypes.AutoMooncake(; config = nothing)` or
 `autodiff = ADTypes.AutoEnzyme(; mode = Enzyme.Reverse, function_annotation = Enzyme.Duplicated)`. Note that
-you need to import the package `ADTypes` as well as the corresponding autodiff (i.e., `Mooncake` or `Enzyme`)
+you need to import the package ADTypes.jl as well as the corresponding autodiff (i.e., Mooncake.jl or Enzyme.jl)
 package to use these modes.
 
 The initial guess for the optimization problem can be passed with the keyword argument `x0`, which is optional.
@@ -78,12 +78,9 @@ is not provided.
 
 The keyword argument `verbose` can be set to `true` to print information about the optimization process.
 
-In order to use this function, the packages `Optim` and `ForwardDiff` must be loaded.
+In order to use this function, the packages Optim.jl and ForwardDiff.jl must be loaded.
 
-See also [`GlaubitzIskeLampertÖffner2025`](@ref).
-
-!!! compat "Julia 1.9"
-    This function requires at least Julia 1.9.
+See also [`GlaubitzIskeLampertÖffner2026Multidimensional`](@ref).
 
 !!! warning "Experimental implementation"
     This is an experimental feature and may change in future releases.

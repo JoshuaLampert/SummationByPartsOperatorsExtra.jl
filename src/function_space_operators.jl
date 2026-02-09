@@ -1,8 +1,80 @@
-# This function is extended in the package extension SummationByPartsOperatorsExtraOptimForwardDiffExt
+"""
+    GlaubitzIskeLampertÖffner2026Basic()
+
+Function space SBP operators constructed with optimization procedure given in
+- Glaubitz, Iske, Lampert, Öffner (2026):
+  Why summation by parts is not enough.
+  TODO
+
+See [`function_space_operator`](@ref).
+"""
+struct GlaubitzIskeLampertÖffner2026Basic <: SourceOfCoefficients end
+
+function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026Basic)
+    if get(io, :compact, false)
+        summary(io, source)
+    else
+        print(io,
+              "Glaubitz, Iske, Lampert, Öffner (2026) \n",
+              "  Why summation by parts is not enough.\n",
+              "  TODO")
+    end
+end
+
+"""
+    GlaubitzIskeLampertÖffner2026Regularized()
+
+Function space SBP operators constructed with regularized constrained optimization procedure given in
+- Glaubitz, Iske, Lampert, Öffner (2026):
+  Why summation by parts is not enough.
+  TODO
+
+See [`function_space_operator`](@ref).
+"""
+struct GlaubitzIskeLampertÖffner2026Regularized <: SourceOfCoefficients end
+
+function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026Regularized)
+    if get(io, :compact, false)
+        summary(io, source)
+    else
+        print(io,
+              "Glaubitz, Iske, Lampert, Öffner (2026) \n",
+              "  Why summation by parts is not enough.\n",
+              "  TODO")
+    end
+end
+
+"""
+    GlaubitzIskeLampertÖffner2026EigenvalueProperty()
+
+Function space SBP operators constructed with constrained optimization procedure satisfying an eigenvalue
+property given in
+- Glaubitz, Iske, Lampert, Öffner (2026):
+  Why summation by parts is not enough.
+  TODO
+
+See [`function_space_operator`](@ref).
+"""
+struct GlaubitzIskeLampertÖffner2026EigenvalueProperty <: SourceOfCoefficients end
+
+function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026EigenvalueProperty)
+    if get(io, :compact, false)
+        summary(io, source)
+    else
+        print(io,
+              "Glaubitz, Iske, Lampert, Öffner (2026) \n",
+              "  Why summation by parts is not enough.\n",
+              "  TODO")
+    end
+end
+
+# This function is extended in the package extensions SummationByPartsOperatorsExtraOptimForwardDiffExt and SummationByPartsOperatorsExtraManifoldsManoptForwardDiffExt
 """
     function_space_operator(basis_functions, nodes, source;
                             derivative_order = 1, accuracy_order = 0,
                             basis_functions_weights = ones(length(basis_functions)),
+                            regularization_functions = nothing,
+                            min_real_eigen = 0.1,
                             bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
                             different_values = true, sparsity_pattern = nothing,
                             opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
@@ -15,16 +87,21 @@ interval `[x_min, x_max]` with the nodes `nodes`, where `x_min` is taken as the 
 `accuracy_order` is the order of the accuracy of the operator, which can optionally be passed,
 but does not have any effect on the operator.
 
-The operator is constructed solving an optimization problem with Optim.jl. You can specify the
+The operator is constructed solving an optimization problem with [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)
+for the source [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref) and using [Manopt.jl](https://github.com/JuliaManifolds/Manopt.jl)
+for the sources [`GlaubitzIskeLampertÖffner2026Basic`](@ref), [`GlaubitzIskeLampertÖffner2026Regularized`](@ref), and
+[`GlaubitzIskeLampertÖffner2026EigenvalueProperty`](@ref). You can specify the
 optimization algorithm, the options for the optimization problem, and the `autodiff` mode with
 the keyword arguments `opt_alg`, `options`, and `autodiff` respectively, see also the documentation of
 Optim.jl about [configurable options](https://julianlsolvers.github.io/Optim.jl/stable/user/config/)
-and [automatic differentiation](https://julianlsolvers.github.io/Optim.jl/stable/user/gradientsandhessians/#Automatic-differentiation).
-In this case, reverse mode automatic differentiation is usually significantly faster than forward mode.
+and [automatic differentiation](https://julianlsolvers.github.io/Optim.jl/stable/user/gradientsandhessians/#Automatic-differentiation)
+or of Manopt.jl about [algorithm options for, e.g., `augmented_Lagrangian_method`](https://manoptjl.org/stable/solvers/augmented_Lagrangian_method/#Manopt.augmented_Lagrangian_method)
+or [`debug` output](https://manoptjl.org/stable/tutorials/HowToDebug/).
+For higher number of nodes, reverse mode automatic differentiation is usually significantly faster than forward mode.
 We recommend using `autodiff = ADTypes.AutoMooncake(; config = nothing)` or
 `autodiff = ADTypes.AutoEnzyme(; mode = Enzyme.Reverse, function_annotation = Enzyme.Duplicated)`. Note that
-you need to import the package `ADTypes` as well as the corresponding autodiff (i.e., `Mooncake` or `Enzyme`)
-package to use these modes.
+you need to import the package ADTypes.jl as well as the corresponding autodiff (i.e., Mooncake.jl or Enzyme.jl)
+package to use these modes. Both Optim.jl and Manopt.jl support `autodiff` backends via ADTypes.jl.
 
 The initial guess for the optimization problem can be passed with the keyword argument `x0`, which is optional.
 If `nothing` is passed, a default initial guess (zeros for the entries of the differentiation matrix and
@@ -35,9 +112,11 @@ weights for each basis function. The default is a vector of ones, which means th
 are equally weighted. This can be used to, e.g., enforce exactness for certain basis functions (high weights),
 but allow non-exactness for others only minimizing the error (low weights).
 
-There are two alternative ways to enforce sparsity of the resulting operator. The first is by passing
-a matrix `sparsity_pattern` that is a matrix of zeros and ones, where the ones indicate the non-zero
-entries of the operator. This matrix should be symmetric or `UpperTriangular` and have zeros on the diagonal.
+When using the source [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref) there are two alternative
+ways to enforce sparsity of the resulting operator.
+
+The first is by passing a matrix `sparsity_pattern` that is a matrix of zeros and ones, where the ones indicate
+the non-zero entries of the operator. This matrix should be symmetric or `UpperTriangular` and have zeros on the diagonal.
 
 The second way is to use a banded-block structure for the operator as is common, e.g., in finite difference methods.
 The keyword arguments `bandwidth` and `size_boundary` specify the bandwidth and the size of the
@@ -51,17 +130,23 @@ is `false` the entries of the stencil are repeated in the central part and the t
 their values (makes sense for uniformly distributed nodes and, e.g., a polynomial basis). The keyword
 argument `different_values` is ignored for dense operators.
 
+When using the regularized optimization procedure using [`GlaubitzIskeLampertÖffner2026Regularized`](@ref), you have to pass
+additional functions to be regularized with the keyword argument `regularization_functions`, which is an iterable of functions.
+
+When using the optimization procedure with eigenvalue constraint using [`GlaubitzIskeLampertÖffner2026EigenvalueProperty`](@ref),
+you can specify the minimal real part of the eigenvalues of the resulting operator with the keyword argument `min_real_eigen`.
+
 The keyword argument `verbose` can be set to `true` to print information about the optimization process.
 
 The operator that is returned follows the general interface. Currently, it is wrapped in a
 [`SummationByPartsOperators.MatrixDerivativeOperator`](@extref), but this might change in the future.
 
-In order to use this function, the packages `Optim` and `ForwardDiff` must be loaded.
+In order to use this function, either the packages Optim.jl and ForwardDiff.jl (for [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref))
+or Manifolds.jl, Manopt.jl, and ForwardDiff.jl (for [`GlaubitzIskeLampertÖffner2026Basic`](@ref), [`GlaubitzIskeLampertÖffner2026Regularized`](@ref),
+and [`GlaubitzIskeLampertÖffner2026EigenvalueProperty`](@ref)) must be loaded.
 
-See also [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref).
-
-!!! compat "Julia 1.9"
-    This function requires at least Julia 1.9.
+See also [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref), [`GlaubitzIskeLampertÖffner2026Basic`](@ref),
+[`GlaubitzIskeLampertÖffner2026Regularized`](@ref), and [`GlaubitzIskeLampertÖffner2026EigenvalueProperty`](@ref).
 
 !!! warning "Experimental implementation"
     This is an experimental feature and may change in future releases.

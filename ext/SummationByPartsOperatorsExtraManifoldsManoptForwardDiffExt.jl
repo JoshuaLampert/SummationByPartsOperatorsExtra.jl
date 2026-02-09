@@ -2,28 +2,43 @@ module SummationByPartsOperatorsExtraManifoldsManoptForwardDiffExt
 
 using Manifolds: Manifolds, SkewSymmetricMatrices, PositiveVectors, ProductManifold,
                  check_point
-using Manopt: quasi_Newton, StopAfterIteration, StopWhenGradientNormLess, StopWhenCostLess
+using Manopt: quasi_Newton, interior_point_Newton, augmented_Lagrangian_method,
+              ApproxHessianBFGS, ManifoldGradientObjective, ConstrainedManifoldObjective,
+              DebugFeasibility,
+              StopAfterIteration, StopWhenGradientNormLess, StopWhenCostLess
+using LinearAlgebra: LinearAlgebra, Eigen, eigen, cross
 import RecursiveArrayTools: ArrayPartition
 import ForwardDiff
 import SummationByPartsOperatorsExtra: construct_function_space_operator,
                                        default_opt_alg,
                                        default_options
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
-                                      GlaubitzIskeLampertÖffner2025,
+                                      GlaubitzIskeLampertÖffner2026Basic,
+                                      GlaubitzIskeLampertÖffner2026Regularized,
+                                      GlaubitzIskeLampertÖffner2026EigenvalueProperty,
                                       MatrixDerivativeOperator
 
 include("utils.jl")
 include("function_space_operators.jl")
 
-default_opt_alg(::GlaubitzIskeLampertÖffner2025) = quasi_Newton
-function default_options(::GlaubitzIskeLampertÖffner2025, verbose)
+function default_opt_alg(::GlaubitzIskeLampertÖffner2026Basic)
+    return quasi_Newton
+end
+function default_opt_alg(::GlaubitzIskeLampertÖffner2026Regularized)
+    return augmented_Lagrangian_method
+end
+function default_opt_alg(::GlaubitzIskeLampertÖffner2026EigenvalueProperty)
+    return augmented_Lagrangian_method
+end
+function default_options(::GlaubitzIskeLampertÖffner2026Basic,
+                         verbose)
     if verbose
         debug = [:Iteration,
             :Time,
             " | ",
             (:Cost, "f(x): %.6e"),
             " | ",
-            (:GradientNorm, "∇ f(x): %.6e"),
+            (:GradientNorm, "||∇f(x)||: %.6e"),
             "\n",
             :Stop]
     else
@@ -35,11 +50,53 @@ function default_options(::GlaubitzIskeLampertÖffner2025, verbose)
                                  StopWhenGradientNormLess(1e-16) |
                                  StopWhenCostLess(1e-28))
 end
+function default_options(::GlaubitzIskeLampertÖffner2026Regularized,
+                         verbose)
+    if verbose
+        debug = [:Iteration,
+            :Time,
+            " | ",
+            (:Cost, "f(x): %.6e"),
+            " | ",
+            DebugFeasibility(["feasible: ", :Feasible, ", total violation: ", :TotalEq]),
+            "\n",
+            :Stop]
+    else
+        debug = []
+    end
+    return (;
+            debug = debug,
+            stopping_criterion = StopAfterIteration(1000) |
+                                 StopWhenCostLess(1e-28))
+end
+function default_options(::GlaubitzIskeLampertÖffner2026EigenvalueProperty,
+                         verbose)
+    if verbose
+        debug = [:Iteration,
+            :Time,
+            " | ",
+            (:Cost, "f(x): %.6e"),
+            " | ",
+            DebugFeasibility(["feasible: ", :Feasible, ", total violation: ", :TotalInEq]),
+            "\n",
+            :Stop]
+    else
+        debug = []
+    end
+    return (;
+            debug = debug,
+            stopping_criterion = StopAfterIteration(10000) |
+                                 cross(StopWhenCostLess(5e-28), 5))
+end
 
 function construct_function_space_operator(basis_functions, nodes,
-                                           source::GlaubitzIskeLampertÖffner2025;
+                                           source::Union{GlaubitzIskeLampertÖffner2026Basic,
+                                                         GlaubitzIskeLampertÖffner2026Regularized,
+                                                         GlaubitzIskeLampertÖffner2026EigenvalueProperty};
                                            basis_functions_weights = ones(eltype(nodes),
                                                                           length(basis_functions)),
+                                           regularization_functions = nothing,
+                                           min_real_eigen = 0.1,
                                            bandwidth = length(nodes) - 1,
                                            size_boundary = 2 * bandwidth,
                                            different_values = true,
@@ -54,10 +111,15 @@ function construct_function_space_operator(basis_functions, nodes,
 
     assert_correct_bandwidth(N, bandwidth, size_boundary)
     if !isnothing(sparsity_pattern)
-        assert_correct_sparsity_pattern(sparsity_pattern)
-        sparsity_pattern = UpperTriangular(sparsity_pattern)
+        throw(ArgumentError("Passing a sparsity pattern is currently not supported."))
     end
     assert_correct_length_basis_functions_weights(basis_functions_weights, basis_functions)
+    if source isa GlaubitzIskeLampertÖffner2026Regularized
+        @assert !isnothing(regularization_functions) "regularization_functions must be provided for GlaubitzIskeLampertÖffner2026Regularized"
+        regularization_functions_derivatives = [x -> ForwardDiff.derivative(regularization_function,
+                                                                            x)
+                                                for regularization_function in regularization_functions]
+    end
     L = get_nsigma(N; bandwidth, size_boundary, different_values, sparsity_pattern)
 
     basis_functions_derivatives = [x -> ForwardDiff.derivative(basis_functions[i], x)
@@ -77,6 +139,10 @@ function construct_function_space_operator(basis_functions, nodes,
     x_length = last(nodes) - first(nodes)
 
     if isnothing(x0)
+        # TODO: This does not satisfy the constraints for the constrained case and will therefore fail.
+        # In this case, should we run the unconstrained optimization first to get a good initial guess?
+        # Or should we just enforce the user to pass a suitable initial guess, e.g., by first running the
+        # unconstrained case with the same nodes and basis, but without the regularization?
         x0 = [zeros(T, L); invsig.(convert.(T, 1 / N * ones(T, N)))]
     else
         n_total = L + N
@@ -95,16 +161,16 @@ function construct_function_space_operator(basis_functions, nodes,
     p0 = diag(create_P(rho0, x_length))
     x0 = ArrayPartition(S0, p0)
 
-    param = (; V, V_x, R)
-    f(M, x) = optimization_function_function_space_operator(M, x, param)
-
-    function optimization_gradient_function_space_operator(M, x, autodiff)
-        b = Manifolds.TangentDiffBackend(autodiff)
-        return Manifolds.gradient(M, x -> f(M, x), x, b)
+    param = (; V, V_x, R, B, min_real_eigen)
+    if source isa GlaubitzIskeLampertÖffner2026Regularized
+        G = vandermonde_matrix(regularization_functions, nodes)
+        G_x = vandermonde_matrix(regularization_functions_derivatives, nodes)
+        R_G = B * G / 2
+        param = (; param..., G, G_x, R_G)
     end
 
-    grad_f(M, x) = optimization_gradient_function_space_operator(M, x, autodiff)
-    x = opt_alg(M, f, grad_f, x0; options...)
+    objective = get_objective_function(source, param, autodiff)
+    x = opt_alg(M, objective, x0; options...)
 
     S, p = x.x
     weights = p
@@ -113,12 +179,113 @@ function construct_function_space_operator(basis_functions, nodes,
     return weights, D
 end
 
+function optimization_gradient_function_space_operator(M, f, x, autodiff)
+    b = Manifolds.ManifoldDiff.TangentDiffBackend(autodiff)
+    return Manifolds.ManifoldDiff.gradient(M, x -> f(M, x), x, b)
+end
+
+function get_objective_function(::GlaubitzIskeLampertÖffner2026Basic,
+                                param, autodiff)
+    f(M, x) = optimization_function_function_space_operator(M, x, param)
+    grad_f(M, x) = optimization_gradient_function_space_operator(M, f, x, autodiff)
+    return ManifoldGradientObjective(f, grad_f)
+end
+function get_objective_function(::GlaubitzIskeLampertÖffner2026Regularized,
+                                param, autodiff)
+    f(M, x) = optimization_function_function_space_operator_G(M, x, param)
+    grad_f(M, x) = optimization_gradient_function_space_operator(M, f, x, autodiff)
+    hess_f(M, p, Xp) = ApproxHessianBFGS(M, p, grad_f)(M, p, Xp)
+
+    h1(M, x) = optimization_function_function_space_operator(M, x, param)
+    h(M, x) = [h1(M, x)]
+    grad_h(M, x) = [optimization_gradient_function_space_operator(M, h1, x, autodiff)]
+    hess_h(M, p, Xp) = ApproxHessianBFGS(M, p, grad_h)(M, p, Xp)
+    return ConstrainedManifoldObjective(f, grad_f; hess_f = hess_f,
+                                        g = nothing, grad_g = nothing, h = h,
+                                        grad_h = grad_h, hess_h = hess_h,
+                                        equality_constraints = 1,
+                                        atol = 1e-28)
+end
+function get_objective_function(::GlaubitzIskeLampertÖffner2026EigenvalueProperty,
+                                param, autodiff)
+    N, N = size(param.V)
+    f(M, x) = optimization_function_function_space_operator(M, x, param)
+    grad_f(M, x) = optimization_gradient_function_space_operator(M, f, x, autodiff)
+    hess_f(M, p, Xp) = ApproxHessianBFGS(M, p, grad_f)(M, p, Xp)
+
+    g1(M, x) = eigenvalue_property(M, x, param)
+    g(M, x) = [g1(M, x)]
+    grad_g(M, x) = [optimization_gradient_function_space_operator(M, g1, x, autodiff)]
+    hess_g(M, p, Xp) = ApproxHessianBFGS(M, p, grad_g)(M, p, Xp)
+    return ConstrainedManifoldObjective(f, grad_f; hess_f = hess_f,
+                                        g = g, grad_g = grad_g, hess_g = hess_g,
+                                        h = nothing, grad_h = nothing,
+                                        inequality_constraints = 1,
+                                        atol = 1e-28)
+end
+
 function optimization_function_function_space_operator(M, x, param)
     (; V, V_x, R) = param
     S, p = x.x
 
     A = S * V - Diagonal(p) * V_x + R
     return sum(abs2, A)
+end
+
+function optimization_function_function_space_operator_G(M, x, param)
+    (; G, G_x, R_G) = param
+    S, p = x.x
+
+    A = S * G - Diagonal(p) * G_x + R_G
+    return sum(abs2, A)
+end
+
+# There is a PR for this in ForwardDiff.jl: https://github.com/JuliaDiff/ForwardDiff.jl/pull/788
+# Make `eigen` differentiable with ForwardDiff.jl
+# See https://github.com/JuliaManifolds/Manifolds.jl/pull/27#issuecomment-536305950
+function make_eigen_dual(val::Real, partial)
+    return ForwardDiff.Dual{ForwardDiff.tagtype(partial)}(val, partial.partials)
+end
+
+function make_eigen_dual(val::Complex, partial::Complex)
+    return Complex(ForwardDiff.Dual{ForwardDiff.tagtype(real(partial))}(real(val),
+                                                                        real(partial).partials),
+                   ForwardDiff.Dual{ForwardDiff.tagtype(imag(partial))}(imag(val),
+                                                                        imag(partial).partials))
+end
+
+function LinearAlgebra.eigen(A::StridedMatrix{<:ForwardDiff.Dual})
+    A_values = map(d -> d.value, A)
+    A_values_eig = eigen(A_values)
+    UinvAU = A_values_eig.vectors \ A * A_values_eig.vectors
+    vals_diff = diag(UinvAU)
+    F = similar(A_values, eltype(A_values_eig.values))
+    for i in axes(A_values, 1), j in axes(A_values, 2)
+        if i == j
+            F[i, j] = 0
+        else
+            F[i, j] = inv(A_values_eig.values[j] - A_values_eig.values[i])
+        end
+    end
+    vectors_diff = A_values_eig.vectors * (F .* UinvAU)
+    for i in eachindex(vectors_diff)
+        vectors_diff[i] = make_eigen_dual(A_values_eig.vectors[i], vectors_diff[i])
+    end
+    return Eigen(vals_diff, vectors_diff)
+end
+
+# The eigenvalue property is satisfied if each value in the vector of the
+# return value of this function is non-positive.
+function eigenvalue_property(M, x, param)
+    (; B, min_real_eigen) = param
+    S, p = x.x
+
+    Q = S + B / 2
+    D_tilde = inv(Diagonal(p)) * Q
+    nu = 1.0
+    D_tilde[1, 1] += nu / p[1]
+    lambdas = eigen(D_tilde).values
+    return -minimum(real(lambdas) .- min_real_eigen)
 end
 
 end
