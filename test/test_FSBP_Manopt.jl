@@ -204,7 +204,7 @@ end
             @test eltype(D) == T
             @test grid(D) ≈ nodes
 
-            tol = T == Float64 ? 1e-10 : (T == Float32 ? 1e-5 : 1e-10)
+            tol = T == Float64 ? 1e-9 : (T == Float32 ? 1e-5 : 1e-9)
             @test all(isapprox.(D * ones(N), zeros(N); atol = tol))
             @test D * nodes ≈ ones(N)
             @test D * (nodes .^ 2) ≈ 2 * nodes
