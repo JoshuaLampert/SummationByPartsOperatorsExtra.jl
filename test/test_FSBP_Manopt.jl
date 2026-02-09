@@ -2,9 +2,10 @@
     using Manopt
     import Manifolds, ForwardDiff
     using DoubleFloats: Double64
+    using LinearAlgebra: eigvals, diag, rank, cross
 end
 
-@testitem "FSBP with Manopt.jl" setup=[FSBP_Manopt] begin
+@testitem "FSBP Basic with Manopt.jl" setup=[FSBP_Manopt] begin
     N = 5
     x_min = -1.0
     x_max = 1.0
@@ -81,5 +82,76 @@ end
         @test D * exp.(nodes) ≈ exp.(nodes)
         M = mass_matrix(D)
         @test M * D.D + D.D' * M ≈ mass_matrix_boundary(D)
+    end
+end
+
+@testitem "FSBP Eigenvalue property with Manopt.jl" setup=[FSBP_Manopt] begin
+    # Use N = 10 to get an operator, which does not satisfy the eigenvalue property with the unconstrained optimization.
+    N = 10
+    x_min = -1.0
+    x_max = 1.0
+    source = GlaubitzIskeLampertÖffner2026EigenvalueProperty()
+    for compact in (true, false)
+        show(IOContext(devnull, :compact => compact), source)
+    end
+
+    function eigenvalue_property_test(D)
+        p = diag(mass_matrix(D))
+        nu = 1.0
+        D_tilde = Matrix(D)
+        D_tilde[1, 1] += nu / p[1]
+        return eigvals(D_tilde)
+    end
+
+    for T in (Float32, Float64, Double64)
+        nodes = collect(LinRange{T}(x_min, x_max, N))
+        debug = SummationByPartsOperatorsExtra.default_options(source, true).debug
+        options = (;
+                   debug = debug,
+                   stopping_criterion = StopAfterIteration(10000) |
+                                        cross(StopWhenCostLess(10000 * eps(T)^2), 5))
+        let basis_functions = [x -> x^i for i in 0:3]
+            # Test errors
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source; derivative_order = 2)
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source;
+                                                               sparsity_pattern = ones(Bool,
+                                                                                       N,
+                                                                                       N))
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source; bandwidth = 2)
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source;
+                                                               x0 = zeros(3))
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source;
+                                                               basis_functions_weights = ones(3))
+
+            D_basic = function_space_operator(basis_functions, nodes,
+                                              GlaubitzIskeLampertÖffner2026Basic())
+            x0 = get_optimization_entries(D_basic)
+            min_real_eigen = 0.1
+            @test count(real.(eigenvalue_property_test(D_basic)) .> min_real_eigen) == 6
+            @test rank(Matrix(D_basic)) == 8
+
+            D = function_space_operator(basis_functions, nodes, source;
+                                        verbose = true, x0 = x0,
+                                        options = options,
+                                        min_real_eigen = min_real_eigen)
+            @test all(real.(eigenvalue_property_test(D)) .> min_real_eigen)
+            @test rank(Matrix(D)) == N - 1
+
+            @test eltype(D) == T
+            @test grid(D) ≈ nodes
+            # Manopt.jl seems to have issues to get the gradient accurate enough with Double64
+            eps_ = T == Double64 ? eps(Float64) : eps(T)
+            @test all(isapprox.(D * ones(N), zeros(N); atol = 100 * eps_))
+            @test D * nodes ≈ ones(N)
+            @test D * (nodes .^ 2) ≈ 2 * nodes
+            @test D * (nodes .^ 3) ≈ 3 * (nodes .^ 2)
+            M = mass_matrix(D)
+            @test M * D.D + D.D' * M ≈ mass_matrix_boundary(D)
+        end
     end
 end

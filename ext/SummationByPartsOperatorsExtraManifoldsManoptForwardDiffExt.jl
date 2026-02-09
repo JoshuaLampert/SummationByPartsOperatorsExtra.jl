@@ -6,7 +6,7 @@ using Manopt: quasi_Newton, interior_point_Newton, augmented_Lagrangian_method,
               ApproxHessianBFGS, ManifoldGradientObjective, ConstrainedManifoldObjective,
               DebugFeasibility,
               StopAfterIteration, StopWhenGradientNormLess, StopWhenCostLess
-using LinearAlgebra: LinearAlgebra, eigen, Eigen
+using LinearAlgebra: LinearAlgebra, Eigen, eigen, cross
 import RecursiveArrayTools: ArrayPartition
 import ForwardDiff
 import SummationByPartsOperatorsExtra: construct_function_space_operator,
@@ -80,8 +80,6 @@ function default_options(::GlaubitzIskeLampertÖffner2026EigenvalueProperty,
             " | ",
             (:Cost, "f(x): %.6e"),
             " | ",
-            (:GradientNorm, "||∇f(x)||: %.6e"),
-            " | ",
             DebugFeasibility(["feasible: ", :Feasible, ", total violation: ", :TotalInEq]),
             "\n",
             :Stop]
@@ -90,9 +88,8 @@ function default_options(::GlaubitzIskeLampertÖffner2026EigenvalueProperty,
     end
     return (;
             debug = debug,
-            stopping_criterion = StopAfterIteration(1000) |
-                                 StopWhenGradientNormLess(1e-16) |
-                                 StopWhenCostLess(1e-28))
+            stopping_criterion = StopAfterIteration(10000) |
+                                 cross(StopWhenCostLess(5e-28), 5))
 end
 
 function construct_function_space_operator(basis_functions, nodes,
@@ -251,6 +248,7 @@ function optimization_function_function_space_operator_G(M, x, param)
     return sum(abs2, A)
 end
 
+# There is a PR for this in ForwardDiff.jl: https://github.com/JuliaDiff/ForwardDiff.jl/pull/788
 # Make `eigen` differentiable with ForwardDiff.jl
 # See https://github.com/JuliaManifolds/Manifolds.jl/pull/27#issuecomment-536305950
 function make_eigen_dual(val::Real, partial)

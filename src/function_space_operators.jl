@@ -2,7 +2,7 @@
     GlaubitzIskeLampertÖffner2026Basic()
 
 Function space SBP operators constructed with optimization procedure given in
-- Glaubitz, Iske, Lampert, Öffner (2025):
+- Glaubitz, Iske, Lampert, Öffner (2026):
   Why summation by parts is not enough.
   TODO
 

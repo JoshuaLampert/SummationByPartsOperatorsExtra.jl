@@ -132,7 +132,7 @@ function get_optimization_entries(D;
         Matrix(D)
     end
     Q = mass_matrix(D) * Matrix_D
-    S = 0.5 * (Q - Q')
+    S = 0.5f0 * (Q - Q')
     if isnothing(sparsity_pattern)
         sigma = get_optimization_entries_block_banded(S; bandwidth, size_boundary,
                                                       different_values)
@@ -143,9 +143,10 @@ function get_optimization_entries(D;
 end
 
 function get_optimization_entries_sparsity_pattern(S; sparsity_pattern)
+    T = eltype(S)
     N = size(S, 1)
     L = get_nsigma(N; sparsity_pattern)
-    sigma = zeros(L)
+    sigma = zeros(T, L)
     reconstruct_sparsity_pattern!(sigma, S, sparsity_pattern)
     return sigma
 end
@@ -155,11 +156,12 @@ function get_optimization_entries_block_banded(S;
                                                size_boundary = SummationByPartsOperators.lower_bandwidth(D) +
                                                                1,
                                                different_values = false)
+    T = eltype(S)
     b = bandwidth
     c = size_boundary
     N = size(S, 1)
     L = get_nsigma(N; bandwidth = b, size_boundary = c, different_values)
-    sigma = zeros(L)
+    sigma = zeros(T, L)
     if b == N - 1 # dense operator
         reconstruct_skew_symmetric!(sigma, S)
     else # sparse operator
@@ -241,7 +243,7 @@ function get_multidimensional_optimization_entries(D::AbstractMultidimensionalMa
     sigmas = T[]
     for i in 1:Dim
         Q = mass_matrix(D) * D[i]
-        S = 0.5 * (Q - Q')
+        S = 0.5f0 * (Q - Q')
         if isnothing(sparsity_patterns)
             sigma = get_optimization_entries_block_banded(S; bandwidth, size_boundary,
                                                           different_values)
