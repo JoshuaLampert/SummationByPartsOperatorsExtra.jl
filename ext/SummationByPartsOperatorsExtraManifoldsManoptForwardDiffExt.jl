@@ -111,8 +111,7 @@ function construct_function_space_operator(basis_functions, nodes,
 
     assert_correct_bandwidth(N, bandwidth, size_boundary)
     if !isnothing(sparsity_pattern)
-        assert_correct_sparsity_pattern(sparsity_pattern)
-        sparsity_pattern = UpperTriangular(sparsity_pattern)
+        throw(ArgumentError("Passing a sparsity pattern is currently not supported."))
     end
     assert_correct_length_basis_functions_weights(basis_functions_weights, basis_functions)
     if source isa GlaubitzIskeLampertÖffner2026Regularized
@@ -181,10 +180,6 @@ function construct_function_space_operator(basis_functions, nodes,
 end
 
 function optimization_gradient_function_space_operator(M, f, x, autodiff)
-    b = Manifolds.ManifoldDiff.TangentDiffBackend(autodiff)
-    return Manifolds.ManifoldDiff.gradient(M, x -> f(M, x), x, b)
-end
-function optimization_jacobian_function_space_operator(M, f, x, autodiff)
     b = Manifolds.ManifoldDiff.TangentDiffBackend(autodiff)
     return Manifolds.ManifoldDiff.gradient(M, x -> f(M, x), x, b)
 end
