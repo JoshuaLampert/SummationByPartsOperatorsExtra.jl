@@ -103,7 +103,9 @@ end
         return eigvals(D_tilde)
     end
 
-    for T in (Float32, Float64, Double64)
+    # currently, other types than `Float32` and `Float64` (`BlasReal` in LinearAlgebra.jl) are not supported
+    # because `eigen!` is defined only for `BlasReal`.
+    for T in (Float32, Float64)
         nodes = collect(LinRange{T}(x_min, x_max, N))
         debug = SummationByPartsOperatorsExtra.default_options(source, true).debug
         options = (;
