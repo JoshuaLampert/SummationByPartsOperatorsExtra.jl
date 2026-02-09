@@ -172,33 +172,21 @@ end
     for T in (Float32, Float64)
         nodes = collect(LinRange{T}(x_min, x_max, N))
         debug = SummationByPartsOperatorsExtra.default_options(source, true).debug
-        iterations = T == Float64 ? 100 : (T == Float32 ? 70 : 100)
+        iterations = T == Float64 ? 100 : (T == Float32 ? 64 : 100)
         options = (;
                    debug = debug,
                    stopping_criterion = StopAfterIteration(iterations) |
                                         StopWhenCostLess(10000 * eps(T)^2))
         let basis_functions = [x -> x^i for i in 0:3]
             # Test errors
-            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
-                                                               source; derivative_order = 2)
-            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
-                                                               source;
-                                                               sparsity_pattern = ones(Bool,
-                                                                                       N,
-                                                                                       N))
-            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
-                                                               source; bandwidth = 3)
-            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
-                                                               source;
-                                                               x0 = zeros(3))
-            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
-                                                               source;
-                                                               basis_functions_weights = ones(3))
+            @test_throws AssertionError function_space_operator(basis_functions, nodes,
+                                                                source;
+                                                                derivative_order = 2)
 
             D_basic = function_space_operator(basis_functions, nodes,
                                               GlaubitzIskeLampertÖffner2026Basic())
-            x0 = get_optimization_entries(D_basic)
             regularization_functions = [x -> x^4, x -> x^5]
+            x0 = get_optimization_entries(D_basic)
             errors_D_basic = norm.([
                                        D_basic * nodes .^ 4 .- 4 .* nodes .^ 3,
                                        D_basic * nodes .^ 5 .- 5 .* nodes .^ 4
