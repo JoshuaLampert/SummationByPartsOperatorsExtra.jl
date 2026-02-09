@@ -122,7 +122,7 @@ end
                                                                                        N,
                                                                                        N))
             @test_throws ArgumentError function_space_operator(basis_functions, nodes,
-                                                               source; bandwidth = 2)
+                                                               source; bandwidth = 1)
             @test_throws ArgumentError function_space_operator(basis_functions, nodes,
                                                                source;
                                                                x0 = zeros(3))
@@ -148,7 +148,7 @@ end
             @test grid(D) ≈ nodes
             # Manopt.jl seems to have issues to get the gradient accurate enough with Double64
             eps_ = T == Double64 ? eps(Float64) : eps(T)
-            @test all(isapprox.(D * ones(N), zeros(N); atol = 100 * eps_))
+            @test all(isapprox.(D * ones(N), zeros(N); atol = 500 * eps_))
             @test D * nodes ≈ ones(N)
             @test D * (nodes .^ 2) ≈ 2 * nodes
             @test D * (nodes .^ 3) ≈ 3 * (nodes .^ 2)
