@@ -2,7 +2,7 @@
     using Manopt
     import Manifolds, ForwardDiff
     using DoubleFloats: Double64
-    using LinearAlgebra: eigvals, diag, rank, cross
+    using LinearAlgebra: norm, eigvals, diag, rank, cross
 end
 
 @testitem "FSBP Basic with Manopt.jl" setup=[FSBP_Manopt] begin
@@ -122,7 +122,7 @@ end
                                                                                        N,
                                                                                        N))
             @test_throws ArgumentError function_space_operator(basis_functions, nodes,
-                                                               source; bandwidth = 1)
+                                                               source; bandwidth = 3)
             @test_throws ArgumentError function_space_operator(basis_functions, nodes,
                                                                source;
                                                                x0 = zeros(3))
@@ -149,6 +149,76 @@ end
             # Manopt.jl seems to have issues to get the gradient accurate enough with Double64
             eps_ = T == Double64 ? eps(Float64) : eps(T)
             @test all(isapprox.(D * ones(N), zeros(N); atol = 500 * eps_))
+            @test D * nodes ≈ ones(N)
+            @test D * (nodes .^ 2) ≈ 2 * nodes
+            @test D * (nodes .^ 3) ≈ 3 * (nodes .^ 2)
+            M = mass_matrix(D)
+            @test M * D.D + D.D' * M ≈ mass_matrix_boundary(D)
+        end
+    end
+end
+
+@testitem "FSBP Regularization with Manopt.jl" setup=[FSBP_Manopt] begin
+    N = 15
+    x_min = -1.0
+    x_max = 1.0
+    source = GlaubitzIskeLampertÖffner2026Regularized()
+    for compact in (true, false)
+        show(IOContext(devnull, :compact => compact), source)
+    end
+
+    # Don't test with Double64 because Manopt.jl seems to have issues to get the gradient accurate enough
+    # it works, but is not more accurate than Float64
+    for T in (Float32, Float64)
+        nodes = collect(LinRange{T}(x_min, x_max, N))
+        debug = SummationByPartsOperatorsExtra.default_options(source, true).debug
+        iterations = T == Float64 ? 100 : (T == Float32 ? 70 : 100)
+        options = (;
+                   debug = debug,
+                   stopping_criterion = StopAfterIteration(iterations) |
+                                        StopWhenCostLess(10000 * eps(T)^2))
+        let basis_functions = [x -> x^i for i in 0:3]
+            # Test errors
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source; derivative_order = 2)
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source;
+                                                               sparsity_pattern = ones(Bool,
+                                                                                       N,
+                                                                                       N))
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source; bandwidth = 3)
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source;
+                                                               x0 = zeros(3))
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source;
+                                                               basis_functions_weights = ones(3))
+
+            D_basic = function_space_operator(basis_functions, nodes,
+                                              GlaubitzIskeLampertÖffner2026Basic())
+            x0 = get_optimization_entries(D_basic)
+            regularization_functions = [x -> x^4, x -> x^5]
+            errors_D_basic = norm.([
+                                       D_basic * nodes .^ 4 .- 4 .* nodes .^ 3,
+                                       D_basic * nodes .^ 5 .- 5 .* nodes .^ 4
+                                   ])
+
+            D = function_space_operator(basis_functions, nodes, source;
+                                        verbose = true, x0 = x0,
+                                        options = options,
+                                        regularization_functions = regularization_functions)
+            errors_D = norm.([
+                                 D * nodes .^ 4 .- 4 .* nodes .^ 3,
+                                 D * nodes .^ 5 .- 5 .* nodes .^ 4
+                             ])
+            @test all(errors_D .< 10 .* errors_D_basic)
+
+            @test eltype(D) == T
+            @test grid(D) ≈ nodes
+
+            tol = T == Float64 ? 1e-10 : (T == Float32 ? 1e-5 : 1e-10)
+            @test all(isapprox.(D * ones(N), zeros(N); atol = tol))
             @test D * nodes ≈ ones(N)
             @test D * (nodes .^ 2) ≈ 2 * nodes
             @test D * (nodes .^ 3) ≈ 3 * (nodes .^ 2)

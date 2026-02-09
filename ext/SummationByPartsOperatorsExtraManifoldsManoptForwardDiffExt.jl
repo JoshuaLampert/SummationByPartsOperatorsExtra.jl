@@ -58,8 +58,6 @@ function default_options(::GlaubitzIskeLampertÖffner2026Regularized,
             " | ",
             (:Cost, "f(x): %.6e"),
             " | ",
-            (:GradientNorm, "||∇f(x)||: %.6e"),
-            " | ",
             DebugFeasibility(["feasible: ", :Feasible, ", total violation: ", :TotalEq]),
             "\n",
             :Stop]
@@ -69,7 +67,6 @@ function default_options(::GlaubitzIskeLampertÖffner2026Regularized,
     return (;
             debug = debug,
             stopping_criterion = StopAfterIteration(1000) |
-                                 StopWhenGradientNormLess(1e-16) |
                                  StopWhenCostLess(1e-28))
 end
 function default_options(::GlaubitzIskeLampertÖffner2026EigenvalueProperty,
