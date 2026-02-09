@@ -148,9 +148,6 @@ and [`GlaubitzIskeLampertÖffner2026EigenvalueProperty`](@ref)) must be loaded.
 See also [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref), [`GlaubitzIskeLampertÖffner2026Basic`](@ref),
 [`GlaubitzIskeLampertÖffner2026Regularized`](@ref), and [`GlaubitzIskeLampertÖffner2026EigenvalueProperty`](@ref).
 
-!!! compat "Julia 1.9"
-    This function requires at least Julia 1.9.
-
 !!! warning "Experimental implementation"
     This is an experimental feature and may change in future releases.
 """
