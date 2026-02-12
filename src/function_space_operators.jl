@@ -4,7 +4,7 @@
 Function space SBP operators constructed with optimization procedure given in
 - Glaubitz, Iske, Lampert, Öffner (2026):
   Why summation by parts is not enough.
-  TODO
+  [arXiv:2602.10786](https://arxiv.org/abs/2602.10786)
 
 See [`function_space_operator`](@ref).
 """
@@ -17,7 +17,7 @@ function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026Basic)
         print(io,
               "Glaubitz, Iske, Lampert, Öffner (2026) \n",
               "  Why summation by parts is not enough.\n",
-              "  TODO")
+              "  arXiv:2602.10786")
     end
 end
 
@@ -27,7 +27,7 @@ end
 Function space SBP operators constructed with regularized constrained optimization procedure given in
 - Glaubitz, Iske, Lampert, Öffner (2026):
   Why summation by parts is not enough.
-  TODO
+  [arXiv:2602.10786](https://arxiv.org/abs/2602.10786)
 
 See [`function_space_operator`](@ref).
 """
@@ -40,7 +40,7 @@ function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026Regularized)
         print(io,
               "Glaubitz, Iske, Lampert, Öffner (2026) \n",
               "  Why summation by parts is not enough.\n",
-              "  TODO")
+              "  arXiv:2602.10786")
     end
 end
 
@@ -51,7 +51,7 @@ Function space SBP operators constructed with constrained optimization procedure
 property given in
 - Glaubitz, Iske, Lampert, Öffner (2026):
   Why summation by parts is not enough.
-  TODO
+  [arXiv:2602.10786](https://arxiv.org/abs/2602.10786)
 
 See [`function_space_operator`](@ref).
 """
@@ -64,7 +64,7 @@ function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026EigenvaluePrope
         print(io,
               "Glaubitz, Iske, Lampert, Öffner (2026) \n",
               "  Why summation by parts is not enough.\n",
-              "  TODO")
+              "  arXiv:2602.10786")
     end
 end
 

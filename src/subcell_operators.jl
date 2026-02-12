@@ -31,7 +31,7 @@ References:
 - Glaubitz, Lampert, Winters, Nordström (2025):
   Towards provable energy-stable overset grid methods using sub-cell
   summation-by-parts operators.
-  arXiv:2509.21442
+  [arXiv:2509.21442](https://arxiv.org/abs/2509.21442)
 """
 @auto_hash_equals struct SubcellOperator{T, QType <: AbstractMatrix{T},
                                          BType <: AbstractMatrix{T},
@@ -406,7 +406,7 @@ Sub-cell SBP operators given in
 - Glaubitz, Lampert, Winters, Nordström (2025):
   Towards provable energy-stable overset grid methods using sub-cell
   summation-by-parts operators.
-  arXiv:2509.21442
+  [arXiv:2509.21442](https://arxiv.org/abs/2509.21442)
 
 See [`subcell_operator`](@ref).
 """
