@@ -23,14 +23,12 @@ ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 Manifolds = "1cead3c2-87b3-11e9-0ccd-23c62b72b94e"
 Manopt = "0fc0a36d-df90-57f3-8f93-d78a9fc72bb5"
-MeshIntegrals = "dadec2fd-bbe0-4da4-9dbe-476c782c8e47"
 Meshes = "eacbb407-ea5a-433e-ab97-5258b1ca43fa"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
 
 [extensions]
 SummationByPartsOperatorsExtraManifoldsManoptForwardDiffExt = ["Manifolds", "Manopt", "ForwardDiff", "RecursiveArrayTools"]
-SummationByPartsOperatorsExtraMeshIntegralsExt = ["Meshes", "MeshIntegrals"]
 SummationByPartsOperatorsExtraMeshesExt = "Meshes"
 SummationByPartsOperatorsExtraMeshesMakieExt = ["Meshes", "Makie"]
 SummationByPartsOperatorsExtraOptimForwardDiffExt = ["Optim", "ForwardDiff"]
@@ -44,8 +42,7 @@ LinearAlgebra = "1"
 Makie = "0.23, 0.24"
 Manifolds = "0.11.5"
 Manopt = "0.5.30"
-MeshIntegrals = "0.16, 0.17"
-Meshes = "0.53, 0.54, 0.55, 0.56"
+Meshes = "0.57"
 Optim = "1.12, 2"
 PolynomialBases = "0.4.25"
 PreallocationTools = "0.4.26, 1"

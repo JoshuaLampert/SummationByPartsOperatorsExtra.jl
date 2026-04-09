@@ -1,13 +1,13 @@
 module SummationByPartsOperatorsExtraMeshesExt
 
-using Meshes: Meshes, PointSet, Point, Ring,
-              paramdim, sample, boundary, measure, to
-
+using Meshes: Meshes, PointSet, Geometry, Point, Ring, Sphere,
+              paramdim, sample, boundary, measure, to, integral
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       multidimensional_function_space_operator,
                                       neighborhood_sparsity_pattern,
                                       compute_moments_boundary,
                                       find_corners,
+                                      integrate_boundary,
                                       SVector
 include("normals.jl")
 
@@ -158,6 +158,32 @@ function divide_into_inner_and_boundary(geometry, nodes)
         end
     end
     return PointSet(nodes_inner), PointSet(nodes_boundary), boundary_indices
+end
+
+# if geometry is already the boundary
+function SummationByPartsOperatorsExtra.integrate_boundary(func,
+                                                           geometry::Union{Ring, Sphere})
+    return Meshes.ustrip(integral(func, geometry))
+end
+function SummationByPartsOperatorsExtra.integrate_boundary(func, geometry::Geometry)
+    return integrate_boundary(func, boundary(geometry))
+end
+
+function SummationByPartsOperatorsExtra.compute_moments_boundary(functions,
+                                                                 geometry::Geometry)
+    K = length(functions)
+    moments = ntuple(paramdim(geometry)) do i
+        M = zeros(K, K)
+        for k in 1:K
+            for l in 1:K
+                f = x -> functions[k](uto(x)) * functions[l](uto(x)) *
+                         outer_normal(geometry, x)[i]
+                M[k, l] = integrate_boundary(f, geometry)
+            end
+        end
+        return M
+    end
+    return moments
 end
 
 function SummationByPartsOperatorsExtra.multidimensional_function_space_operator(basis_functions,
