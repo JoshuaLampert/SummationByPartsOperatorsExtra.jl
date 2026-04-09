@@ -1,7 +1,7 @@
 # This example takes some time to run.
 using SummationByPartsOperatorsExtra
 import Random
-using Meshes, MeshIntegrals
+using Meshes
 using KernelInterpolation: WendlandKernel, LagrangeBasis, NodeSet
 import Optim, ADTypes, Mooncake
 Random.seed!(43)
