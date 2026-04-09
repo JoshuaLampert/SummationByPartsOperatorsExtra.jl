@@ -7,7 +7,7 @@ Compute the moments, i.e., the integrals of the product of two basis functions w
 of the direction. For each direction, it computes a ``K \times K`` matrix, where ``K`` is the number of `functions`
 and returns a tuple of these matrices.
 In one dimension, `nodes` and `normals` can be passed. You can also pass a derivative operator `D`
-or a `Geometry` object from Meshes.jl. Note that the latter is defined in a package extension of MeshIntegrals.jl and
+or a `Geometry` object from Meshes.jl. Note that the latter is defined in a package extension of Meshes.jl and
 therefore requires loading that package before.
 """
 function compute_moments_boundary(functions, nodes, normals)
