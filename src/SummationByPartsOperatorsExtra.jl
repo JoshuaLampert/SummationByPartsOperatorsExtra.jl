@@ -18,7 +18,14 @@ using DiffEqCallbacks: PeriodicCallback, PeriodicCallbackAffect
 using LinearAlgebra: LinearAlgebra, Diagonal, UpperTriangular, diag, dot
 import LinearAlgebra: mul!, diagind, norm
 using Reexport: @reexport
-import SciMLBase: u_modified!, get_tmp_cache
+import SciMLBase: SciMLBase, get_tmp_cache
+# To keep backwards compatibility with SciMLBase v2, see
+# https://github.com/trixi-framework/Trixi.jl/pull/2918#issuecomment-4233720339
+@static if isdefined(SciMLBase, :derivative_discontinuity!)
+    using SciMLBase: derivative_discontinuity!
+else
+    const derivative_discontinuity! = SciMLBase.u_modified!
+end
 @reexport using PolynomialBases
 @reexport using SummationByPartsOperators
 using SimpleUnPack: @unpack
