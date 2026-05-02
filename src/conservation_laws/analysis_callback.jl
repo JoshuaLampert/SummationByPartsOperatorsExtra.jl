@@ -125,7 +125,7 @@ function (analysis_callback::AnalysisCallback)(integrator)
     push!(quantities, analyze_quantities(semi, du, u, p, t))
 
     # avoid re-evaluating possible FSAL stages
-    u_modified!(integrator, false)
+    derivative_discontinuity!(integrator, false)
 
     return nothing
 end
