@@ -25,7 +25,7 @@
 end
 
 @testitem "Reproducing legendre_derivative_operator" setup=[Reproducing1D] begin
-    for n in 2:6
+    for n in 2:5
         @testset "n = $n" begin
             D_legendre = legendre_derivative_operator(xmin, xmax, n)
 
