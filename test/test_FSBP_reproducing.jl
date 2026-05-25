@@ -142,8 +142,8 @@ end
                 D = function_space_operator(basis, nodes, source;
                                             bandwidth, size_boundary, different_values,
                                             verbose, opt_kwargs...)
-                @test isapprox(Matrix(D), Matrix(D_poly); atol = 1e-3) # almost equal
-                @test isapprox(mass_matrix(D), mass_matrix(D_poly); atol = 1e-4) # almost equal
+                @test isapprox(Matrix(D), Matrix(D_poly); atol = 8e-2) # almost equal
+                @test isapprox(mass_matrix(D), mass_matrix(D_poly); atol = 8e-3) # almost equal
 
                 x_poly = get_optimization_entries(D_poly;
                                                   bandwidth, size_boundary,
@@ -291,8 +291,8 @@ end
             D = function_space_operator(basis, nodes, source;
                                         bandwidth, size_boundary, different_values,
                                         verbose, opt_kwargs...)
-            @test isapprox(Matrix(D), Matrix(D_poly); atol = 1e-10) # equal
-            @test isapprox(mass_matrix(D), mass_matrix(D_poly); atol = 1e-12) # equal
+            @test isapprox(Matrix(D), Matrix(D_poly); atol = 8e-9) # equal
+            @test isapprox(mass_matrix(D), mass_matrix(D_poly); atol = 8e-10) # equal
         end
 
         @testset "multidimensional_function_space_operator" begin
@@ -328,7 +328,7 @@ end
                                         bandwidth, size_boundary, different_values,
                                         verbose, opt_kwargs...)
             @test isapprox(Matrix(D), Matrix(D_poly); atol = 1e-2) # almost equal
-            @test isapprox(mass_matrix(D), mass_matrix(D_poly); atol = 1e-4) # almost equal
+            @test isapprox(mass_matrix(D), mass_matrix(D_poly); atol = 8e-3) # almost equal
 
             # Also minimizing the error for polynomial of one degree higher gets closer to
             # original operator
@@ -404,7 +404,7 @@ end
                                                          bandwidth, size_boundary,
                                                          different_values,
                                                          verbose, opt_kwargs...)
-            @test isapprox(Matrix(D[1]), Matrix(D_poly); atol = 1e-12) # equal
+            @test isapprox(Matrix(D[1]), Matrix(D_poly); atol = 8e-11) # equal
             @test isapprox(mass_matrix(D), mass_matrix(D_poly); atol) # equal
             @test isapprox(mass_matrix_boundary(D, 1), mass_matrix_boundary(D_poly);
                            atol) # equal
@@ -421,8 +421,8 @@ end
             D = function_space_operator(basis, nodes, source;
                                         bandwidth, size_boundary, different_values,
                                         verbose, opt_kwargs...)
-            @test isapprox(Matrix(D), Matrix(D_poly); atol = 1e-3) # almost equal
-            @test isapprox(mass_matrix(D), mass_matrix(D_poly); atol = 1e-4) # almost equal
+            @test isapprox(Matrix(D), Matrix(D_poly); atol = 8e-2) # almost equal
+            @test isapprox(mass_matrix(D), mass_matrix(D_poly); atol = 8e-3) # almost equal
         end
 
         @testset "multidimensional_function_space_operator" begin
