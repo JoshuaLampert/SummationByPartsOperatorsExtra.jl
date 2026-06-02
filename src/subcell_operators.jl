@@ -431,7 +431,7 @@ end
                      bandwidths = [N_L - 1, N_R - 1], size_boundaries = 2 .* bandwidths,
                      different_values = [true, true], sparsity_patterns = [nothing, nothing],
                      M_local_approximation = [N_L, N_R],
-                     opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
+                     opt_alg = Optim.BFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
                      autodiff = ADTypes.AutoForwardDiff(), x0 = nothing, verbose = false)
 
 Construct a sub-cell operator in a function space spanned by the `basis_functions`, which is an
