@@ -20,7 +20,8 @@ end
         options = (;
                    debug = debug,
                    stopping_criterion = StopAfterIteration(1000) |
-                                        StopWhenGradientNormLess(eps(T)))
+                                        StopWhenGradientNormLess(eps(T)) |
+                                        StopWhenCostChangeLess(1e-30) × 3)
         let basis_functions = [x -> x^i for i in 0:3]
             # Test errors
             @test_throws ArgumentError function_space_operator(basis_functions, nodes,
