@@ -21,7 +21,7 @@ end
                    debug = debug,
                    stopping_criterion = StopAfterIteration(1000) |
                                         StopWhenGradientNormLess(eps(T)) |
-                                        StopWhenCostChangeLess(1e-30) × 3)
+                                        cross(StopWhenCostChangeLess(1e-30), 3))
         let basis_functions = [x -> x^i for i in 0:3]
             # Test errors
             @test_throws ArgumentError function_space_operator(basis_functions, nodes,
@@ -110,9 +110,10 @@ end
         nodes = collect(LinRange{T}(x_min, x_max, N))
         debug = SummationByPartsOperatorsExtra.default_options(source, true).debug
         options = (;
-                   debug = debug,
+                   debug = push!(debug, 100), # Only print every 100 iterations
                    stopping_criterion = StopAfterIteration(10000) |
-                                        cross(StopWhenCostLess(10000 * eps(T)^2), 5))
+                                        cross(StopWhenCostLess(10000 * eps(T)^2), 5) |
+                                        cross(StopWhenCostChangeLess(1e-30), 3))
         let basis_functions = [x -> x^i for i in 0:3]
             # Test errors
             @test_throws ArgumentError function_space_operator(basis_functions, nodes,
@@ -177,7 +178,8 @@ end
         options = (;
                    debug = debug,
                    stopping_criterion = StopAfterIteration(iterations) |
-                                        StopWhenCostLess(10000 * eps(T)^2))
+                                        StopWhenCostLess(10000 * eps(T)^2) |
+                                        cross(StopWhenCostChangeLess(1e-30), 3))
         let basis_functions = [x -> x^i for i in 0:3]
             # Test errors
             @test_throws AssertionError function_space_operator(basis_functions, nodes,
