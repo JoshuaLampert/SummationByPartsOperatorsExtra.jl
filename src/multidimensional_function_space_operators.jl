@@ -29,7 +29,7 @@ end
                                              derivative_order = 1, accuracy_order = 0,
                                              bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
                                              different_values = true, sparsity_pattern = nothing,
-                                             opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
+                                             opt_alg = Optim.BFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
                                              autodiff = ADTypes.AutoForwardDiff(), x0 = nothing, verbose = false)
 
 Construct a [`SummationByPartsOperators.MultidimensionalMatrixDerivativeOperator`](@extref) that represents a first-derivative operator in a function

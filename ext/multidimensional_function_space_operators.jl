@@ -33,7 +33,7 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
                                                             different_values = true,
                                                             sparsity_patterns = nothing,
                                                             corners = nothing,
-                                                            opt_alg = LBFGS(),
+                                                            opt_alg = BFGS(),
                                                             options = Options(g_tol = 1e-14,
                                                                               iterations = 10000),
                                                             autodiff = Optim.ADTypes.AutoForwardDiff(),

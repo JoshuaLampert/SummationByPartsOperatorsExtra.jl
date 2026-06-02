@@ -77,7 +77,7 @@ end
                             min_real_eigen = 0.1,
                             bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
                             different_values = true, sparsity_pattern = nothing,
-                            opt_alg = Optim.LBFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
+                            opt_alg = Optim.BFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
                             autodiff = ADTypes.AutoForwardDiff(), x0 = nothing, verbose = false)
 
 Construct an operator that represents a first-derivative operator in a function space spanned by
