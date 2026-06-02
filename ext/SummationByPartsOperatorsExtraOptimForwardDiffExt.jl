@@ -1,6 +1,6 @@
 module SummationByPartsOperatorsExtraOptimForwardDiffExt
 
-using Optim: Optim, Options, LBFGS, optimize, minimizer
+using Optim: Optim, Options, BFGS, optimize, minimizer
 import ForwardDiff
 
 import SummationByPartsOperatorsExtra: construct_function_space_operator,
