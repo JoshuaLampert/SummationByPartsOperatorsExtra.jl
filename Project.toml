@@ -29,7 +29,7 @@ RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
 
 [extensions]
 ManifoldsManoptForwardDiffExt = ["Manifolds", "Manopt", "ForwardDiff", "RecursiveArrayTools"]
-ExtraMeshesExt = "Meshes"
+MeshesExt = "Meshes"
 MeshesMakieExt = ["Meshes", "Makie"]
 OptimForwardDiffExt = ["Optim", "ForwardDiff"]
 
