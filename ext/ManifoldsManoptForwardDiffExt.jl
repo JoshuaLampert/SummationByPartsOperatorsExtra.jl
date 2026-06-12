@@ -1,4 +1,4 @@
-module SummationByPartsOperatorsExtraManifoldsManoptForwardDiffExt
+module ManifoldsManoptForwardDiffExt
 
 using Manifolds: Manifolds, SkewSymmetricMatrices, PositiveVectors, ProductManifold,
                  check_point

@@ -1,4 +1,4 @@
-module SummationByPartsOperatorsExtraOptimForwardDiffExt
+module OptimForwardDiffExt
 
 using Optim: Optim, Options, BFGS, optimize, minimizer
 import ForwardDiff

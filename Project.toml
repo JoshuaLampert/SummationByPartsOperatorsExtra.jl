@@ -28,10 +28,10 @@ Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
 
 [extensions]
-SummationByPartsOperatorsExtraManifoldsManoptForwardDiffExt = ["Manifolds", "Manopt", "ForwardDiff", "RecursiveArrayTools"]
-SummationByPartsOperatorsExtraMeshesExt = "Meshes"
-SummationByPartsOperatorsExtraMeshesMakieExt = ["Meshes", "Makie"]
-SummationByPartsOperatorsExtraOptimForwardDiffExt = ["Optim", "ForwardDiff"]
+ManifoldsManoptForwardDiffExt = ["Manifolds", "Manopt", "ForwardDiff", "RecursiveArrayTools"]
+ExtraMeshesExt = "Meshes"
+MeshesMakieExt = ["Meshes", "Makie"]
+OptimForwardDiffExt = ["Optim", "ForwardDiff"]
 
 [compat]
 ArgCheck = "1, 2"

@@ -1,4 +1,4 @@
-module SummationByPartsOperatorsExtraMeshesExt
+module MeshesExt
 
 using Meshes: Meshes, PointSet, Geometry, Point, Ring, Sphere,
               paramdim, sample, boundary, measure, to, integral
