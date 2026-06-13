@@ -1,4 +1,4 @@
-module SummationByPartsOperatorsExtraMeshesMakieExt
+module MeshesMakieExt
 
 using LinearAlgebra: Symmetric
 using Meshes: Meshes, PointSet, coords, viz, viz!
