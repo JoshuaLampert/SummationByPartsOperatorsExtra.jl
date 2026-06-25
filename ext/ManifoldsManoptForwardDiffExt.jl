@@ -281,6 +281,7 @@ function eigenvalue_property(M, x, param)
     S, p = x.x
 
     Q = S + B / 2
+    @info p
     D_tilde = inv(Diagonal(p)) * Q
     nu = 1.0
     D_tilde[1, 1] += nu / p[1]
