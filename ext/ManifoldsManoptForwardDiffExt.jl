@@ -281,7 +281,11 @@ function eigenvalue_property(M, x, param)
     S, p = x.x
 
     Q = S + B / 2
-    @info p
+    if eltype(p) <: AbstractFloat
+        if minimum(p) <= 1e-4
+            @info p
+        end
+    end
     D_tilde = inv(Diagonal(p)) * Q
     nu = 1.0
     D_tilde[1, 1] += nu / p[1]
