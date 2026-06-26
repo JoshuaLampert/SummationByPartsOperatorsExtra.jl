@@ -281,6 +281,17 @@ function eigenvalue_property(M, x, param)
     (; B, min_real_eigen) = param
     S, p = x.x
 
+    # During the (Manopt >= 0.6) Wolfe-Powell line search the exponential retraction on the
+    # `PositiveVectors` manifold, `q = p .* exp.(t .* X ./ p)`, can probe huge step sizes
+    # (`max_stepsize(M) == Inf`, so the increase loop is only bounded by 1e9). This makes
+    # entries of `p` over-/underflow to `Inf`/`0.0`, after which `inv(Diagonal(p))` throws a
+    # `SingularException` (or `eigen` throws on `Inf`/`NaN`) and the solver crashes instead of
+    # backtracking. Return a strongly-violated (large positive) constraint value so the line
+    # search rejects such a trial point. The gradient is evaluated at the accepted, finite
+    # point, so this guard only affects degenerate cost probes.
+    if !all(pᵢ -> isfinite(pᵢ) && pᵢ > 0, p)
+        return convert(eltype(p), Inf)
+    end
     Q = S + B / 2
     if eltype(p) <: AbstractFloat
         if minimum(p) <= 1e-4
