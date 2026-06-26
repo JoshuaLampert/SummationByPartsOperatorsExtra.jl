@@ -110,7 +110,7 @@ end
         nodes = collect(LinRange{T}(x_min, x_max, N))
         debug = SummationByPartsOperatorsExtra.default_options(source, true).debug
         options = (;
-                   debug = push!(debug, Sys.iswindows() ? 1 : 100), # Only print every 100 iterations
+                   debug = push!(debug, 100), # Only print every 100 iterations
                    stopping_criterion = StopAfterIteration(10000) |
                                         cross(StopWhenCostLess(10000 * eps(T)^2), 5) |
                                         cross(StopWhenCostChangeLess(1e-30), 3))

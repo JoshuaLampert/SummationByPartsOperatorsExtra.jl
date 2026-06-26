@@ -159,7 +159,6 @@ function construct_function_space_operator(basis_functions, nodes,
     S0 = SummationByPartsOperatorsExtra.create_S(sigma0, N, bandwidth, size_boundary,
                                                  different_values, sparsity_pattern)
     p0 = diag(create_P(rho0, x_length))
-    @info "Initial guess for p: $p0"
     x0 = ArrayPartition(S0, p0)
 
     param = (; V, V_x, R, B, min_real_eigen)
@@ -304,11 +303,6 @@ function eigenvalue_property(M, x, param)
     # `inv(Diagonal(p))` and `Inf`/`NaN` from `eigen` during the line search.
     p_is_degenerate(p) && return convert(eltype(p), degenerate_penalty(eltype(p)))
     Q = S + B / 2
-    if eltype(p) <: AbstractFloat
-        if minimum(p) <= 1e-4
-            @info p
-        end
-    end
     D_tilde = inv(Diagonal(p)) * Q
     nu = 1.0
     D_tilde[1, 1] += nu / p[1]
