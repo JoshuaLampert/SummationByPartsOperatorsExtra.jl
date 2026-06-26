@@ -159,6 +159,7 @@ function construct_function_space_operator(basis_functions, nodes,
     S0 = SummationByPartsOperatorsExtra.create_S(sigma0, N, bandwidth, size_boundary,
                                                  different_values, sparsity_pattern)
     p0 = diag(create_P(rho0, x_length))
+    @info "Initial guess for p: $p0"
     x0 = ArrayPartition(S0, p0)
 
     param = (; V, V_x, R, B, min_real_eigen)
