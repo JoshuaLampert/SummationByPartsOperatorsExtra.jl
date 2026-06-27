@@ -224,10 +224,27 @@ function get_objective_function(::GlaubitzIskeLampertÖffner2026EigenvalueProper
                                         atol = 1e-28)
 end
 
+# During the (Manopt >= 0.6) Wolfe-Powell line search the exponential retraction on the
+# `PositiveVectors` manifold, `q = p .* exp.(t .* X ./ p)`, can probe huge step sizes
+# (`max_stepsize(M) == Inf`, so the increase loop is only bounded by `1e9`). This makes
+# entries of `p` over-/underflow to `Inf`/`0.0`, after which the objective/constraint
+# (`Diagonal(p)`, `inv(Diagonal(p))`, `eigen`) produce `Inf`/`NaN` or even throw a
+# `SingularException`. Whether `exp` lands on exactly `0.0`/`Inf` is platform dependent, which
+# is why this only surfaced on Windows. Detect such degenerate `p` and return a large *finite*
+# penalty so the line search backtracks. It must stay finite when squared (augmented Lagrangian)
+# and scaled by the penalty parameter `ρ`, hence not `Inf`: a non-finite cost/constraint feeds
+# `Inf`/`Inf * 0 = NaN` into the quasi-Newton gradient and poisons the BFGS Hessian (the NaN
+# iterates seen on Windows). Returning a constant also keeps the (ForwardDiff) gradient finite
+# (zero) at these probe points. The accepted iterate is always finite, so this only affects
+# rejected line-search probes and does not change the optimum.
+p_is_degenerate(p) = !all(pᵢ -> isfinite(pᵢ) && pᵢ > 0, p)
+degenerate_penalty(::Type{T}) where {T} = inv(eps(real(T)))
+
 function optimization_function_function_space_operator(M, x, param)
     (; V, V_x, R) = param
     S, p = x.x
 
+    p_is_degenerate(p) && return convert(eltype(p), degenerate_penalty(eltype(p)))
     A = S * V - Diagonal(p) * V_x + R
     return sum(abs2, A)
 end
@@ -236,6 +253,7 @@ function optimization_function_function_space_operator_G(M, x, param)
     (; G, G_x, R_G) = param
     S, p = x.x
 
+    p_is_degenerate(p) && return convert(eltype(p), degenerate_penalty(eltype(p)))
     A = S * G - Diagonal(p) * G_x + R_G
     return sum(abs2, A)
 end
@@ -280,6 +298,10 @@ function eigenvalue_property(M, x, param)
     (; B, min_real_eigen) = param
     S, p = x.x
 
+    # Return a large positive (i.e. strongly violated) but finite penalty for degenerate `p`,
+    # see the note above `p_is_degenerate`. Guards against `SingularException` from
+    # `inv(Diagonal(p))` and `Inf`/`NaN` from `eigen` during the line search.
+    p_is_degenerate(p) && return convert(eltype(p), degenerate_penalty(eltype(p)))
     Q = S + B / 2
     D_tilde = inv(Diagonal(p)) * Q
     nu = 1.0
