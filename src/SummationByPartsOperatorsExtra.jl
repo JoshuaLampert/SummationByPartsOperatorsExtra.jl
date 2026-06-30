@@ -15,7 +15,7 @@ module SummationByPartsOperatorsExtra
 using AutoHashEquals: @auto_hash_equals
 using ArgCheck: @argcheck
 using DiffEqCallbacks: PeriodicCallback, PeriodicCallbackAffect
-using LinearAlgebra: LinearAlgebra, Diagonal, UpperTriangular, diag, dot
+using LinearAlgebra: LinearAlgebra, Diagonal, UpperTriangular, LowerTriangular, diag, dot
 import LinearAlgebra: mul!, diagind, norm
 using Reexport: @reexport
 import SciMLBase: SciMLBase, get_tmp_cache
@@ -43,6 +43,7 @@ include("function_space_operators.jl")
 include("multidimensional_function_space_operators.jl")
 include("polynomialbases_operators.jl")
 include("subcell_operators.jl")
+include("upwind_operators.jl")
 include("conservation_laws/analysis_callback.jl")
 include("conservation_laws/multidimensional_linear_advection.jl")
 export get_nsigma, get_optimization_entries, get_multidimensional_optimization_entries
@@ -62,6 +63,7 @@ export SubcellOperator, GlaubitzLampertWintersNordström2025, subcell_operator,
        integrate_left, integrate_right,
        left_projection_left, left_projection_right,
        right_projection_left, right_projection_right
+export GlaubitzEtAl2025
 export AnalysisCallback, tstops, quantities
 export MultidimensionalLinearAdvectionNonperiodicSemidiscretization
 end
