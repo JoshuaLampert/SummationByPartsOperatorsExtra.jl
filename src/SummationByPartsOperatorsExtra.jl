@@ -63,7 +63,7 @@ export SubcellOperator, GlaubitzLampertWintersNordström2025, subcell_operator,
        integrate_left, integrate_right,
        left_projection_left, left_projection_right,
        right_projection_left, right_projection_right
-export GlaubitzEtAl2025
+export GlaubitzEtAl2025, GlaubitzEtAl2026
 export AnalysisCallback, tstops, quantities
 export MultidimensionalLinearAdvectionNonperiodicSemidiscretization
 end

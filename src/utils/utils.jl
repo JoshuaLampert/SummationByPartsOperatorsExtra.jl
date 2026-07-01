@@ -39,7 +39,8 @@ function orthonormalize_gram_schmidt(functions, nodes)
             A[k, :] = A[k, :] - inner_product / norm_squared * A[j, :]
         end
 
-        functions_orthonormalized[k] = x -> call_orthonormal_basis_function(A, functions, k, x)
+        functions_orthonormalized[k] = x -> call_orthonormal_basis_function(A, functions, k,
+                                                                            x)
         # Normalization
         r = norm_L2(functions_orthonormalized[k], nodes)
         A[k, :] = A[k, :] / r
