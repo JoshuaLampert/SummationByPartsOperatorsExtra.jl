@@ -1,5 +1,4 @@
 using SummationByPartsOperatorsExtra: grid, mass_matrix, orthonormalize_gram_schmidt
-using LinearAlgebra: norm
 
 function SummationByPartsOperatorsExtra.upwind_operators(D, basis_functions,
                                                          additional_functions,
@@ -72,7 +71,6 @@ function optimization_function_upwind_function_space_operator(sigma, p)
     (; P_inv, Dc, V, test_functions_values, test_functions_derivatives_values) = p
     N = size(V, 1)
     K = N - length(sigma)
-    @info ForwardDiff.value.(sigma)
 
     lambda = zeros(eltype(sigma), N)
     lambda[(K + 1):N] .= sigma
@@ -84,8 +82,10 @@ function optimization_function_upwind_function_space_operator(sigma, p)
     residuals = zeros(eltype(sigma), length(test_functions_values))
     for (i, (test_function_values, test_function_derivative_values)) in enumerate(zip(test_functions_values,
                                                                                       test_functions_derivatives_values))
-        residuals[i] = norm(Dp * test_function_values - test_function_derivative_values)^2 +
-                       norm(Dm * test_function_values - test_function_derivative_values)^2
+        residuals[i] = sum(abs2,
+                           Dp * test_function_values - test_function_derivative_values) +
+                       sum(abs2,
+                           Dm * test_function_values - test_function_derivative_values)
     end
     return sum(residuals)
 end

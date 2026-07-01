@@ -40,7 +40,7 @@ where `M` is the mass matrix.
 
 See also [`GlaubitzEtAl2025`](@ref) for details.
 """
-function SummationByPartsOperators.upwind_operators(D, sigma, source::GlaubitzEtAl2025)
+function upwind_operators(D, sigma, source::GlaubitzEtAl2025)
     xmin = SummationByPartsOperators.xmin(D)
     xmax = SummationByPartsOperators.xmax(D)
     nodes = grid(D)
