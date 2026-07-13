@@ -1,6 +1,6 @@
 name = "SummationByPartsOperatorsExtra"
 uuid = "213abaa5-c2d1-49c7-a86b-a2b7aa43ec15"
-version = "0.1.0-DEV"
+version = "0.1.0"
 authors = ["Joshua Lampert <joshua.lampert@uni-hamburg.de> and contributors"]
 
 [deps]
