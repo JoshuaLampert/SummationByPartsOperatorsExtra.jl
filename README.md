@@ -9,7 +9,7 @@
 **SummationByPartsOperatorsExtra.jl** is a [Julia](https://julialang.org/) package that
 implements some extra functionality for the package [SummationByPartsOperators.jl](https://github.com/ranocha/SummationByPartsOperators.jl).
 SummationByPartsOperatorsExtra.jl is still in an early stage of development and is meant to be used
-for research purposes. Maybe some parts of the package will be moved to SummationByPartsOperators.jl in the future.
+for research purposes.
 Until now, the package focuses on the implementation of function space summation-by-parts operators in one and multiple dimensions
 and on subcell summation-by-parts operators.
 
@@ -36,6 +36,8 @@ julia> using SummationByPartsOperatorsExtra
 
 SummationByPartsOperatorsExtra.jl is built on top of the package SummationByPartsOperators.jl and exports all the functions
 and types of the package.
+For more details about how to use SummationByPartsOperatorsExtra.jl, take a look at the
+[documentation](https://joshualampert.github.io/SummationByPartsOperatorsExtra.jl/dev/ref/).
 
 ## Authors
 
