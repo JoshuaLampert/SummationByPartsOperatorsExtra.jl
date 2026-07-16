@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/JoshuaLampert/SummationByPartsOperatorsExtra.jl/graph/badge.svg?token=ZnS5D3tWSK)](https://codecov.io/gh/JoshuaLampert/SummationByPartsOperatorsExtra.jl)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](https://opensource.org/licenses/MIT)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21397439.svg)](https://doi.org/10.5281/zenodo.21397439)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21397438.svg)](https://doi.org/10.5281/zenodo.21397438)
 
 **SummationByPartsOperatorsExtra.jl** is a [Julia](https://julialang.org/) package that
 implements some extra functionality for the package [SummationByPartsOperators.jl](https://github.com/ranocha/SummationByPartsOperators.jl).
@@ -54,7 +54,7 @@ You can directly refer to SummationByPartsOperatorsExtra.jl as
   year={2026},
   month={07},
   howpublished={\url{https://github.com/JoshuaLampert/SummationByPartsOperatorsExtra.jl}},
-  doi={10.5281/zenodo.21397439}
+  doi={10.5281/zenodo.21397438}
 }
 ```
 
