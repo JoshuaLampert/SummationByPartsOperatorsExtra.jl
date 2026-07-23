@@ -10,7 +10,7 @@
                                 # These are needed in the extensions, but not in the main module.
                                 # Since package extensions cannot have additional dependencies,
                                 # we need to load them in the main module.
-                                ignore = [:PreallocationTools]),
+                                ignore = [:PreallocationTools, :ScopedValues]),
                   # We use type piracy for `mass_matrix_boundary`. This probably doesn't want to live
                   # in SummationByPartsOperators.jl since it has some assumptions.
                   piracies = false)

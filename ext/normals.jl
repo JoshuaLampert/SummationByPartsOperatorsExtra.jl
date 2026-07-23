@@ -1,6 +1,7 @@
 using Meshes: Vec, Ngon, Box, Ball, Ring, Segment, segments
 using LinearAlgebra: normalize
-using Base.ScopedValues: with
+# On julia >=v1.11, ScopedValues is part of Base, but we still need to import it for older versions of Julia
+using ScopedValues: with
 
 function outer_normal(geometry::Union{Ngon, Box, Ball}, point)
     return outer_normal(boundary(geometry), point)
