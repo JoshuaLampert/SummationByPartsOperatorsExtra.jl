@@ -151,10 +151,7 @@ function get_optimization_entries_sparsity_pattern(S; sparsity_pattern)
     return sigma
 end
 
-function get_optimization_entries_block_banded(S;
-                                               bandwidth = div(accuracy_order(D), 2),
-                                               size_boundary = SummationByPartsOperators.lower_bandwidth(D) +
-                                                               1,
+function get_optimization_entries_block_banded(S; bandwidth, size_boundary,
                                                different_values = false)
     T = eltype(S)
     b = bandwidth
