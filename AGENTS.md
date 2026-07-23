@@ -9,7 +9,7 @@ SummationByPartsOperatorsExtra.jl is a Julia research package that adds extra fu
 [SummationByPartsOperators.jl](https://github.com/ranocha/SummationByPartsOperators.jl) (SBP). It `@reexport`s
 SummationByPartsOperators.jl and PolynomialBases.jl, so users get all of those symbols by `using SummationByPartsOperatorsExtra`.
 The focus is on **function space SBP operators** (one- and multi-dimensional) and **subcell SBP operators**, mostly
-constructed by numerical optimization. Requires Julia ≥ 1.11.
+constructed by numerical optimization. Requires Julia ≥ 1.10.
 
 ## Common commands
 
