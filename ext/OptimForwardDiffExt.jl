@@ -1,6 +1,7 @@
 module OptimForwardDiffExt
 
 using Optim: Optim, Options, BFGS, optimize, minimizer
+using LinearAlgebra: mul!
 import ForwardDiff
 
 import SummationByPartsOperatorsExtra: construct_function_space_operator,

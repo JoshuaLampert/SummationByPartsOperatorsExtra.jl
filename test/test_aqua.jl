@@ -21,6 +21,7 @@
     @test isnothing(check_no_stale_explicit_imports(SummationByPartsOperatorsExtra,
                                                     ignore = (:derivative_discontinuity!,)))
     @test isnothing(check_all_qualified_accesses_via_owners(SummationByPartsOperatorsExtra;
-                                                            ignore = (:ustrip,)))
+                                                            ignore = (:ustrip, :AutoForwardDiff,
+                                                                      :ManifoldDiff)))
     @test isnothing(check_no_self_qualified_accesses(SummationByPartsOperatorsExtra))
 end
