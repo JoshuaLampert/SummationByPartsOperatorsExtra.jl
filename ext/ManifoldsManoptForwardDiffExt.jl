@@ -1,8 +1,7 @@
 module ManifoldsManoptForwardDiffExt
 
-using Manifolds: Manifolds, SkewSymmetricMatrices, PositiveVectors, ProductManifold,
-                 check_point
-using Manopt: quasi_Newton, interior_point_Newton, augmented_Lagrangian_method,
+using Manifolds: Manifolds, SkewSymmetricMatrices, PositiveVectors, ProductManifold
+using Manopt: quasi_Newton, augmented_Lagrangian_method,
               ApproxHessianBFGS, ManifoldGradientObjective, ConstrainedManifoldObjective,
               DebugFeasibility,
               StopAfterIteration, StopWhenGradientNormLess, StopWhenCostLess

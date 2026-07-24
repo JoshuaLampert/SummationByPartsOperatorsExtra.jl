@@ -1,5 +1,5 @@
 using SummationByPartsOperatorsExtra: get_nsigma
-using LinearAlgebra: Diagonal, UpperTriangular, LowerTriangular, diag, mul!, issymmetric
+using LinearAlgebra: Diagonal, UpperTriangular, LowerTriangular, diag, issymmetric
 using SparseArrays: spzeros
 
 function vandermonde_matrix(functions, nodes)
