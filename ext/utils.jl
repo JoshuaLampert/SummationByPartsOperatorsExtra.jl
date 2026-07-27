@@ -1,5 +1,5 @@
 using SummationByPartsOperatorsExtra: get_nsigma, vandermonde_matrix
-using LinearAlgebra: Diagonal, UpperTriangular, LowerTriangular, diag, mul!, issymmetric
+using LinearAlgebra: Diagonal, UpperTriangular, LowerTriangular, diag, issymmetric
 using SparseArrays: spzeros
 
 function SummationByPartsOperatorsExtra.create_S(sigma, N, bandwidth, size_boundary,

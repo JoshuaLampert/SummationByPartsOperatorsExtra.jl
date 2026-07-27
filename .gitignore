@@ -6,4 +6,5 @@ run/*
 out*/
 **/*.code-workspace
 .vscode/
+*/JuliaLint.toml
 .claude/
