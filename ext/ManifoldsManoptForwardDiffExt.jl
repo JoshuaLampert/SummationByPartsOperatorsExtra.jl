@@ -115,9 +115,6 @@ function construct_function_space_operator(basis_functions, nodes,
     assert_correct_length_basis_functions_weights(basis_functions_weights, basis_functions)
     if source isa GlaubitzIskeLampertÖffner2026Regularized
         @assert !isnothing(regularization_functions) "regularization_functions must be provided for GlaubitzIskeLampertÖffner2026Regularized"
-        regularization_functions_derivatives = [x -> ForwardDiff.derivative(regularization_function,
-                                                                            x)
-                                                for regularization_function in regularization_functions]
     end
     L = get_nsigma(N; bandwidth, size_boundary, different_values, sparsity_pattern)
 
@@ -162,6 +159,9 @@ function construct_function_space_operator(basis_functions, nodes,
 
     param = (; V, V_x, R, B, min_real_eigen)
     if source isa GlaubitzIskeLampertÖffner2026Regularized
+        regularization_functions_derivatives = [x -> ForwardDiff.derivative(regularization_function,
+                                                                            x)
+                                                for regularization_function in regularization_functions]
         G = vandermonde_matrix(regularization_functions, nodes)
         G_x = vandermonde_matrix(regularization_functions_derivatives, nodes)
         R_G = B * G / 2
