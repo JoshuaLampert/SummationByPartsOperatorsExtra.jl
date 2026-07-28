@@ -1,6 +1,7 @@
 using Documenter
 using DocumenterInterLinks
 using SummationByPartsOperatorsExtra
+import Changelog
 
 # Provide external links to the SummationByPartsOperators.jl docs (project root and inventory file)
 links = InterLinks("SummationByPartsOperators" => ("https://ranocha.github.io/SummationByPartsOperators.jl/stable/",
@@ -10,6 +11,13 @@ links = InterLinks("SummationByPartsOperators" => ("https://ranocha.github.io/Su
 DocMeta.setdocmeta!(SummationByPartsOperatorsExtra, :DocTestSetup,
                     :(using SummationByPartsOperatorsExtra);
                     recursive = true)
+
+# Create changelog
+Changelog.generate(Changelog.Documenter(),                                   # output type
+                   joinpath(@__DIR__, "..", "CHANGELOG.md"),                 # input file
+                   joinpath(@__DIR__, "src", "changelog.md");                # output file
+                   repo = "JoshuaLampert/SummationByPartsOperatorsExtra.jl", # default repository for links
+                   branch = "main",)
 
 makedocs(;
          modules = [SummationByPartsOperatorsExtra],
@@ -23,6 +31,7 @@ makedocs(;
          pages = ["Home" => "index.md",
              "Development" => "development.md",
              "Reference" => "ref.md",
+             "Changelog" => "changelog.md",
              "License" => "license.md"],
          plugins = [links])
 
