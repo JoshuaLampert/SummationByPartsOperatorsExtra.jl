@@ -1,5 +1,6 @@
 using Documenter
-using DocumenterInterLinks
+using DocumenterCodeBlocks: CodeBlocks
+using DocumenterInterLinks: InterLinks
 using SummationByPartsOperatorsExtra
 import Changelog
 
@@ -28,12 +29,14 @@ makedocs(;
                                   prettyurls = get(ENV, "CI", "false") == "true",
                                   canonical = "https://JoshuaLampert.github.io/SummationByPartsOperatorsExtra.jl/stable",
                                   edit_link = "main"),
+         # Improve code blocks in the documentation by using DocumenterCodeBlocks.jl
+         plugins = [links, CodeBlocks()],
+         # Explicitly specify documentation structure
          pages = ["Home" => "index.md",
              "Development" => "development.md",
              "Reference" => "ref.md",
              "Changelog" => "changelog.md",
-             "License" => "license.md"],
-         plugins = [links])
+             "License" => "license.md"])
 
 deploydocs(;
            repo = "github.com/JoshuaLampert/SummationByPartsOperatorsExtra.jl",
