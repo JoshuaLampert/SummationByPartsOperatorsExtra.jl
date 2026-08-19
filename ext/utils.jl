@@ -1,4 +1,7 @@
 using SummationByPartsOperatorsExtra: get_nsigma, vandermonde_matrix
+# Imported (not just qualified) since the bare name is used in the other files included by
+# the extensions, e.g. `function_space_operators_optim.jl`
+import SummationByPartsOperatorsExtra: orthonormalize_gram_schmidt
 using LinearAlgebra: Diagonal, UpperTriangular, LowerTriangular, diag, issymmetric
 using SparseArrays: spzeros
 
@@ -191,9 +194,7 @@ end
 # number of the Vandermonde matrix. The matrix A transfers the old basis functions to the new orthonormalized by
 # g(x) = A * f(x), where f(x) is the vector of old basis functions and g(x) is the vector of the new orthonormalized
 # basis functions. Analogously, we have g'(x) = A * f'(x).
-function SummationByPartsOperatorsExtra.orthonormalize_gram_schmidt(basis_functions,
-                                                                    basis_functions_derivatives,
-                                                                    nodes)
+function orthonormalize_gram_schmidt(basis_functions, basis_functions_derivatives, nodes)
     K = length(basis_functions)
 
     A = LowerTriangular(zeros(eltype(nodes), K, K))

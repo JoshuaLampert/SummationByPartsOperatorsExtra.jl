@@ -1,5 +1,5 @@
 """
-    GlaubitzEtAl2025()
+    GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025()
 
 Upwind SBP operators given in
 - Glaubitz, Ranocha, Winters, Schlottke-Lakemper, Öffner, Gassner (2025):
@@ -10,9 +10,10 @@ Upwind SBP operators given in
 
 See [`upwind_operators`](@ref).
 """
-struct GlaubitzEtAl2025 <: SourceOfCoefficients end
+struct GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025 <: SourceOfCoefficients end
 
-function Base.show(io::IO, source::GlaubitzEtAl2025)
+function Base.show(io::IO,
+                   source::GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025)
     if get(io, :compact, false)
         summary(io, source)
     else
@@ -25,105 +26,198 @@ function Base.show(io::IO, source::GlaubitzEtAl2025)
 end
 
 """
-    upwind_operators(D, sigma, source::GlaubitzEtAl2025)
+    GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized()
 
-Create upwind SBP operators with central derivative operator `D` and given negative eigenvalues `sigma`
-of the dissipation matrix `S`. The dissipation matrix is constructed as `S = V * Diagonal(lambda) * V'`
-with `lambda = [0, ..., 0, sigma]` and `V` being the Vandermonde matrix of the orthonormalized basis functions,
-i.e. the number of zero eigenvalues is equal to `N - length(sigma)`, where `N` is the number of nodes in `D`.
-The upwind operators are then given as
-```math
-D^- = D - 0.5 * M^{-1} * S
-D^+ = D + 0.5 * M^{-1} * S
-```
-where `M` is the mass matrix.
-
-See also [`GlaubitzEtAl2025`](@ref) for details.
-"""
-function upwind_operators(D, sigma, source::GlaubitzEtAl2025)
-    xmin = SummationByPartsOperators.xmin(D)
-    xmax = SummationByPartsOperators.xmax(D)
-    nodes = grid(D)
-    N = length(nodes)
-    @assert length(sigma)<N "length(sigma) = $(length(sigma)) must be less than N = $N"
-    K = N - length(sigma)
-    accuracy_order = K - 1 # TODO: This is for D being GLL, but for FD?
-
-    P = mass_matrix(D)
-    weights = diag(P)
-    P_inv = inv(P)
-    Dc = Matrix(D)
-
-    functions = [x -> x^k for k in 0:(N - 1)]
-    functions_orthonormalized = orthonormalize_gram_schmidt(functions, nodes)
-    V = vandermonde_matrix(functions_orthonormalized, nodes)
-    lambda = zeros(real(D), N)
-    lambda[(K + 1):N] .= sigma
-    S = V * Diagonal(lambda) * V'
-    Dm = Dc - 0.5f0 * P_inv * S
-    Dp = Dc + 0.5f0 * P_inv * S
-    D_upw = UpwindOperators(MatrixDerivativeOperator(xmin, xmax, nodes, weights, Dm,
-                                                     accuracy_order, source),
-                            D,
-                            MatrixDerivativeOperator(xmin, xmax, nodes, weights, Dp,
-                                                     accuracy_order, source))
-    return D_upw
-end
-
-"""
-    GlaubitzEtAl2026()
-
-Function space upwind SBP operators given in
+Function space upwind SBP operators whose dissipation matrix is determined by minimizing the
+error of the upwind operators on a set of test functions, given in
 - Glaubitz, Lampert, Mattsson, Niemelä, Winters (2026):
-  Upwind summation-by-parts operators for general function spaces:
-  Discontinuous Galerkin-type operators.
+  Upwind summation-by-parts operators for general function spaces.
   [DOI: TODO](TODO)
 
 See [`upwind_operators`](@ref).
-"""
-struct GlaubitzEtAl2026 <: SourceOfCoefficients end
 
-function Base.show(io::IO, source::GlaubitzEtAl2026)
+!!! warning "Degenerate construction"
+    This construction is documented in the reference above as a *negative* result and is only
+    kept here for reproducibility. It does not yield useful dissipation, see the discussion in
+    the docstring of [`upwind_operators`](@ref).
+"""
+struct GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized <: SourceOfCoefficients end
+
+function Base.show(io::IO,
+                   source::GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized)
     if get(io, :compact, false)
         summary(io, source)
     else
         print(io,
               "Glaubitz, Lampert, Mattsson, Niemelä, Winters (2026) \n",
-              "  Upwind summation-by-parts operators for general function spaces: \n",
-              "  Discontinuous Galerkin-type operators. \n",
+              "  Upwind summation-by-parts operators for general function spaces. \n",
               "  TODO.")
     end
 end
 
+# Vandermonde-like matrix of the `functions` after orthonormalizing them with respect to the
+# discrete inner product induced by `nodes`. If `length(functions) == length(nodes)`, the
+# result is an orthogonal matrix, i.e., the discrete orthonormal basis (DOB).
+function orthonormal_vandermonde(functions, nodes)
+    functions_orthonormalized = orthonormalize_gram_schmidt(functions, nodes)
+    return vandermonde_matrix(functions_orthonormalized, nodes)
+end
+
+# Dissipation matrix `S = V * Diagonal(lambda) * V'` with `lambda = [0, ..., 0, sigma...]` for
+# an orthogonal matrix `V` whose first `N - length(sigma)` columns span the nodal values of the
+# function space the operators are exact for. The `Symmetric` wrapper makes `S` exactly
+# symmetric, which the product of the three factors is not in floating point arithmetic.
+function eigen_dissipation_matrix(V, sigma)
+    N = size(V, 1)
+    K = N - length(sigma)
+    lambda = zeros(eltype(sigma), N)
+    lambda[(K + 1):N] .= sigma
+    return Symmetric(V * Diagonal(lambda) * V')
+end
+
+"""
+    upwind_operators(D, S::AbstractMatrix, source; accuracy_order = accuracy_order(D))
+
+Create [`UpwindOperators`](@extref SummationByPartsOperators.UpwindOperators) from a central
+first-derivative SBP operator `D` and a dissipation matrix `S` as
+```math
+D^- = D - M^{-1} S / 2, \\qquad D^+ = D + M^{-1} S / 2,
+```
+where ``M`` is the mass matrix of `D`. The matrix `S` must be symmetric (pass, e.g., a
+`Symmetric` matrix) and should be negative semi-definite with ``S \\mathbf{f} = \\mathbf{0}``
+for all functions `f` in the function space `D` is exact for. In that case, `D^-` and `D^+`
+are upwind SBP operators that are exact for the same function space.
+Negative semi-definiteness is not verified since this is comparatively expensive.
+
+The `accuracy_order` is stored in the resulting operators `D^-` and `D^+`. Note that it is
+generally *not* the accuracy order of `D`: `D^\\pm` are exact for a function `f` if and only if
+`D` is exact for `f` *and* ``S \\mathbf{f} = \\mathbf{0}``.
+
+The central operator `D` is stored unchanged in the resulting
+[`UpwindOperators`](@extref SummationByPartsOperators.UpwindOperators).
+
+!!! warning "Experimental implementation"
+    This is an experimental feature and may change in future releases.
+"""
+function upwind_operators(D::AbstractNonperiodicDerivativeOperator, S::AbstractMatrix,
+                          source;
+                          accuracy_order = SummationByPartsOperators.accuracy_order(D))
+    nodes = grid(D)
+    N = length(nodes)
+    if size(S) != (N, N)
+        throw(DimensionMismatch("size(S) = $(size(S)) does not match the number of nodes N = $N"))
+    end
+    if !issymmetric(S)
+        throw(ArgumentError("the dissipation matrix `S` must be symmetric, consider wrapping it in `Symmetric`"))
+    end
+    x_min = SummationByPartsOperators.xmin(D)
+    x_max = SummationByPartsOperators.xmax(D)
+    P = mass_matrix(D)
+    weights = diag(P)
+    D_central = Matrix(D)
+    # `M^{-1} S / 2`; the mass matrix is diagonal, so this solve is cheap
+    dissipation = (P \ S) / 2
+    D_minus = D_central - dissipation
+    D_plus = D_central + dissipation
+    return UpwindOperators(MatrixDerivativeOperator(x_min, x_max, nodes, weights, D_minus,
+                                                    accuracy_order, source),
+                           D,
+                           MatrixDerivativeOperator(x_min, x_max, nodes, weights, D_plus,
+                                                    accuracy_order, source))
+end
+
+"""
+    upwind_operators(D, sigma, source::GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025)
+
+Create upwind SBP operators with central derivative operator `D` and given negative eigenvalues `sigma`
+of the dissipation matrix `S`. The dissipation matrix is constructed as `S = V * Diagonal(lambda) * V'`
+with `lambda = [0, ..., 0, sigma...]` and `V` being the Vandermonde matrix of the orthonormalized monomials,
+i.e. the number of zero eigenvalues is equal to `N - length(sigma)`, where `N` is the number of nodes in `D`.
+The upwind operators are then given as
+```math
+D^- = D - M^{-1} S / 2, \\qquad D^+ = D + M^{-1} S / 2,
+```
+where ``M`` is the mass matrix.
+
+The operators `D^-` and `D^+` are exact for a function `f` if and only if `D` is exact for `f`
+*and* `S` annihilates `f`. By construction, `S` annihilates all polynomials of degree at most
+`K - 1` with `K = N - length(sigma)`. Hence, whenever `accuracy_order(D)` is the degree up to
+which `D` is exact for polynomials, the resulting operators are exact for polynomials of degree
+at most `min(K - 1, accuracy_order(D))`, which is stored as their `accuracy_order`. This is the
+case for the polynomial operators considered in the reference below, but not, e.g., for a
+non-polynomial [`function_space_operator`](@ref), whose `accuracy_order` carries no information
+about polynomial exactness. There, `min(K - 1, accuracy_order(D))` is still stored in `D^-` and
+`D^+`, but their exactness is the one given by the equivalence above.
+
+See also [`GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025`](@ref) for details.
+"""
+function upwind_operators(D::AbstractNonperiodicDerivativeOperator, sigma::AbstractVector,
+                          source::GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025)
+    nodes = grid(D)
+    N = length(nodes)
+    @argcheck length(sigma) < N
+    K = N - length(sigma)
+
+    functions = [x -> x^k for k in 0:(N - 1)]
+    V = orthonormal_vandermonde(functions, nodes)
+    S = eigen_dissipation_matrix(V, sigma)
+    accuracy_order = min(K - 1, SummationByPartsOperators.accuracy_order(D))
+    return upwind_operators(D, S, source; accuracy_order)
+end
+
 """
     upwind_operators(D, basis_functions, additional_functions, test_functions,
-                     source::GlaubitzEtAl2026; autodiff = Optim.ADTypes.AutoForwardDiff(),
+                     source::GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized;
+                     autodiff = Optim.ADTypes.AutoForwardDiff(),
                      sigma0 = nothing, verbose = false,
-                     opt_alg = LBFGSB(), options = Optim.Options(g_tol = 1e-10, iterations = 10000)))
+                     opt_alg = LBFGSB(), options = Optim.Options(g_tol = 1e-10, iterations = 10000))
 
 Create upwind function space SBP operators with central derivative operator `D`, e.g. a [`function_space_operator`](@ref)
-created by `D = function_space_operators(basis_functions, nodes, GlaubitzNordströmÖffner2023())`. The `basis_functions` is
+created by `D = function_space_operator(basis_functions, nodes, GlaubitzNordströmÖffner2023())`. The `basis_functions` is
 a list of the basis functions for which `D` is exact, the `additional_functions` are the additional functions `g_j` used to
 construct a basis of ``\\mathbf{R}^N``, i.e., the number of additional functions must be equal to `N - length(basis_functions)`,
-where `N` is the number of nodes in `D`. A dissipation matrix `S` is constructed by solving a constrained optimization problem such
-that the upwind operators ``D^-`` and ``D^+`` satisfy the upwind SBP property, are exact for the `basis_functions`, and dissipative for
-`additional_functions`. They are constructed, such that the error of the upwind operators for the `test_functions` is minimized.
+where `N` is the number of nodes in `D`. A dissipation matrix `S = V * Diagonal(lambda) * V'` is constructed by choosing
+the negative eigenvalues `sigma = lambda[(K + 1):N]` such that the error of the upwind operators ``D^\\pm`` on the
+`test_functions` is minimized, i.e., by solving
+```math
+\\min_{\\sigma \\leq 0} \\sum_l \\| D^+ \\varphi_l - \\varphi_l' \\|_2^2 + \\| D^- \\varphi_l - \\varphi_l' \\|_2^2.
+```
 
 The optimization problem is solved using [`Optim.jl`](https://github.com/JuliaNLSolvers/Optim.jl) with the optimization algorithm `opt_alg` and options `options`.
 The `autodiff` method can be set with `autodiff` using the interface of [ADTypes.jl](https://github.com/SciML/ADTypes.jl).
 The initial guess for the optimization problem can be set with `sigma0`, which is a vector of negative eigenvalues of the dissipation matrix `S`. If omitted,
 a default initial guess of `-1.0` is used for all eigenvalues. The `verbose` flag can be set to `true` to print additional information about the optimization process.
 
-The upwind operators are then given as
-```math
-D^- = D - 0.5 * M^{-1} * S
-D^+ = D + 0.5 * M^{-1} * S
-```
-where `M` is the mass matrix.
+See also [`GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized`](@ref) for details.
 
-See also [`GlaubitzEtAl2026`](@ref) for details.
+!!! warning "This construction is degenerate and only kept for reproducibility"
+    The objective above cannot select a dissipation matrix. Using ``D^\\pm \\varphi_l = D \\varphi_l \\pm M^{-1} S \\varphi_l / 2``
+    and expanding the squares, the ``\\pm`` cross terms cancel, so the objective equals
+    ``2 \\sum_l \\| D \\varphi_l - \\varphi_l' \\|_2^2 + \\frac{1}{2} \\sum_l \\| M^{-1} S \\varphi_l \\|_2^2``, whose first term
+    is independent of `sigma`. The objective is therefore monotonically non-increasing as `sigma` tends to zero: its
+    minimizers are exactly those `sigma` with ``\\sigma_j (\\mathbf{v}_j^T \\boldsymbol{\\varphi}_l) = 0`` for all `j` and `l`.
+    The optimizer thus drives every eigenvalue whose mode overlaps some test function to zero, while modes orthogonal to
+    *all* test functions are invisible to the objective and simply retain their initial guess `sigma0`.
+    Whatever dissipation remains is an artifact of the initialization.
 
 !!! warning "Experimental implementation"
     This is an experimental feature and may change in future releases.
 """
-function upwind_operators end
+function upwind_operators(D::AbstractNonperiodicDerivativeOperator, basis_functions,
+                          additional_functions, test_functions,
+                          source::GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized;
+                          kwargs...)
+    nodes = grid(D)
+    N = length(nodes)
+    K = length(basis_functions)
+    @argcheck length(additional_functions)==N - K "length(additional_functions) = $(length(additional_functions)) must be equal to N - K = $(N - K)"
+
+    V = orthonormal_vandermonde([basis_functions; additional_functions], nodes)
+    sigma = compute_dissipation_eigenvalues(D, V, test_functions, K, source; kwargs...)
+    S = eigen_dissipation_matrix(V, sigma)
+    return upwind_operators(D, S, source)
+end
+
+# Placeholder for computing the negative eigenvalues of the dissipation matrix. This method is
+# extended in backend-specific implementations.
+function compute_dissipation_eigenvalues end

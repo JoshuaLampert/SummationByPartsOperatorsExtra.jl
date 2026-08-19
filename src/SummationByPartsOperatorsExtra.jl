@@ -15,7 +15,8 @@ module SummationByPartsOperatorsExtra
 using AutoHashEquals: @auto_hash_equals
 using ArgCheck: @argcheck
 using DiffEqCallbacks: PeriodicCallback, PeriodicCallbackAffect
-using LinearAlgebra: LinearAlgebra, Diagonal, UpperTriangular, LowerTriangular, diag, dot
+using LinearAlgebra: LinearAlgebra, Diagonal, UpperTriangular, LowerTriangular, Symmetric,
+                     diag, dot, issymmetric
 import LinearAlgebra: mul!, diagind, norm
 using Reexport: @reexport
 import SciMLBase: SciMLBase, get_tmp_cache
@@ -31,6 +32,10 @@ end
 using SimpleUnPack: @unpack
 @reexport using StaticArrays: SVector
 using StatsBase: countmap
+# `upwind_operators` is imported (not just reexported) since we add methods for the
+# `SourceOfCoefficients` types defined here. Shadowing it would hide the methods of
+# SummationByPartsOperators.jl, e.g. `upwind_operators(Mattsson2017, ...)`.
+import SummationByPartsOperators: upwind_operators
 using SummationByPartsOperators: AbstractDerivativeOperator,
                                  AbstractNonperiodicDerivativeOperator,
                                  AbstractMultidimensionalMatrixDerivativeOperator,
@@ -63,7 +68,8 @@ export SubcellOperator, GlaubitzLampertWintersNordström2025, subcell_operator,
        integrate_left, integrate_right,
        left_projection_left, left_projection_right,
        right_projection_left, right_projection_right
-export GlaubitzEtAl2025, GlaubitzEtAl2026
+export GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025,
+       GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized
 export AnalysisCallback, tstops, quantities
 export MultidimensionalLinearAdvectionNonperiodicSemidiscretization
 end
