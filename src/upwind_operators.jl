@@ -81,12 +81,13 @@ function Base.show(io::IO,
     end
 end
 
-# Vandermonde-like matrix of the `functions` after orthonormalizing them with respect to the
-# discrete inner product induced by `nodes`. If `length(functions) == length(nodes)`, the
-# result is an orthogonal matrix, i.e., the discrete orthonormal basis (DOB).
-function orthonormal_vandermonde(functions, nodes)
-    functions_orthonormalized = orthonormalize_gram_schmidt(functions, nodes)
-    return vandermonde_matrix(functions_orthonormalized, nodes)
+# The dissipation matrix is negative semi-definite if and only if its non-zero eigenvalues are
+# non-positive.
+function check_dissipation_eigenvalues(sigma)
+    if !all(<=(0), sigma)
+        throw(ArgumentError("the eigenvalues of the dissipation matrix must be non-positive, got $sigma"))
+    end
+    return nothing
 end
 
 # Dissipation matrix `S = V * Diagonal(lambda) * V'` with `lambda = [0, ..., 0, sigma...]` for
@@ -178,31 +179,37 @@ about polynomial exactness. There, `min(K - 1, accuracy_order(D))` is still stor
 See also [`GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025`](@ref) for details.
 """
 function upwind_operators(D::AbstractNonperiodicDerivativeOperator, sigma::AbstractVector,
-                          source::GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025)
+                          source::GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025;
+                          rtol = sqrt(eps(eltype(grid(D)))))
     nodes = grid(D)
     N = length(nodes)
-    @argcheck length(sigma) < N
+    @argcheck length(sigma)<N "length(sigma) = $(length(sigma)) must be less than N = $N"
     K = N - length(sigma)
 
-    functions = [x -> x^k for k in 0:(N - 1)]
-    V = orthonormal_vandermonde(functions, nodes)
+    # The function space is the space of polynomials of degree at most `K - 1`. We represent it by
+    # Legendre polynomials rather than monomials since they span the same space, but are much
+    # better conditioned. The orthonormal complement is the default (Legendre) enrichment.
+    basis_functions = [reference_legendre(nodes, degree) for degree in 0:(K - 1)]
+    V = enriched_orthonormal_vandermonde(basis_functions, nodes, nothing, rtol)
+    check_dissipation_eigenvalues(sigma)
     S = eigen_dissipation_matrix(V, sigma)
     accuracy_order = min(K - 1, SummationByPartsOperators.accuracy_order(D))
     return upwind_operators(D, S, source; accuracy_order)
 end
 
 """
-    upwind_operators(D, basis_functions, additional_functions, test_functions,
+    upwind_operators(D, basis_functions, test_functions,
                      source::GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized;
+                     enrichment_functions = nothing, rtol = sqrt(eps(eltype(grid(D)))),
                      autodiff = Optim.ADTypes.AutoForwardDiff(),
                      sigma0 = nothing, verbose = false,
                      opt_alg = LBFGSB(), options = Optim.Options(g_tol = 1e-10, iterations = 10000))
 
 Create upwind function space SBP operators with central derivative operator `D`, e.g. a [`function_space_operator`](@ref)
 created by `D = function_space_operator(basis_functions, nodes, GlaubitzNordströmÖffner2023())`. The `basis_functions` is
-a list of the basis functions for which `D` is exact, the `additional_functions` are the additional functions `g_j` used to
-construct a basis of ``\\mathbf{R}^N``, i.e., the number of additional functions must be equal to `N - length(basis_functions)`,
-where `N` is the number of nodes in `D`. A dissipation matrix `S = V * Diagonal(lambda) * V'` is constructed by choosing
+a list of the basis functions for which `D` is exact and the `enrichment_functions` are the functions `g_j` completing them to
+a basis of ``\\mathbf{R}^N``; see [`dissipation_matrix`](@ref) for how they default to the lowest-degree Legendre polynomials
+not already contained in the function space. A dissipation matrix `S = V * Diagonal(lambda) * V'` is constructed by choosing
 the negative eigenvalues `sigma = lambda[(K + 1):N]` such that the error of the upwind operators ``D^\\pm`` on the
 `test_functions` is minimized, i.e., by solving
 ```math
@@ -229,17 +236,15 @@ See also [`GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized`](@ref) f
 !!! warning "Experimental implementation"
     This is an experimental feature and may change in future releases.
 """
-function upwind_operators(D::AbstractNonperiodicDerivativeOperator, basis_functions,
-                          additional_functions, test_functions,
+function upwind_operators(D::AbstractNonperiodicDerivativeOperator,
+                          basis_functions::AbstractVector, test_functions,
                           source::GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized;
-                          kwargs...)
+                          enrichment_functions = nothing,
+                          rtol = sqrt(eps(eltype(grid(D)))), kwargs...)
     nodes = grid(D)
-    N = length(nodes)
-    K = length(basis_functions)
-    @argcheck length(additional_functions)==N - K "length(additional_functions) = $(length(additional_functions)) must be equal to N - K = $(N - K)"
-
-    V = orthonormal_vandermonde([basis_functions; additional_functions], nodes)
-    sigma = compute_dissipation_eigenvalues(D, V, test_functions, K, source; kwargs...)
+    V = enriched_orthonormal_vandermonde(basis_functions, nodes, enrichment_functions, rtol)
+    sigma = compute_dissipation_eigenvalues(D, V, test_functions, length(basis_functions),
+                                            source; kwargs...)
     S = eigen_dissipation_matrix(V, sigma)
     return upwind_operators(D, S, source)
 end
@@ -252,14 +257,19 @@ function compute_dissipation_eigenvalues end
 # span of the columns of `M`, mapped from the reference interval `[-1, 1]` to the interval spanned
 # by the `nodes`. Degrees `0, ..., N - 1` always suffice since the nodal values of the polynomials
 # of degree at most `N - 1` span all of `R^N`.
+# Legendre polynomial of the given `degree`, mapped from the reference interval `[-1, 1]` to the
+# interval spanned by the `nodes`
+function reference_legendre(nodes, degree)
+    x_min, x_max = extrema(nodes)
+    return x -> legendre((2 * x - (x_min + x_max)) / (x_max - x_min), degree)
+end
+
 function default_enrichment_functions(M, nodes, n_enrichment, rtol)
     N = length(nodes)
-    x_min, x_max = extrema(nodes)
-    to_reference(x) = (2 * x - (x_min + x_max)) / (x_max - x_min)
     enrichment_functions = Vector{Any}(undef, 0)
     for degree in 0:(N - 1)
         length(enrichment_functions) == n_enrichment && break
-        g(x) = legendre(to_reference(x), degree)
+        g = reference_legendre(nodes, degree)
         values = g.(nodes)
         # Skip the degrees whose nodal values are (numerically) already in the span of `M`
         norm(values - M * (M \ values)) > rtol * norm(values) || continue
@@ -279,9 +289,21 @@ end
 # orthonormalized functions themselves), and the QR decomposition is orthogonal to machine
 # precision independently of the conditioning of the enriched basis. Both give the same `V` up to
 # the signs of the columns, which do not affect `S = V * Diagonal(lambda) * V'`.
-function enriched_orthonormal_vandermonde(basis_functions, enrichment_functions, nodes,
+function enriched_orthonormal_vandermonde(basis_functions, nodes, enrichment_functions,
                                           rtol)
+    N = length(nodes)
+    K = length(basis_functions)
+    @argcheck K<=N "length(basis_functions) = $K must not be larger than the number of nodes N = $N"
+    n_enrichment = N - K
+
     V_basis = vandermonde_matrix(basis_functions, nodes)
+    if isnothing(enrichment_functions)
+        enrichment_functions = default_enrichment_functions(V_basis, nodes, n_enrichment,
+                                                            rtol)
+    elseif length(enrichment_functions) != n_enrichment
+        throw(DimensionMismatch("length(enrichment_functions) = $(length(enrichment_functions)) must be equal to N - K = $n_enrichment"))
+    end
+
     M = if isempty(enrichment_functions)
         V_basis
     else
@@ -346,24 +368,10 @@ function dissipation_matrix(basis_functions, nodes::AbstractVector,
                             source::GlaubitzLampertMattssonNiemeläWinters2026DG;
                             lambda, enrichment_functions = nothing,
                             rtol = sqrt(eps(eltype(nodes))))
-    N = length(nodes)
-    K = length(basis_functions)
-    @argcheck K<=N "length(basis_functions) = $K must not be larger than the number of nodes N = $N"
-    n_enrichment = N - K
-
-    if isnothing(enrichment_functions)
-        enrichment_functions = default_enrichment_functions(vandermonde_matrix(basis_functions,
-                                                                               nodes),
-                                                            nodes, n_enrichment, rtol)
-    elseif length(enrichment_functions) != n_enrichment
-        throw(DimensionMismatch("length(enrichment_functions) = $(length(enrichment_functions)) must be equal to N - K = $n_enrichment"))
-    end
-
-    sigma = dissipation_eigenvalues(lambda, n_enrichment, eltype(nodes))
-    if !all(<=(0), sigma)
-        throw(ArgumentError("all values of `lambda` must be non-positive, got $sigma"))
-    end
-    V = enriched_orthonormal_vandermonde(basis_functions, enrichment_functions, nodes, rtol)
+    V = enriched_orthonormal_vandermonde(basis_functions, nodes, enrichment_functions, rtol)
+    sigma = dissipation_eigenvalues(lambda, length(nodes) - length(basis_functions),
+                                    eltype(nodes))
+    check_dissipation_eigenvalues(sigma)
     return eigen_dissipation_matrix(V, sigma)
 end
 

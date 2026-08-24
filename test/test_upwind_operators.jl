@@ -79,12 +79,12 @@ end
         nodes = collect(range(x_L, x_R, length = N))
         D = function_space_operator(basis_functions, nodes,
                                     GlaubitzNordströmÖffner2023())
-        additional_functions = [x -> x^j for j in 2:(N - 2)]
-        additional_functions_derivatives = [x -> j * x^(j - 1) for j in 2:(N - 2)]
-        @test length(additional_functions) == N - K
+        enrichment_functions = [x -> x^j for j in 2:(N - 2)]
+        enrichment_functions_derivatives = [x -> j * x^(j - 1) for j in 2:(N - 2)]
+        @test length(enrichment_functions) == N - K
 
-        D_upw = upwind_operators(D, basis_functions, additional_functions,
-                                 test_functions, source)
+        D_upw = upwind_operators(D, basis_functions, test_functions, source;
+                                 enrichment_functions)
         x = grid(D_upw)
         Dp = Matrix(D_upw.plus)
         Dm = Matrix(D_upw.minus)
@@ -105,7 +105,8 @@ end
         @test count(<(-1e-10), lambda) >= 1
         @test count(x -> abs(x) < 1e-10, lambda) >= N - K
 
-        # The upwind operators are exact for the basis functions, but not for `additional_functions` and `test_functions`
+        # The upwind operators are exact for the basis functions, but not for the
+        # `enrichment_functions` and `test_functions`
         for (basis_function, basis_function_derivative) in zip(basis_functions,
                                                                basis_functions_derivatives)
             for D_op in (D_upw.minus, D_upw.plus, D_upw.central)
@@ -113,11 +114,11 @@ end
             end
             @test S * basis_function.(x)≈zeros(N) atol=1e-11
         end
-        for (additional_functions, additional_functions_derivatives) in zip(additional_functions,
-                                                                            additional_functions_derivatives)
+        for (enrichment_function, enrichment_function_derivative) in zip(enrichment_functions,
+                                                                         enrichment_functions_derivatives)
             for D_op in (D_upw.minus, D_upw.plus, D_upw.central)
-                @test !(D_op * additional_functions.(x) ≈
-                        additional_functions_derivatives.(x))
+                @test !(D_op * enrichment_function.(x) ≈
+                        enrichment_function_derivative.(x))
             end
         end
         for (test_function, test_function_derivative) in zip(test_functions,
@@ -128,13 +129,26 @@ end
         end
     end
 
-    # The number of `additional_functions` must be equal to `N - K`
+    # The number of `enrichment_functions` must be equal to `N - K`
     let N = 5
         nodes = collect(range(x_L, x_R, length = N))
         D = function_space_operator(basis_functions, nodes,
                                     GlaubitzNordströmÖffner2023())
-        @test_throws ArgumentError upwind_operators(D, basis_functions, [x -> x^2],
-                                                    test_functions, source)
+        @test_throws DimensionMismatch upwind_operators(D, basis_functions, test_functions,
+                                                        source,
+                                                        enrichment_functions = [x -> x^2])
+    end
+
+    # The `enrichment_functions` default to the lowest-degree Legendre polynomials not already
+    # contained in the function space, here the degrees 2 and 3
+    let N = 5
+        nodes = collect(range(x_L, x_R, length = N))
+        D = function_space_operator(basis_functions, nodes,
+                                    GlaubitzNordströmÖffner2023())
+        D_upw = upwind_operators(D, basis_functions, test_functions, source)
+        D_upw_explicit = upwind_operators(D, basis_functions, test_functions, source;
+                                          enrichment_functions = [x -> x^2, x -> x^3])
+        @test isapprox(Matrix(D_upw.plus), Matrix(D_upw_explicit.plus), atol = 1e-10)
     end
 
     # The initial guess for the optimization can be set with the `sigma0` keyword
@@ -142,9 +156,9 @@ end
         nodes = collect(range(x_L, x_R, length = N))
         D = function_space_operator(basis_functions, nodes,
                                     GlaubitzNordströmÖffner2023())
-        additional_functions = [x -> x^2, x -> x^3]
-        D_upw = upwind_operators(D, basis_functions, additional_functions,
-                                 test_functions, source; sigma0 = [-2.0, -1.0])
+        enrichment_functions = [x -> x^2, x -> x^3]
+        D_upw = upwind_operators(D, basis_functions, test_functions, source;
+                                 enrichment_functions, sigma0 = [-2.0, -1.0])
         @test eltype(D_upw) == Float64
     end
 end
@@ -164,16 +178,17 @@ end
     nodes = collect(range(-1.0, 1.0, length = N))
     D = function_space_operator(basis_functions, nodes, GlaubitzNordströmÖffner2023())
 
-    additional_functions = [x -> x^2, x -> x^3, x -> x^4]
-    @test length(additional_functions) == N - K
+    enrichment_functions = [x -> x^2, x -> x^3, x -> x^4]
+    @test length(enrichment_functions) == N - K
     # `x^2` and `x^3` are contained in the span of the enrichment modes 1 and 2, but are
     # orthogonal to the enrichment mode 3
     test_functions = [x -> x^2, x -> x^3]
     sigma0 = [-1.0, -1.0, -1.0]
 
-    V = SummationByPartsOperatorsExtra.orthonormal_vandermonde([basis_functions;
-                                                                additional_functions],
-                                                               nodes)
+    V = SummationByPartsOperatorsExtra.enriched_orthonormal_vandermonde(basis_functions,
+                                                                        nodes,
+                                                                        enrichment_functions,
+                                                                        sqrt(eps()))
     sigma = SummationByPartsOperatorsExtra.compute_dissipation_eigenvalues(D, V,
                                                                            test_functions,
                                                                            K,
@@ -186,8 +201,8 @@ end
 
     # The objective is driven to (almost) zero, i.e. this is a global minimizer and not a
     # failure of the optimizer
-    D_upw = upwind_operators(D, basis_functions, additional_functions, test_functions,
-                             source; sigma0)
+    D_upw = upwind_operators(D, basis_functions, test_functions, source;
+                             enrichment_functions, sigma0)
     x = grid(D_upw)
     objective = sum(sum(abs2, D_op * f.(x) - f_x.(x))
                     for D_op in (D_upw.minus, D_upw.plus),
@@ -199,8 +214,8 @@ end
 
     # Changing the initial guess changes the resulting operators, which is exactly the
     # artifact described in the docstring
-    D_upw2 = upwind_operators(D, basis_functions, additional_functions, test_functions,
-                              source; sigma0 = [-1.0, -1.0, -2.0])
+    D_upw2 = upwind_operators(D, basis_functions, test_functions, source;
+                              enrichment_functions, sigma0 = [-1.0, -1.0, -2.0])
     @test !isapprox(Matrix(D_upw.plus), Matrix(D_upw2.plus))
 end
 

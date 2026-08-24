@@ -15,7 +15,7 @@ module SummationByPartsOperatorsExtra
 using AutoHashEquals: @auto_hash_equals
 using ArgCheck: @argcheck
 using DiffEqCallbacks: PeriodicCallback, PeriodicCallbackAffect
-using LinearAlgebra: LinearAlgebra, Diagonal, UpperTriangular, LowerTriangular, Symmetric,
+using LinearAlgebra: LinearAlgebra, Diagonal, UpperTriangular, Symmetric,
                      diag, dot, issymmetric, qr
 import LinearAlgebra: mul!, diagind, norm
 using Reexport: @reexport
