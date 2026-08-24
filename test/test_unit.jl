@@ -116,3 +116,66 @@ end
         show(IOContext(devnull, :compact => compact), semi)
     end
 end
+
+@testitem "orthonormal_vandermonde_matrices" begin
+    using LinearAlgebra: I, cond, norm
+    import Optim, ForwardDiff
+
+    ext = Base.get_extension(SummationByPartsOperatorsExtra, :OptimForwardDiffExt)
+    nodes = collect(range(-1.0, 1.0, length = 12))
+    N = length(nodes)
+
+    function orthonormalize(basis_functions)
+        basis_functions_derivatives = [x -> ForwardDiff.derivative(f, x)
+                                       for f in basis_functions]
+        return ext.orthonormal_vandermonde_matrices(basis_functions,
+                                                    basis_functions_derivatives, nodes)
+    end
+    stacked(basis_functions) = [reduce(hcat, [f.(nodes) for f in basis_functions]);
+                                reduce(hcat,
+                                       [x -> ForwardDiff.derivative(f, x)
+                                        for f in basis_functions] .|>
+                                       (fd -> fd.(nodes)))]
+
+    for basis_functions in ([one, identity, exp],
+                            [x -> x^k for k in 0:5],
+                            [x -> x^k for k in 0:(N - 1)],
+                            # Badly conditioned: cond(W) is of the order of 1e15 here
+                            [x -> (x + 5.0)^k for k in 0:9])
+        V, V_x = orthonormalize(basis_functions)
+        K = length(basis_functions)
+        @test size(V) == size(V_x) == (N, K)
+        # The basis is orthonormal with respect to the discrete H^1 inner product. Note that the
+        # classical Gram-Schmidt process used previously loses orthogonality proportionally to
+        # `cond(W)^2` and fails completely for the badly conditioned basis above, while the
+        # Householder QR decomposition is orthogonal to machine precision for all of them.
+        @test isapprox(V' * V + V_x' * V_x, I, atol = 1e-13)
+    end
+
+    # The orthonormalized basis is obtained from the original one by a *lower triangular*
+    # transformation, i.e. the `k`-th orthonormalized function is a combination of the first `k`
+    # original ones. We only check this for reasonably conditioned bases, since the spans
+    # themselves are not numerically well-defined otherwise.
+    for basis_functions in ([one, identity, exp], [x -> x^k for k in 0:5])
+        V, V_x = orthonormalize(basis_functions)
+        W = stacked(basis_functions)
+        W_orthonormalized = [V; V_x]
+        for k in axes(W, 2)
+            W_k = W[:, 1:k]
+            residual = W_orthonormalized[:, k] - W_k * (W_k \ W_orthonormalized[:, k])
+            @test isapprox(norm(residual), 0.0, atol = 1e-12)
+        end
+    end
+
+    # The signs are normalized as for the Gram-Schmidt process, i.e. the diagonal of the
+    # transformation matrix is positive. Together with the lower triangular structure this makes
+    # the orthonormalized basis unique.
+    let basis_functions = [one, identity, exp]
+        V, _ = orthonormalize(basis_functions)
+        V_original = reduce(hcat, [f.(nodes) for f in basis_functions])
+        A_transposed = V_original \ V
+        for k in axes(A_transposed, 2)
+            @test A_transposed[k, k] > 0
+        end
+    end
+end

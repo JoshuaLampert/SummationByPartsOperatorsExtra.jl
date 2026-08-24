@@ -120,14 +120,11 @@ function construct_function_space_operator(basis_functions, nodes,
 
     basis_functions_derivatives = [x -> ForwardDiff.derivative(basis_functions[i], x)
                                    for i in 1:K]
-    basis_functions_orthonormalized, basis_functions_orthonormalized_derivatives = orthonormalize_gram_schmidt(basis_functions,
-                                                                                                               basis_functions_derivatives,
-                                                                                                               nodes)
+    V, V_x = orthonormal_vandermonde_matrices(basis_functions, basis_functions_derivatives,
+                                              nodes)
     # This weights column k, i.e. basis function k, with the weight `basis_functions_weights[k]`
-    V = vandermonde_matrix(basis_functions_orthonormalized, nodes) *
-        Diagonal(basis_functions_weights)
-    V_x = vandermonde_matrix(basis_functions_orthonormalized_derivatives, nodes) *
-          Diagonal(basis_functions_weights)
+    V = V * Diagonal(basis_functions_weights)
+    V_x = V_x * Diagonal(basis_functions_weights)
     B = spzeros(T, N, N)
     B[1, 1] = -1
     B[N, N] = 1

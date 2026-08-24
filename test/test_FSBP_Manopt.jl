@@ -46,11 +46,12 @@ end
             @test grid(D) ≈ nodes
             # Manopt.jl seems to have issues to get the gradient accurate enough with Double64
             eps_ = T == Double64 ? eps(Float64) : eps(T)
-            if VERSION < v"1.11"
-                @test all(isapprox.(D * ones(N), zeros(N); atol = 50 * eps_))
-            else
-                @test all(isapprox.(D * ones(N), zeros(N); atol = 10 * eps_))
-            end
+            # This residual is set by where the optimizer stops, not by the accuracy of the
+            # operator itself: it is sensitive at the ulp level to how the orthonormalized
+            # basis is represented. Three orthonormalizations differing only in the last bit
+            # give residuals between 3 and 22 ulp here, so we use a correspondingly loose
+            # tolerance.
+            @test all(isapprox.(D * ones(N), zeros(N); atol = 50 * eps_))
             @test D * nodes ≈ ones(N)
             @test D * (nodes .^ 2) ≈ 2 * nodes
             @test D * (nodes .^ 3) ≈ 3 * (nodes .^ 2)
