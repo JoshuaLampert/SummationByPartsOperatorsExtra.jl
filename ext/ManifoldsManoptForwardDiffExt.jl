@@ -200,10 +200,8 @@ function get_objective_function(::GlaubitzIskeLampertÖffner2026Regularized,
     grad_h(M, x) = [optimization_gradient_function_space_operator(M, h1, x, autodiff)]
     hess_h(M, p, Xp) = ApproxHessianBFGS(M, p, grad_h)(M, p, Xp)
     return ConstrainedManifoldObjective(f, grad_f; hess_f = hess_f,
-                                        g = nothing, grad_g = nothing, h = h,
-                                        grad_h = grad_h, hess_h = hess_h,
-                                        equality_constraints = 1,
-                                        atol = 1e-28)
+                                        h = h, grad_h = grad_h, hess_h = hess_h,
+                                        equality_constraints = 1, atol = 1e-28)
 end
 function get_objective_function(::GlaubitzIskeLampertÖffner2026EigenvalueProperty,
                                 param, autodiff)
@@ -218,9 +216,7 @@ function get_objective_function(::GlaubitzIskeLampertÖffner2026EigenvalueProper
     hess_g(M, p, Xp) = ApproxHessianBFGS(M, p, grad_g)(M, p, Xp)
     return ConstrainedManifoldObjective(f, grad_f; hess_f = hess_f,
                                         g = g, grad_g = grad_g, hess_g = hess_g,
-                                        h = nothing, grad_h = nothing,
-                                        inequality_constraints = 1,
-                                        atol = 1e-28)
+                                        inequality_constraints = 1, atol = 1e-28)
 end
 
 # During the (Manopt >= 0.6) Wolfe-Powell line search the exponential retraction on the
