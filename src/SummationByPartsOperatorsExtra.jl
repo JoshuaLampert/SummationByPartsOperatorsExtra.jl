@@ -16,7 +16,7 @@ using AutoHashEquals: @auto_hash_equals
 using ArgCheck: @argcheck
 using DiffEqCallbacks: PeriodicCallback, PeriodicCallbackAffect
 using LinearAlgebra: LinearAlgebra, Diagonal, UpperTriangular, LowerTriangular, Symmetric,
-                     diag, dot, issymmetric
+                     diag, dot, issymmetric, qr
 import LinearAlgebra: mul!, diagind, norm
 using Reexport: @reexport
 import SciMLBase: SciMLBase, get_tmp_cache
@@ -69,7 +69,9 @@ export SubcellOperator, GlaubitzLampertWintersNordström2025, subcell_operator,
        left_projection_left, left_projection_right,
        right_projection_left, right_projection_right
 export GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025,
-       GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized
+       GlaubitzLampertMattssonNiemeläWinters2026DG,
+       GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized,
+       dissipation_matrix
 export AnalysisCallback, tstops, quantities
 export MultidimensionalLinearAdvectionNonperiodicSemidiscretization
 end

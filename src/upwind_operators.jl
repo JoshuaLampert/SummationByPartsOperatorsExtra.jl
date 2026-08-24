@@ -26,6 +26,32 @@ function Base.show(io::IO,
 end
 
 """
+    GlaubitzLampertMattssonNiemeläWinters2026DG()
+
+Function space upwind SBP operators of DG type, i.e. with a dense dissipation matrix acting on
+the whole unresolved complement of the function space, given in
+- Glaubitz, Lampert, Mattsson, Niemelä, Winters (2026):
+  Upwind summation-by-parts operators for general function spaces:
+  Discontinuous Galerkin-type operators.
+  [DOI: TODO](TODO)
+
+See [`dissipation_matrix`](@ref) and [`upwind_operators`](@ref).
+"""
+struct GlaubitzLampertMattssonNiemeläWinters2026DG <: SourceOfCoefficients end
+
+function Base.show(io::IO, source::GlaubitzLampertMattssonNiemeläWinters2026DG)
+    if get(io, :compact, false)
+        summary(io, source)
+    else
+        print(io,
+              "Glaubitz, Lampert, Mattsson, Niemelä, Winters (2026) \n",
+              "  Upwind summation-by-parts operators for general function spaces: \n",
+              "  Discontinuous Galerkin-type operators. \n",
+              "  TODO.")
+    end
+end
+
+"""
     GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized()
 
 Function space upwind SBP operators whose dissipation matrix is determined by minimizing the
@@ -221,3 +247,150 @@ end
 # Placeholder for computing the negative eigenvalues of the dissipation matrix. This method is
 # extended in backend-specific implementations.
 function compute_dissipation_eigenvalues end
+
+# Legendre polynomials of the lowest degrees whose nodal values are not already contained in the
+# span of the columns of `M`, mapped from the reference interval `[-1, 1]` to the interval spanned
+# by the `nodes`. Degrees `0, ..., N - 1` always suffice since the nodal values of the polynomials
+# of degree at most `N - 1` span all of `R^N`.
+function default_enrichment_functions(M, nodes, n_enrichment, rtol)
+    N = length(nodes)
+    x_min, x_max = extrema(nodes)
+    to_reference(x) = (2 * x - (x_min + x_max)) / (x_max - x_min)
+    enrichment_functions = Vector{Any}(undef, 0)
+    for degree in 0:(N - 1)
+        length(enrichment_functions) == n_enrichment && break
+        g(x) = legendre(to_reference(x), degree)
+        values = g.(nodes)
+        # Skip the degrees whose nodal values are (numerically) already in the span of `M`
+        norm(values - M * (M \ values)) > rtol * norm(values) || continue
+        push!(enrichment_functions, g)
+        M = hcat(M, values)
+    end
+    if length(enrichment_functions) != n_enrichment
+        throw(ArgumentError("could not find $n_enrichment enrichment functions, the nodal values of the basis functions are likely (numerically) linearly dependent"))
+    end
+    return enrichment_functions
+end
+
+# Orthogonal matrix `V` whose first `K` columns span the nodal values of the `basis_functions` and
+# whose remaining columns are an orthonormal complement built from the `enrichment_functions`.
+# We use a Householder QR decomposition instead of the Gram-Schmidt process of the reference. Only
+# the matrix `V` is needed here (in contrast to `orthonormalize_gram_schmidt`, we never need the
+# orthonormalized functions themselves), and the QR decomposition is orthogonal to machine
+# precision independently of the conditioning of the enriched basis. Both give the same `V` up to
+# the signs of the columns, which do not affect `S = V * Diagonal(lambda) * V'`.
+function enriched_orthonormal_vandermonde(basis_functions, enrichment_functions, nodes,
+                                          rtol)
+    V_basis = vandermonde_matrix(basis_functions, nodes)
+    M = if isempty(enrichment_functions)
+        V_basis
+    else
+        hcat(V_basis, vandermonde_matrix(enrichment_functions, nodes))
+    end
+    factorization = qr(M)
+    R_diagonal = abs.(diag(factorization.R))
+    if minimum(R_diagonal) <= rtol * maximum(R_diagonal)
+        throw(ArgumentError("the nodal values of the basis and enrichment functions are (numerically) linearly dependent"))
+    end
+    return Matrix(factorization.Q)
+end
+
+# Vector of the `N - K` negative eigenvalues of the dissipation matrix from the `lambda` argument,
+# which is either a scalar (flat choice) or a vector.
+function dissipation_eigenvalues(lambda::Real, n_enrichment, ::Type{T}) where {T}
+    return fill(convert(T, lambda), n_enrichment)
+end
+
+function dissipation_eigenvalues(lambda::AbstractVector, n_enrichment, ::Type{T}) where {T}
+    if length(lambda) != n_enrichment
+        throw(DimensionMismatch("length(lambda) = $(length(lambda)) must be equal to N - K = $n_enrichment"))
+    end
+    return convert(Vector{T}, lambda)
+end
+
+"""
+    dissipation_matrix(basis_functions, nodes, source::GlaubitzLampertMattssonNiemeläWinters2026DG;
+                       lambda, enrichment_functions = nothing, rtol = sqrt(eps(eltype(nodes))))
+
+Construct a dissipation matrix `S` on the `nodes` for the function space spanned by the
+`basis_functions` following the DG-type construction of the reference in
+[`GlaubitzLampertMattssonNiemeläWinters2026DG`](@ref).
+
+The matrix is given by `S = V * Diagonal([0, ..., 0, lambda...]) * V'`, where `V` is an orthogonal
+matrix whose first `K = length(basis_functions)` columns span the nodal values of the
+`basis_functions` and whose remaining `N - K` columns are an orthonormal complement obtained from
+the `enrichment_functions` (`N = length(nodes)`). The resulting `S` is symmetric and negative
+semi-definite, satisfies `S * f == 0` for all `f` in the function space, and `f' * S * f < 0`
+otherwise, provided all entries of `lambda` are negative.
+
+The `lambda` keyword argument holds the `N - K` eigenvalues of `S` that are not forced to be zero.
+It is either a `Real`, which is used for all of them (the flat choice used as the default in the
+reference), or an `AbstractVector` of length `N - K`. All values must be non-positive.
+
+The `enrichment_functions` are the functions `g_j` used to complete the basis. If `nothing` is
+passed, the Legendre polynomials of the lowest degrees whose nodal values are not already in the
+span of the `basis_functions` are used. The `rtol` is the relative tolerance used to detect such
+linear dependence.
+
+!!! note "The flat choice does not depend on the enrichment"
+    For a flat `lambda = -c`, the construction simplifies to `S = -c * (I - P)` with `P` being the
+    orthogonal projection onto the nodal values of the function space, so `S` is independent of the
+    `enrichment_functions`. They only matter for a non-constant `lambda`.
+
+See also [`upwind_operators`](@ref).
+
+!!! warning "Experimental implementation"
+    This is an experimental feature and may change in future releases.
+"""
+function dissipation_matrix(basis_functions, nodes::AbstractVector,
+                            source::GlaubitzLampertMattssonNiemeläWinters2026DG;
+                            lambda, enrichment_functions = nothing,
+                            rtol = sqrt(eps(eltype(nodes))))
+    N = length(nodes)
+    K = length(basis_functions)
+    @argcheck K<=N "length(basis_functions) = $K must not be larger than the number of nodes N = $N"
+    n_enrichment = N - K
+
+    if isnothing(enrichment_functions)
+        enrichment_functions = default_enrichment_functions(vandermonde_matrix(basis_functions,
+                                                                               nodes),
+                                                            nodes, n_enrichment, rtol)
+    elseif length(enrichment_functions) != n_enrichment
+        throw(DimensionMismatch("length(enrichment_functions) = $(length(enrichment_functions)) must be equal to N - K = $n_enrichment"))
+    end
+
+    sigma = dissipation_eigenvalues(lambda, n_enrichment, eltype(nodes))
+    if !all(<=(0), sigma)
+        throw(ArgumentError("all values of `lambda` must be non-positive, got $sigma"))
+    end
+    V = enriched_orthonormal_vandermonde(basis_functions, enrichment_functions, nodes, rtol)
+    return eigen_dissipation_matrix(V, sigma)
+end
+
+"""
+    upwind_operators(D, basis_functions, source::GlaubitzLampertMattssonNiemeläWinters2026DG;
+                     lambda, enrichment_functions = nothing, rtol = sqrt(eps(eltype(grid(D)))))
+
+Create upwind function space SBP operators of DG type with central derivative operator `D`, e.g. a
+[`function_space_operator`](@ref) created by
+`D = function_space_operator(basis_functions, nodes, GlaubitzNordströmÖffner2023())`, which is
+exact for the function space spanned by the `basis_functions`. The dissipation matrix `S` is
+constructed with [`dissipation_matrix`](@ref) on the grid of `D`, to which all keyword arguments
+are forwarded, and the upwind operators are given as
+```math
+D^- = D - M^{-1} S / 2, \\qquad D^+ = D + M^{-1} S / 2,
+```
+where ``M`` is the mass matrix. Since `S` annihilates the nodal values of the function space `D`
+is exact for, `D^-` and `D^+` are exact for the same function space.
+
+See also [`GlaubitzLampertMattssonNiemeläWinters2026DG`](@ref) and [`dissipation_matrix`](@ref).
+
+!!! warning "Experimental implementation"
+    This is an experimental feature and may change in future releases.
+"""
+function upwind_operators(D::AbstractNonperiodicDerivativeOperator,
+                          basis_functions::AbstractVector,
+                          source::GlaubitzLampertMattssonNiemeläWinters2026DG; kwargs...)
+    S = dissipation_matrix(basis_functions, grid(D), source; kwargs...)
+    return upwind_operators(D, S, source)
+end
