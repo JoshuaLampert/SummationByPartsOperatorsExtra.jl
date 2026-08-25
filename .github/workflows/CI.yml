@@ -64,6 +64,11 @@ jobs:
       - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
       - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
+      # TODO: Remove this step again
+      - name: Use branch `ef/fix-macro` of TrixiTest.jl
+        run: julia --project=test -e 'using Pkg; Pkg.add(PackageSpec(url = "https://github.com/trixi-framework/TrixiTest.jl", rev = "ef/fix-macro"))'
+        env:
+          JULIA_PKG_PRECOMPILE_AUTO: '0'
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
         with:
