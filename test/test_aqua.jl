@@ -10,7 +10,10 @@
                                 # These are needed in the extensions, but not in the main module.
                                 # Since package extensions cannot have additional dependencies,
                                 # we need to load them in the main module.
-                                ignore = [:PreallocationTools, :ScopedValues]),
+                                ignore = [:PreallocationTools, :ScopedValues,
+                                          # TODO: Remove again once the temporary TrixiTest.jl
+                                          #       branch in `.github/workflows/CI.yml` is gone.
+                                          :TrixiTest]),
                   # We use type piracy for `mass_matrix_boundary`. This probably doesn't want to live
                   # in SummationByPartsOperators.jl since it has some assumptions.
                   piracies = false)
