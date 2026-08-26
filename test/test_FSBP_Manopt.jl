@@ -174,12 +174,8 @@ end
     for T in (Float32, Float64)
         nodes = collect(LinRange{T}(x_min, x_max, N))
         debug = SummationByPartsOperatorsExtra.default_options(source, true).debug
-        iterations = T == Float64 ? 100 : (T == Float32 ? 64 : 100)
-        options = (;
-                   debug = debug,
-                   stopping_criterion = StopAfterIteration(iterations) |
-                                        StopWhenCostLess(10000 * eps(T)^2) |
-                                        cross(StopWhenCostChangeLess(1e-30), 3))
+        # Use the default stopping criterion of `augmented_Lagrangian_method` here.
+        options = (; debug = debug)
         let basis_functions = [x -> x^i for i in 0:3]
             # Test errors
             @test_throws AssertionError function_space_operator(basis_functions, nodes,
