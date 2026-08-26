@@ -203,11 +203,16 @@ end
             @test eltype(D) == T
             @test grid(D) ≈ nodes
 
-            tol = T == Float64 ? 1e-9 : (T == Float32 ? 1e-5 : 1e-9)
+            # The regularized operator reproduces the basis functions only up to the accuracy
+            # the constrained optimization reaches, which is around 1e-8 (Float64) and 1e-5
+            # (Float32) for this problem. Where exactly the solver stops depends on the rounding
+            # of the underlying BLAS and hence on the platform, so we compare against an absolute
+            # tolerance with some margin rather than the default tolerance of `≈`.
+            tol = T == Float64 ? 1e-6 : 1e-4
             @test all(isapprox.(D * ones(N), zeros(N); atol = tol))
-            @test D * nodes ≈ ones(N)
-            @test D * (nodes .^ 2) ≈ 2 * nodes
-            @test D * (nodes .^ 3) ≈ 3 * (nodes .^ 2)
+            @test isapprox(D * nodes, ones(N); atol = tol)
+            @test isapprox(D * (nodes .^ 2), 2 * nodes; atol = tol)
+            @test isapprox(D * (nodes .^ 3), 3 * (nodes .^ 2); atol = tol)
             M = mass_matrix(D)
             @test M * D.D + D.D' * M ≈ mass_matrix_boundary(D)
         end
