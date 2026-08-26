@@ -1,5 +1,5 @@
 using SummationByPartsOperatorsExtra: get_nsigma
-using LinearAlgebra: Diagonal, UpperTriangular, LowerTriangular, diag, issymmetric
+using LinearAlgebra: Diagonal, UpperTriangular, I, diag, issymmetric, qr
 using SparseArrays: spzeros
 
 function vandermonde_matrix(functions, nodes)
@@ -191,53 +191,47 @@ function set_B!(B, phi, normals, boundary_indices, dim;
     end
 end
 
-function inner_H1(f, g, f_derivative, g_derivative, nodes)
-    return sum(f.(nodes) .* g.(nodes) + f_derivative.(nodes) .* g_derivative.(nodes))
-end
-norm_H1(f, f_derivative, nodes) = sqrt(inner_H1(f, f, f_derivative, f_derivative, nodes))
-
-function call_orthonormal_basis_function(A, basis_functions, k, x)
-    return sum(basis_functions[i](x) * A[k, i] for i in 1:k)
-end
-
-# This will orthonormalize the basis functions using the Gram-Schmidt process to reduce the condition
-# number of the Vandermonde matrix. The matrix A transfers the old basis functions to the new orthonormalized by
-# g(x) = A * f(x), where f(x) is the vector of old basis functions and g(x) is the vector of the new orthonormalized
-# basis functions. Analogously, we have g'(x) = A * f'(x).
-function orthonormalize_gram_schmidt(basis_functions, basis_functions_derivatives, nodes)
+# Nodal values of the `basis_functions` and of their derivatives after orthonormalizing the basis
+# with respect to the discrete H^1 inner product induced by the `nodes`,
+#     <f, g>_{H^1} = sum_n f(x_n) * g(x_n) + sum_n f'(x_n) * g'(x_n),
+# which reduces the condition number of the Vandermonde matrix. That is, the returned matrices
+# `V` and `V_x` satisfy `V' * V + V_x' * V_x = I`.
+#
+# The orthonormalization is linear: the orthonormalized basis is `g(x) = A * f(x)` with the
+# derivatives `g'(x) = A * f'(x)` for the same lower triangular matrix `A`, where `f(x)` is the
+# vector of the old basis functions. Moreover, the H^1 inner product above is just the Euclidean
+# inner product of the stacked vectors `[f(x); f'(x)]`. Hence, `A` is determined by a QR
+# decomposition of the stacked Vandermonde matrix `W = [V; V_x]`: if `W = Q * R`, then
+# `A = inv(R)'` is lower triangular and satisfies
+#     [V; V_x] * A' = W * inv(R) = Q,
+# i.e. the two blocks of `Q` are exactly the nodal values we are after. We therefore never have to
+# form `A` (or the orthonormalized basis functions) explicitly.
+#
+# We use a Householder QR decomposition rather than the Gram-Schmidt process used previously: it is
+# orthogonal to machine precision independently of the conditioning of `W`, whereas the classical
+# Gram-Schmidt process loses orthogonality proportionally to the *squared* condition number of `W`
+# - which partly defeats the purpose of orthonormalizing in the first place. It is also cheaper
+# since the basis functions are evaluated once instead of once per inner product.
+function orthonormal_vandermonde_matrices(basis_functions, basis_functions_derivatives,
+                                          nodes)
+    T = eltype(nodes)
+    N = length(nodes)
     K = length(basis_functions)
+    W = [vandermonde_matrix(basis_functions, nodes);
+         vandermonde_matrix(basis_functions_derivatives, nodes)]
 
-    A = LowerTriangular(zeros(eltype(nodes), K, K))
-
-    basis_functions_orthonormalized = Vector{Function}(undef, K)
-    basis_functions_orthonormalized_derivatives = Vector{Function}(undef, K)
-
+    factorization = qr(W)
+    # `Matrix(factorization.Q)` would form the full `2N x 2N` factor, so we apply the Householder
+    # reflectors to the first `K` unit vectors instead to obtain the thin factor directly
+    Q = factorization.Q * Matrix{T}(I, 2 * N, K)
+    # The QR decomposition is unique only up to the signs of the columns of `Q`. We normalize them
+    # such that the diagonal of `R` (and hence of `A`) is positive, as for the Gram-Schmidt process.
     for k in 1:K
-        A[k, k] = 1
-        for j in 1:(k - 1)
-            g(x) = call_orthonormal_basis_function(A, basis_functions, j, x)
-            function g_derivative(x)
-                return call_orthonormal_basis_function(A, basis_functions_derivatives, j, x)
-            end
-            inner_product = inner_H1(basis_functions[k], g, basis_functions_derivatives[k],
-                                     g_derivative, nodes)
-            norm_squared = inner_H1(g, g, g_derivative, g_derivative, nodes)
-            A[k, :] = A[k, :] - inner_product / norm_squared * A[j, :]
+        if factorization.R[k, k] < 0
+            @views Q[:, k] .= -Q[:, k]
         end
-
-        basis_functions_orthonormalized[k] = x -> call_orthonormal_basis_function(A,
-                                                                                  basis_functions,
-                                                                                  k, x)
-        basis_functions_orthonormalized_derivatives[k] = x -> call_orthonormal_basis_function(A,
-                                                                                              basis_functions_derivatives,
-                                                                                              k,
-                                                                                              x)
-        # Normalization
-        r = norm_H1(basis_functions_orthonormalized[k],
-                    basis_functions_orthonormalized_derivatives[k], nodes)
-        A[k, :] = A[k, :] / r
     end
-    return basis_functions_orthonormalized, basis_functions_orthonormalized_derivatives
+    return Q[1:N, :], Q[(N + 1):(2 * N), :]
 end
 
 function assert_first_derivative_order(derivative_order)
