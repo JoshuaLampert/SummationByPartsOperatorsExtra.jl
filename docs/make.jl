@@ -1,6 +1,8 @@
 using Documenter
-using DocumenterInterLinks
+using DocumenterCodeBlocks: CodeBlocks
+using DocumenterInterLinks: InterLinks
 using SummationByPartsOperatorsExtra
+import Changelog
 
 # Provide external links to the SummationByPartsOperators.jl docs (project root and inventory file)
 links = InterLinks("SummationByPartsOperators" => ("https://ranocha.github.io/SummationByPartsOperators.jl/stable/",
@@ -11,6 +13,13 @@ DocMeta.setdocmeta!(SummationByPartsOperatorsExtra, :DocTestSetup,
                     :(using SummationByPartsOperatorsExtra);
                     recursive = true)
 
+# Create changelog
+Changelog.generate(Changelog.Documenter(),                                   # output type
+                   joinpath(@__DIR__, "..", "CHANGELOG.md"),                 # input file
+                   joinpath(@__DIR__, "src", "changelog.md");                # output file
+                   repo = "JoshuaLampert/SummationByPartsOperatorsExtra.jl", # default repository for links
+                   branch = "main",)
+
 makedocs(;
          modules = [SummationByPartsOperatorsExtra],
          authors = "Joshua Lampert <joshua.lampert@uni-hamburg.de>",
@@ -20,11 +29,14 @@ makedocs(;
                                   prettyurls = get(ENV, "CI", "false") == "true",
                                   canonical = "https://JoshuaLampert.github.io/SummationByPartsOperatorsExtra.jl/stable",
                                   edit_link = "main"),
+         # Improve code blocks in the documentation by using DocumenterCodeBlocks.jl
+         plugins = [links, CodeBlocks()],
+         # Explicitly specify documentation structure
          pages = ["Home" => "index.md",
              "Development" => "development.md",
              "Reference" => "ref.md",
-             "License" => "license.md"],
-         plugins = [links])
+             "Changelog" => "changelog.md",
+             "License" => "license.md"])
 
 deploydocs(;
            repo = "github.com/JoshuaLampert/SummationByPartsOperatorsExtra.jl",

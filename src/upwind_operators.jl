@@ -284,11 +284,10 @@ end
 
 # Orthogonal matrix `V` whose first `K` columns span the nodal values of the `basis_functions` and
 # whose remaining columns are an orthonormal complement built from the `enrichment_functions`.
-# We use a Householder QR decomposition instead of the Gram-Schmidt process of the reference. Only
-# the matrix `V` is needed here (in contrast to `orthonormalize_gram_schmidt`, we never need the
-# orthonormalized functions themselves), and the QR decomposition is orthogonal to machine
-# precision independently of the conditioning of the enriched basis. Both give the same `V` up to
-# the signs of the columns, which do not affect `S = V * Diagonal(lambda) * V'`.
+# We use a Householder QR decomposition instead of the Gram-Schmidt process of the reference: it is
+# orthogonal to machine precision independently of the conditioning of the enriched basis. Both
+# give the same `V` up to the signs of the columns, which do not affect
+# `S = V * Diagonal(lambda) * V'`.
 function enriched_orthonormal_vandermonde(basis_functions, nodes, enrichment_functions,
                                           rtol)
     N = length(nodes)

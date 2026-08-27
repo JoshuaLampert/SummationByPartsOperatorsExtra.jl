@@ -115,22 +115,16 @@ function construct_function_space_operator(basis_functions, nodes,
     assert_correct_length_basis_functions_weights(basis_functions_weights, basis_functions)
     if source isa GlaubitzIskeLampertÖffner2026Regularized
         @assert !isnothing(regularization_functions) "regularization_functions must be provided for GlaubitzIskeLampertÖffner2026Regularized"
-        regularization_functions_derivatives = [x -> ForwardDiff.derivative(regularization_function,
-                                                                            x)
-                                                for regularization_function in regularization_functions]
     end
     L = get_nsigma(N; bandwidth, size_boundary, different_values, sparsity_pattern)
 
     basis_functions_derivatives = [x -> ForwardDiff.derivative(basis_functions[i], x)
                                    for i in 1:K]
-    basis_functions_orthonormalized, basis_functions_orthonormalized_derivatives = orthonormalize_gram_schmidt(basis_functions,
-                                                                                                               basis_functions_derivatives,
-                                                                                                               nodes)
+    V, V_x = orthonormal_vandermonde_matrices(basis_functions, basis_functions_derivatives,
+                                              nodes)
     # This weights column k, i.e. basis function k, with the weight `basis_functions_weights[k]`
-    V = vandermonde_matrix(basis_functions_orthonormalized, nodes) *
-        Diagonal(basis_functions_weights)
-    V_x = vandermonde_matrix(basis_functions_orthonormalized_derivatives, nodes) *
-          Diagonal(basis_functions_weights)
+    V = V * Diagonal(basis_functions_weights)
+    V_x = V_x * Diagonal(basis_functions_weights)
     B = spzeros(T, N, N)
     B[1, 1] = -1
     B[N, N] = 1
@@ -162,6 +156,9 @@ function construct_function_space_operator(basis_functions, nodes,
 
     param = (; V, V_x, R, B, min_real_eigen)
     if source isa GlaubitzIskeLampertÖffner2026Regularized
+        regularization_functions_derivatives = [x -> ForwardDiff.derivative(regularization_function,
+                                                                            x)
+                                                for regularization_function in regularization_functions]
         G = vandermonde_matrix(regularization_functions, nodes)
         G_x = vandermonde_matrix(regularization_functions_derivatives, nodes)
         R_G = B * G / 2
@@ -200,10 +197,8 @@ function get_objective_function(::GlaubitzIskeLampertÖffner2026Regularized,
     grad_h(M, x) = [optimization_gradient_function_space_operator(M, h1, x, autodiff)]
     hess_h(M, p, Xp) = ApproxHessianBFGS(M, p, grad_h)(M, p, Xp)
     return ConstrainedManifoldObjective(f, grad_f; hess_f = hess_f,
-                                        g = nothing, grad_g = nothing, h = h,
-                                        grad_h = grad_h, hess_h = hess_h,
-                                        equality_constraints = 1,
-                                        atol = 1e-28)
+                                        h = h, grad_h = grad_h, hess_h = hess_h,
+                                        equality_constraints = 1, atol = 1e-28)
 end
 function get_objective_function(::GlaubitzIskeLampertÖffner2026EigenvalueProperty,
                                 param, autodiff)
@@ -218,9 +213,7 @@ function get_objective_function(::GlaubitzIskeLampertÖffner2026EigenvalueProper
     hess_g(M, p, Xp) = ApproxHessianBFGS(M, p, grad_g)(M, p, Xp)
     return ConstrainedManifoldObjective(f, grad_f; hess_f = hess_f,
                                         g = g, grad_g = grad_g, hess_g = hess_g,
-                                        h = nothing, grad_h = nothing,
-                                        inequality_constraints = 1,
-                                        atol = 1e-28)
+                                        inequality_constraints = 1, atol = 1e-28)
 end
 
 # During the (Manopt >= 0.6) Wolfe-Powell line search the exponential retraction on the

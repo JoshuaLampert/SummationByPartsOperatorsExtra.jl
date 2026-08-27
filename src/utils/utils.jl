@@ -11,11 +11,6 @@ function vandermonde_matrix(functions, nodes)
     return V
 end
 
-# Placeholder for orthonormalizing basis functions with the Gram-Schmidt process. This method is
-# extended in backend-specific implementations, where the orthonormalized functions themselves are
-# needed (in contrast to just their nodal values, cf. `enriched_orthonormal_vandermonde`).
-function orthonormalize_gram_schmidt end
-
 include("interpolation.jl")
 include("optimization.jl")
 include("sparsity_patterns.jl")

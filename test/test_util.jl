@@ -1,29 +1,19 @@
-using TrixiTest: @trixi_test_nowarn
-using TrixiBase: trixi_include
+using TrixiTest: @test_trixi_include_base
 
 # Use a macro to avoid world age issues when defining new initial conditions etc.
 # inside an example.
 """
-    @test_trixi_include(example)
+    @test_trixi_include(example, args...)
 
-Test by calling `trixi_include(example; parameters...)`.
+Test by calling `trixi_include(example; args...)`.
 By default, only the absence of error output is checked.
+
+This is a thin wrapper around `TrixiTest.@test_trixi_include_base`, analogous to the
+one Trixi.jl uses in its `test/test_trixi.jl`.
 """
 macro test_trixi_include(example, args...)
-    local kwargs = Pair{Symbol, Any}[]
-    for arg in args
-        if arg.head == :(=)
-            push!(kwargs, Pair(arg.args...))
-        end
+    ex = quote
+        @test_trixi_include_base($example, $(args...))
     end
-
-    quote
-        println("═"^100)
-        println($example)
-
-        # evaluate examples in the scope of the module they're called from
-        @trixi_test_nowarn trixi_include(@__MODULE__, $example; $kwargs...)
-
-        println("═"^100)
-    end
+    return esc(ex)
 end
