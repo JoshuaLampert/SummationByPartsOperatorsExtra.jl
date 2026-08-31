@@ -7,7 +7,8 @@ function default_options(::GlaubitzLampertMattssonNiemeläWinters2026AccuracyOpt
     return Options(g_tol = 1e-10, iterations = 10000, show_trace = verbose)
 end
 
-function SummationByPartsOperatorsExtra.dissipation_eigenvalues(test_functions, D, V, K,
+function SummationByPartsOperatorsExtra.dissipation_eigenvalues(test_functions, D,
+                                                                enriched_basis, K,
                                                                 source::GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized;
                                                                 autodiff = Optim.ADTypes.AutoForwardDiff(),
                                                                 sigma0 = nothing,
@@ -15,6 +16,7 @@ function SummationByPartsOperatorsExtra.dissipation_eigenvalues(test_functions, 
                                                                 opt_alg = default_opt_alg(source),
                                                                 options = default_options(source,
                                                                                           verbose))
+    V = enriched_basis.V
     nodes = grid(D)
     N = length(nodes)
     NmK = N - K

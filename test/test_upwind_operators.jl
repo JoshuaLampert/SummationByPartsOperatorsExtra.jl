@@ -188,11 +188,12 @@ end
     test_functions = [x -> x^2, x -> x^3]
     sigma0 = [-1.0, -1.0, -1.0]
 
-    V = SummationByPartsOperatorsExtra.enriched_orthonormal_vandermonde(basis_functions,
-                                                                        nodes,
-                                                                        enrichment_functions,
-                                                                        sqrt(eps()))
-    sigma = SummationByPartsOperatorsExtra.dissipation_eigenvalues(test_functions, D, V, K,
+    enriched_basis = SummationByPartsOperatorsExtra.enriched_orthonormal_vandermonde(basis_functions,
+                                                                                     nodes,
+                                                                                     enrichment_functions,
+                                                                                     sqrt(eps()))
+    sigma = SummationByPartsOperatorsExtra.dissipation_eigenvalues(test_functions, D,
+                                                                   enriched_basis, K,
                                                                    source; sigma0)
     # The modes seen by the objective are driven to zero ...
     @test isapprox(sigma[1], 0.0, atol = 1e-8)
@@ -351,8 +352,9 @@ end
     nodes = collect(range(-1.0, 1.0, length = N))
     D = function_space_operator(basis_functions, nodes, GlaubitzNordströmÖffner2023())
 
-    V = SBPE.enriched_orthonormal_vandermonde(basis_functions, nodes, nothing, sqrt(eps()))
-    S_shape = SBPE.eigen_dissipation_matrix(V, -ones(N - K))
+    enriched_basis = SBPE.enriched_orthonormal_vandermonde(basis_functions, nodes, nothing,
+                                                           sqrt(eps()))
+    S_shape = SBPE.eigen_dissipation_matrix(enriched_basis.V, -ones(N - K))
 
     # Reference values of the reference given in `GlaubitzLampertMattssonNiemeläWinters2026DG`:
     # the budget-calibrated flat rate is `lambda* = 0.80` at a spectral radius ratio of `1.20`
@@ -385,7 +387,8 @@ end
     M = mass_matrix(D_upw)
     B = mass_matrix_boundary(D_upw)
     @test isapprox(Matrix(D_upw.minus)' * M + M * Matrix(D_upw.plus), B, atol = 1e-11)
-    S = M * Matrix(D_upw.plus) - B / 2 + (M * Matrix(D_upw.plus) - B / 2)'
+    Qp = M * Matrix(D_upw.plus) - B / 2
+    S = Qp + Qp'
     @test issymmetric(S)
     @test maximum(eigvals(S)) < 1e-10
     for basis_function in basis_functions
@@ -398,4 +401,105 @@ end
     # A budget that is never binding cannot be calibrated
     @test_throws ArgumentError SBPE.calibrate_stiffness_budget(D, S_shape, source,
                                                                StiffnessBudget(tol = 1e6))
+end
+
+@testitem "Upwind operators (error-weighted damping rates)" begin
+    using LinearAlgebra: Diagonal, diag, dot, eigvals, issymmetric
+    import Optim, ForwardDiff
+
+    SBPE = SummationByPartsOperatorsExtra
+    source = GlaubitzLampertMattssonNiemeläWinters2026DG()
+    basis_functions = [one, identity, exp]
+    basis_functions_derivatives = [zero, one, exp]
+    K = length(basis_functions)
+    N = 6
+    nodes = collect(range(-1.0, 1.0, length = N))
+    D = function_space_operator(basis_functions, nodes, GlaubitzNordströmÖffner2023())
+    P = mass_matrix(D)
+
+    enriched_basis = SBPE.enriched_orthonormal_vandermonde(basis_functions, nodes, nothing,
+                                                           sqrt(eps()))
+    V = enriched_basis.V
+    V_x = SBPE.enriched_derivative_vandermonde(basis_functions_derivatives,
+                                               enriched_basis.enrichment_functions_derivatives,
+                                               nodes, enriched_basis)
+    errors = [sqrt(dot(r, P, r)) for r in eachcol(Matrix(D) * V - V_x)]
+
+    # `V_x` are the nodal derivative values of the orthonormalized enriched basis, so the central
+    # operator is exact on the first `K` modes - they span the function space it is built for
+    @test all(<(1e-10), errors[1:K])
+    @test all(>(1e-2), errors[(K + 1):N])
+
+    weights = ErrorWeights(; basis_functions_derivatives)
+    w = SBPE.dissipation_weights(weights, D, enriched_basis, K, basis_functions)
+    @test w ≈ errors[(K + 1):N] / sum(errors[(K + 1):N])
+    @test sum(w) ≈ 1
+
+    # Reference values of the reference given in `GlaubitzLampertMattssonNiemeläWinters2026DG`:
+    # the per-mode ratio of the dissipation-induced derivative error to the central error is
+    # `(0.90, 0.16, 0.06)` for the flat choice, but `(0.39, 0.34, 0.35)` for the weighted one
+    function error_ratios(lambda)
+        S = dissipation_matrix(basis_functions, D, source; lambda)
+        dissipation = (P \ Matrix(S)) * V[:, (K + 1):N] / 2
+        return [sqrt(dot(r, P, r)) for r in eachcol(dissipation)] ./ errors[(K + 1):N]
+    end
+    @test isapprox(error_ratios(StiffnessBudget()), [0.90, 0.16, 0.06], atol = 0.02)
+    @test isapprox(error_ratios(StiffnessBudget(weights)), [0.39, 0.34, 0.35], atol = 0.02)
+
+    # The equilibration of the reference holds only up to the factor `norm(v_j, inv(P))`: since
+    # `v_j` is an eigenvector of `S`, the dissipation-induced derivative error of mode `j` is
+    #     norm(inv(P) * S * v_j, P) == abs(lambda_j) * norm(v_j, inv(P)),
+    # where the extra factor appears because the modes are normalized in the Euclidean inner
+    # product while the error is measured in the `P` norm. This is structural: it holds for every
+    # choice of the eigenvalues, not just for the weighted one.
+    for lambda in (-1.0, StiffnessBudget(), StiffnessBudget(weights))
+        S = Matrix(dissipation_matrix(basis_functions, D, source; lambda))
+        for j in (K + 1):N
+            v = V[:, j]
+            # `S * v == lambda_j * v` and `norm(v) == 1`, so this is the eigenvalue of that mode
+            lambda_j = dot(v, S * v)
+            @test isapprox(S * v, lambda_j * v, atol = 1e-12)
+
+            dissipation = P \ (S * v)
+            @test isapprox(sqrt(dot(dissipation, P, dissipation)),
+                           abs(lambda_j) * sqrt(dot(v, inv(P), v)), rtol = 1e-10)
+            # ... and the factor may not be dropped, it is far from one here
+            @test !isapprox(sqrt(dot(dissipation, P, dissipation)), abs(lambda_j),
+                            rtol = 0.1)
+        end
+    end
+
+    # The weighted choice yields a valid pair of upwind operators, but a different one
+    D_upwind = upwind_operators(D, basis_functions, source;
+                                lambda = StiffnessBudget(weights))
+    x = grid(D_upwind)
+    M = mass_matrix(D_upwind)
+    B = mass_matrix_boundary(D_upwind)
+    @test isapprox(Matrix(D_upwind.minus)' * M + M * Matrix(D_upwind.plus), B, atol = 1e-11)
+    Qp = M * Matrix(D_upwind.plus) - B / 2
+    S = Qp + Qp'
+    @test issymmetric(S)
+    @test maximum(eigvals(S)) < 1e-10
+    for basis_function in basis_functions
+        @test isapprox(S * basis_function.(x), zeros(N), atol = 1e-10)
+    end
+    @test !isapprox(Matrix(D_upwind.plus),
+                    Matrix(upwind_operators(D, basis_functions, source).plus))
+
+    # Error handling
+    let enrichment_functions = [x -> x^2, x -> x^5, cos]
+        # custom enrichment functions need their derivatives
+        @test_throws ArgumentError dissipation_matrix(basis_functions, D, source;
+                                                      enrichment_functions,
+                                                      lambda = StiffnessBudget(weights))
+        weights_full = ErrorWeights(; basis_functions_derivatives,
+                                    enrichment_functions_derivatives = [x -> 2 * x,
+                                        x -> 5 * x^4, x -> -sin(x)])
+        @test dissipation_matrix(basis_functions, D, source; enrichment_functions,
+                                 lambda = StiffnessBudget(weights_full)) isa AbstractMatrix
+    end
+    @test_throws DimensionMismatch dissipation_matrix(basis_functions, D, source;
+                                                      lambda = StiffnessBudget(ErrorWeights(;
+                                                                                            basis_functions_derivatives = [zero,
+                                                                                                one])))
 end

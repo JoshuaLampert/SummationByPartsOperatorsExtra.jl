@@ -218,9 +218,9 @@ function dissipation_matrix(sigma::AbstractVector,
     # Legendre polynomials rather than monomials since they span the same space, but are much
     # better conditioned. The orthonormal complement is the default (Legendre) enrichment.
     basis_functions = [reference_legendre(nodes, degree) for degree in 0:(K - 1)]
-    V = enriched_orthonormal_vandermonde(basis_functions, nodes, nothing, rtol)
+    enriched_basis = enriched_orthonormal_vandermonde(basis_functions, nodes, nothing, rtol)
     check_dissipation_eigenvalues(sigma)
-    return eigen_dissipation_matrix(V, sigma)
+    return eigen_dissipation_matrix(enriched_basis.V, sigma)
 end
 
 """
@@ -269,11 +269,12 @@ function dissipation_matrix(basis_functions, D::AbstractNonperiodicDerivativeOpe
                             test_functions, enrichment_functions = nothing,
                             rtol = sqrt(eps(eltype(grid(D)))), kwargs...)
     nodes = grid(D)
-    V = enriched_orthonormal_vandermonde(basis_functions, nodes, enrichment_functions, rtol)
-    sigma = dissipation_eigenvalues(test_functions, D, V, length(basis_functions), source;
-                                    kwargs...)
+    enriched_basis = enriched_orthonormal_vandermonde(basis_functions, nodes,
+                                                      enrichment_functions, rtol)
+    sigma = dissipation_eigenvalues(test_functions, D, enriched_basis,
+                                    length(basis_functions), source; kwargs...)
     check_dissipation_eigenvalues(sigma)
-    return eigen_dissipation_matrix(V, sigma)
+    return eigen_dissipation_matrix(enriched_basis.V, sigma)
 end
 
 # Legendre polynomials of the lowest degrees whose nodal values are not already contained in the
@@ -287,9 +288,23 @@ function reference_legendre(nodes, degree)
     return x -> legendre((2 * x - (x_min + x_max)) / (x_max - x_min), degree)
 end
 
+# Derivative of `reference_legendre`, including the chain rule factor of the affine map. Having it
+# in closed form means the default enrichment needs no automatic differentiation.
+function reference_legendre_derivative(nodes, degree)
+    x_min, x_max = extrema(nodes)
+    scaling = 2 / (x_max - x_min)
+    function derivative(x)
+        _, derivative_value = legendre_and_derivative((2 * x - (x_min + x_max)) /
+                                                      (x_max - x_min), degree)
+        return scaling * derivative_value
+    end
+    return derivative
+end
+
 function default_enrichment_functions(M, nodes, n_enrichment, rtol)
     N = length(nodes)
     enrichment_functions = Vector{Any}(undef, 0)
+    enrichment_functions_derivatives = Vector{Any}(undef, 0)
     for degree in 0:(N - 1)
         length(enrichment_functions) == n_enrichment && break
         g = reference_legendre(nodes, degree)
@@ -297,12 +312,14 @@ function default_enrichment_functions(M, nodes, n_enrichment, rtol)
         # Skip the degrees whose nodal values are (numerically) already in the span of `M`
         norm(values - M * (M \ values)) > rtol * norm(values) || continue
         push!(enrichment_functions, g)
+        push!(enrichment_functions_derivatives,
+              reference_legendre_derivative(nodes, degree))
         M = hcat(M, values)
     end
     if length(enrichment_functions) != n_enrichment
         throw(ArgumentError("could not find $n_enrichment enrichment functions, the nodal values of the basis functions are likely (numerically) linearly dependent"))
     end
-    return enrichment_functions
+    return enrichment_functions, enrichment_functions_derivatives
 end
 
 # Orthogonal matrix `V` whose first `K` columns span the nodal values of the `basis_functions` and
@@ -319,9 +336,12 @@ function enriched_orthonormal_vandermonde(basis_functions, nodes, enrichment_fun
     n_enrichment = N - K
 
     V_basis = vandermonde_matrix(basis_functions, nodes)
+    enrichment_functions_derivatives = nothing
     if isnothing(enrichment_functions)
-        enrichment_functions = default_enrichment_functions(V_basis, nodes, n_enrichment,
-                                                            rtol)
+        enrichment_functions, enrichment_functions_derivatives = default_enrichment_functions(V_basis,
+                                                                                              nodes,
+                                                                                              n_enrichment,
+                                                                                              rtol)
     elseif length(enrichment_functions) != n_enrichment
         throw(DimensionMismatch("length(enrichment_functions) = $(length(enrichment_functions)) must be equal to N - K = $n_enrichment"))
     end
@@ -336,15 +356,87 @@ function enriched_orthonormal_vandermonde(basis_functions, nodes, enrichment_fun
     if minimum(R_diagonal) <= rtol * maximum(R_diagonal)
         throw(ArgumentError("the nodal values of the basis and enrichment functions are (numerically) linearly dependent"))
     end
-    return Matrix(factorization.Q)
+    # `M = V * R`, so the function with nodal values `V[:, j]` is the combination of the enriched
+    # basis given by the `j`-th column of `inv(R)`. Its nodal derivative values are therefore the
+    # `j`-th column of `M_x / R` with `M_x` the Vandermonde matrix of the derivatives, cf.
+    # `enriched_derivative_vandermonde`.
+    return (; V = Matrix(factorization.Q), R = factorization.R, enrichment_functions,
+            enrichment_functions_derivatives)
+end
+
+# Nodal derivative values of the orthonormalized enriched basis, see the comment above.
+function enriched_derivative_vandermonde(basis_functions_derivatives,
+                                         enrichment_functions_derivatives, nodes,
+                                         enriched_basis)
+    M_x = if isempty(enrichment_functions_derivatives)
+        vandermonde_matrix(basis_functions_derivatives, nodes)
+    else
+        hcat(vandermonde_matrix(basis_functions_derivatives, nodes),
+             vandermonde_matrix(enrichment_functions_derivatives, nodes))
+    end
+    return M_x / enriched_basis.R
 end
 
 """
-    StiffnessBudget(; tol = 1 // 5, num_elements = 2, max_scale = 100, rtol = 1e-10)
+    FlatWeights()
+
+Damp all unresolved modes at the same rate, i.e. use `lambda_j = -scale` for all of them. Pass it
+to [`StiffnessBudget`](@ref).
+
+By the remark on the flat choice in [`dissipation_matrix`](@ref), the resulting dissipation matrix
+is a multiple of the orthogonal projection onto the unresolved complement and hence does not
+depend on the enrichment functions at all. It therefore damps every unresolved direction alike and
+cannot distinguish between unresolved modes; see [`ErrorWeights`](@ref) for a refinement.
+"""
+struct FlatWeights end
+
+@doc raw"""
+    ErrorWeights(; basis_functions_derivatives, enrichment_functions_derivatives = nothing)
+
+Damp the unresolved modes proportionally to the error the central operator makes on them, i.e. use
+`lambda_j = -scale * w_j` with `w_j = e_j / sum(e)` and
+```math
+e_j = \\| D \\mathbf{v}_j - \\mathbf{v}_j' \\|_P, \\qquad j = K+1, \\dots, N,
+```
+where ``\\mathbf{v}_j'`` collects the nodal derivative values of the function in the enriched space
+with nodal values ``\\mathbf{v}_j``. Pass it to [`StiffnessBudget`](@ref).
+
+Modes that `D` differentiates accurately receive weak damping, while the budget is concentrated on
+the modes with the largest errors. The `e_j` are fixed data computed from the central operator, so
+nothing is optimized here and the degeneracy of
+[`GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized`](@ref) cannot occur.
+
+In contrast to [`FlatWeights`](@ref), the result depends on the enrichment functions, both through
+the space they span, which is what defines ``\\mathbf{v}_j'``, and through the orthonormal basis of
+the unresolved complement they induce.
+
+Computing the `e_j` requires the derivatives of the basis functions, which have to be passed as
+`basis_functions_derivatives`. The derivatives of the enrichment functions are only needed if the
+`enrichment_functions` are passed explicitly to [`dissipation_matrix`](@ref); for the default
+Legendre enrichment they are known in closed form.
+
+!!! warning "Experimental implementation"
+    This is an experimental feature and may change in future releases.
+"""
+struct ErrorWeights{Basis, Enrichment}
+    basis_functions_derivatives::Basis
+    enrichment_functions_derivatives::Enrichment
+end
+
+function ErrorWeights(; basis_functions_derivatives,
+                      enrichment_functions_derivatives = nothing)
+    return ErrorWeights(basis_functions_derivatives, enrichment_functions_derivatives)
+end
+
+"""
+    StiffnessBudget(weights = FlatWeights(); tol = 1 // 5, num_elements = 2,
+                    max_scale = 100, rtol = 1e-10)
 
 Determine the scale of the dissipation matrix from a *stiffness budget*: the largest scale such
 that the spectral radius of the semidiscretization grows by at most a factor `1 + tol` over the
-one of the central operator. Pass it as the `lambda` argument of [`dissipation_matrix`](@ref) or
+one of the central operator. The eigenvalues are `lambda_j = -scale * w_j` with the `weights` `w_j`
+given by [`FlatWeights`](@ref) or [`ErrorWeights`](@ref); their normalization is immaterial since
+any rescaling is absorbed by the calibrated scale. Pass it as the `lambda` argument of [`dissipation_matrix`](@ref) or
 [`upwind_operators`](@ref).
 
 The semidiscretization is the periodic upwind FSBP-SAT discretization of the linear advection
@@ -363,16 +455,18 @@ and [`GlaubitzLampertMattssonNiemeläWinters2026DG`](@ref).
 !!! warning "Experimental implementation"
     This is an experimental feature and may change in future releases.
 """
-struct StiffnessBudget{T <: Real}
+struct StiffnessBudget{Weights, T <: Real}
+    weights::Weights
     tol::T
     num_elements::Int
     max_scale::T
     rtol::T
 end
 
-function StiffnessBudget(; tol = 1 // 5, num_elements = 2, max_scale = 100, rtol = 1.0e-10)
+function StiffnessBudget(weights = FlatWeights(); tol = 1 // 5, num_elements = 2,
+                         max_scale = 100, rtol = 1.0e-10)
     tol, max_scale, rtol = promote(float(tol), float(max_scale), float(rtol))
-    return StiffnessBudget(tol, num_elements, max_scale, rtol)
+    return StiffnessBudget(weights, tol, num_elements, max_scale, rtol)
 end
 
 # Spectral radius of the periodic upwind FSBP-SAT semidiscretization of linear advection built
@@ -411,10 +505,37 @@ function calibrate_stiffness_budget(D, S_shape, source, budget::StiffnessBudget)
     return lower
 end
 
-# Non-negative weights `w_j` such that the eigenvalues are `-scale * w_j`, cf.
-# Only the flat choice for now.
-function dissipation_weights(::StiffnessBudget, ::Type{T}, n_enrichment) where {T}
-    return ones(T, n_enrichment)
+# Non-negative weights `w_j` such that the eigenvalues are `-scale * w_j`
+function dissipation_weights(::FlatWeights, D, enriched_basis, K, basis_functions)
+    return ones(eltype(enriched_basis.V), size(enriched_basis.V, 1) - K)
+end
+
+function dissipation_weights(weights::ErrorWeights, D, enriched_basis, K, basis_functions)
+    enrichment_functions_derivatives = if isnothing(weights.enrichment_functions_derivatives)
+        enriched_basis.enrichment_functions_derivatives
+    else
+        weights.enrichment_functions_derivatives
+    end
+    if isnothing(enrichment_functions_derivatives)
+        throw(ArgumentError("`ErrorWeights` needs the derivatives of the `enrichment_functions`; pass them as `enrichment_functions_derivatives` or use the default enrichment"))
+    end
+    if length(weights.basis_functions_derivatives) != length(basis_functions)
+        throw(DimensionMismatch("length(basis_functions_derivatives) = $(length(weights.basis_functions_derivatives)) must be equal to length(basis_functions) = $(length(basis_functions))"))
+    end
+
+    V = enriched_basis.V
+    V_x = enriched_derivative_vandermonde(weights.basis_functions_derivatives,
+                                          enrichment_functions_derivatives, grid(D),
+                                          enriched_basis)
+    P = mass_matrix(D)
+    D_matrix = Matrix(D)
+    N = size(V, 1)
+    errors = similar(V, N - K)
+    for j in (K + 1):N
+        residual = D_matrix * view(V, :, j) - view(V_x, :, j)
+        errors[j - K] = sqrt(dot(residual, P, residual))
+    end
+    return errors / sum(errors)
 end
 
 """
@@ -459,10 +580,12 @@ function dissipation_matrix(basis_functions, D::AbstractNonperiodicDerivativeOpe
                             lambda = StiffnessBudget(), enrichment_functions = nothing,
                             rtol = sqrt(eps(eltype(grid(D)))))
     nodes = grid(D)
-    V = enriched_orthonormal_vandermonde(basis_functions, nodes, enrichment_functions, rtol)
-    sigma = dissipation_eigenvalues(lambda, D, V, length(basis_functions), source)
+    enriched_basis = enriched_orthonormal_vandermonde(basis_functions, nodes,
+                                                      enrichment_functions, rtol)
+    sigma = dissipation_eigenvalues(lambda, D, enriched_basis, length(basis_functions),
+                                    source; basis_functions)
     check_dissipation_eigenvalues(sigma)
-    return eigen_dissipation_matrix(V, sigma)
+    return eigen_dissipation_matrix(enriched_basis.V, sigma)
 end
 
 # Vector of the `N - K` negative eigenvalues of the dissipation matrix from the `lambda` argument,
@@ -474,13 +597,17 @@ end
 # problem and is therefore provided by a package extension.
 
 # Fixed eigenvalues do not depend on the operator
-function dissipation_eigenvalues(lambda::Real, D, V, K,
-                                 source::GlaubitzLampertMattssonNiemeläWinters2026DG)
+function dissipation_eigenvalues(lambda::Real, D, enriched_basis, K,
+                                 source::GlaubitzLampertMattssonNiemeläWinters2026DG;
+                                 basis_functions = nothing)
+    V = enriched_basis.V
     return fill(convert(eltype(V), lambda), size(V, 1) - K)
 end
 
-function dissipation_eigenvalues(lambda::AbstractVector, D, V, K,
-                                 source::GlaubitzLampertMattssonNiemeläWinters2026DG)
+function dissipation_eigenvalues(lambda::AbstractVector, D, enriched_basis, K,
+                                 source::GlaubitzLampertMattssonNiemeläWinters2026DG;
+                                 basis_functions = nothing)
+    V = enriched_basis.V
     n_enrichment = size(V, 1) - K
     if length(lambda) != n_enrichment
         throw(DimensionMismatch("length(lambda) = $(length(lambda)) must be equal to N - K = $n_enrichment"))
@@ -488,13 +615,14 @@ function dissipation_eigenvalues(lambda::AbstractVector, D, V, K,
     return convert(Vector{eltype(V)}, lambda)
 end
 
-function dissipation_eigenvalues(budget::StiffnessBudget, D, V, K,
-                                 source::GlaubitzLampertMattssonNiemeläWinters2026DG)
-    T = eltype(V)
-    weights = dissipation_weights(budget, T, size(V, 1) - K)
+function dissipation_eigenvalues(budget::StiffnessBudget, D, enriched_basis, K,
+                                 source::GlaubitzLampertMattssonNiemeläWinters2026DG;
+                                 basis_functions)
+    V = enriched_basis.V
+    weights = dissipation_weights(budget.weights, D, enriched_basis, K, basis_functions)
     S_shape = eigen_dissipation_matrix(V, -weights)
     scale = calibrate_stiffness_budget(D, S_shape, source, budget)
-    return -convert(T, scale) * weights
+    return -convert(eltype(V), scale) * weights
 end
 
 """

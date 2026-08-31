@@ -28,6 +28,8 @@ else
     const derivative_discontinuity! = SciMLBase.u_modified!
 end
 @reexport using PolynomialBases
+# not exported by PolynomialBases.jl, but needed for the derivatives of the enrichment
+using PolynomialBases: legendre_and_derivative
 @reexport using SummationByPartsOperators
 using SimpleUnPack: @unpack
 @reexport using StaticArrays: SVector
@@ -71,7 +73,7 @@ export SubcellOperator, GlaubitzLampertWintersNordström2025, subcell_operator,
 export GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025,
        GlaubitzLampertMattssonNiemeläWinters2026DG,
        GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized,
-       dissipation_matrix, StiffnessBudget
+       dissipation_matrix, StiffnessBudget, FlatWeights, ErrorWeights
 export AnalysisCallback, tstops, quantities
 export MultidimensionalLinearAdvectionNonperiodicSemidiscretization
 end
