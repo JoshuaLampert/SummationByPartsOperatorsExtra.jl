@@ -7,16 +7,14 @@ function default_options(::GlaubitzLampertMattssonNiemeläWinters2026AccuracyOpt
     return Options(g_tol = 1e-10, iterations = 10000, show_trace = verbose)
 end
 
-function SummationByPartsOperatorsExtra.compute_dissipation_eigenvalues(D, V,
-                                                                        test_functions,
-                                                                        K,
-                                                                        source::GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized;
-                                                                        autodiff = Optim.ADTypes.AutoForwardDiff(),
-                                                                        sigma0 = nothing,
-                                                                        verbose = false,
-                                                                        opt_alg = default_opt_alg(source),
-                                                                        options = default_options(source,
-                                                                                                  verbose))
+function SummationByPartsOperatorsExtra.dissipation_eigenvalues(test_functions, D, V, K,
+                                                                source::GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized;
+                                                                autodiff = Optim.ADTypes.AutoForwardDiff(),
+                                                                sigma0 = nothing,
+                                                                verbose = false,
+                                                                opt_alg = default_opt_alg(source),
+                                                                options = default_options(source,
+                                                                                          verbose))
     nodes = grid(D)
     N = length(nodes)
     NmK = N - K

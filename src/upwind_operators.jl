@@ -35,7 +35,8 @@ the whole unresolved complement of the function space, given in
   Discontinuous Galerkin-type operators.
   [DOI: TODO](TODO)
 
-See [`dissipation_matrix`](@ref) and [`upwind_operators`](@ref).
+See [`dissipation_matrix`](@ref), [`upwind_operators`](@ref),
+and [`StiffnessBudget`](@ref).
 """
 struct GlaubitzLampertMattssonNiemeläWinters2026DG <: SourceOfCoefficients end
 
@@ -157,9 +158,10 @@ end
     upwind_operators(D, sigma, source::GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025)
 
 Create upwind SBP operators with central derivative operator `D` and given negative eigenvalues `sigma`
-of the dissipation matrix `S`. The dissipation matrix is constructed as `S = V * Diagonal(lambda) * V'`
-with `lambda = [0, ..., 0, sigma...]` and `V` being the Vandermonde matrix of the orthonormalized monomials,
-i.e. the number of zero eigenvalues is equal to `N - length(sigma)`, where `N` is the number of nodes in `D`.
+of the dissipation matrix `S`. The dissipation matrix is constructed with
+[`dissipation_matrix`](@ref), i.e. `S = V * Diagonal([0, ..., 0, sigma...]) * V'` with `V` an orthogonal matrix
+whose first `K = N - length(sigma)` columns span the nodal values of the polynomials of degree at most `K - 1`,
+where `N` is the number of nodes in `D`.
 The upwind operators are then given as
 ```math
 D^- = D - M^{-1} S / 2, \\qquad D^+ = D + M^{-1} S / 2,
@@ -180,7 +182,33 @@ See also [`GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025`](@ref) for
 """
 function upwind_operators(D::AbstractNonperiodicDerivativeOperator, sigma::AbstractVector,
                           source::GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025;
-                          rtol = sqrt(eps(eltype(grid(D)))))
+                          kwargs...)
+    S = dissipation_matrix(sigma, D, source; kwargs...)
+    K = length(grid(D)) - length(sigma)
+    accuracy_order = min(K - 1, SummationByPartsOperators.accuracy_order(D))
+    return upwind_operators(D, S, source; accuracy_order)
+end
+
+"""
+    dissipation_matrix(sigma, D, source::GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025;
+                       rtol = sqrt(eps(eltype(grid(D)))))
+
+Construct the dissipation matrix `S = V * Diagonal([0, ..., 0, sigma...]) * V'` on the grid of the
+central derivative operator `D` for the given negative eigenvalues `sigma`, following the reference
+in [`GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025`](@ref).
+
+In contrast to the other sources, the function space is not passed but derived from the number of
+eigenvalues: `V` is an orthogonal matrix whose first `K = N - length(sigma)` columns span the nodal
+values of the polynomials of degree at most `K - 1`, where `N` is the number of nodes of `D`. Only
+the grid of `D` is used. All values of `sigma` must be non-positive. The `rtol` is the relative
+tolerance used to detect linear dependence of the nodal values.
+
+See also [`upwind_operators`](@ref).
+"""
+function dissipation_matrix(sigma::AbstractVector,
+                            D::AbstractNonperiodicDerivativeOperator,
+                            source::GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025;
+                            rtol = sqrt(eps(eltype(grid(D)))))
     nodes = grid(D)
     N = length(nodes)
     @argcheck length(sigma)<N "length(sigma) = $(length(sigma)) must be less than N = $N"
@@ -192,21 +220,21 @@ function upwind_operators(D::AbstractNonperiodicDerivativeOperator, sigma::Abstr
     basis_functions = [reference_legendre(nodes, degree) for degree in 0:(K - 1)]
     V = enriched_orthonormal_vandermonde(basis_functions, nodes, nothing, rtol)
     check_dissipation_eigenvalues(sigma)
-    S = eigen_dissipation_matrix(V, sigma)
-    accuracy_order = min(K - 1, SummationByPartsOperators.accuracy_order(D))
-    return upwind_operators(D, S, source; accuracy_order)
+    return eigen_dissipation_matrix(V, sigma)
 end
 
 """
-    upwind_operators(D, basis_functions, test_functions,
-                     source::GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized;
-                     enrichment_functions = nothing, rtol = sqrt(eps(eltype(grid(D)))),
-                     autodiff = Optim.ADTypes.AutoForwardDiff(),
-                     sigma0 = nothing, verbose = false,
-                     opt_alg = LBFGSB(), options = Optim.Options(g_tol = 1e-10, iterations = 10000))
+    dissipation_matrix(basis_functions, D,
+                       source::GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized;
+                       test_functions, enrichment_functions = nothing,
+                       rtol = sqrt(eps(eltype(grid(D)))),
+                       autodiff = Optim.ADTypes.AutoForwardDiff(),
+                       sigma0 = nothing, verbose = false,
+                       opt_alg = LBFGSB(), options = Optim.Options(g_tol = 1e-10, iterations = 10000))
 
-Create upwind function space SBP operators with central derivative operator `D`, e.g. a [`function_space_operator`](@ref)
-created by `D = function_space_operator(basis_functions, nodes, GlaubitzNordströmÖffner2023())`. The `basis_functions` is
+Construct a dissipation matrix on the grid of the central derivative operator `D`, e.g. a
+[`function_space_operator`](@ref) created by
+`D = function_space_operator(basis_functions, nodes, GlaubitzNordströmÖffner2023())`. The `basis_functions` is
 a list of the basis functions for which `D` is exact and the `enrichment_functions` are the functions `g_j` completing them to
 a basis of ``\\mathbf{R}^N``; see [`dissipation_matrix`](@ref) for how they default to the lowest-degree Legendre polynomials
 not already contained in the function space. A dissipation matrix `S = V * Diagonal(lambda) * V'` is constructed by choosing
@@ -236,22 +264,17 @@ See also [`GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized`](@ref) f
 !!! warning "Experimental implementation"
     This is an experimental feature and may change in future releases.
 """
-function upwind_operators(D::AbstractNonperiodicDerivativeOperator,
-                          basis_functions::AbstractVector, test_functions,
-                          source::GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized;
-                          enrichment_functions = nothing,
-                          rtol = sqrt(eps(eltype(grid(D)))), kwargs...)
+function dissipation_matrix(basis_functions, D::AbstractNonperiodicDerivativeOperator,
+                            source::GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized;
+                            test_functions, enrichment_functions = nothing,
+                            rtol = sqrt(eps(eltype(grid(D)))), kwargs...)
     nodes = grid(D)
     V = enriched_orthonormal_vandermonde(basis_functions, nodes, enrichment_functions, rtol)
-    sigma = compute_dissipation_eigenvalues(D, V, test_functions, length(basis_functions),
-                                            source; kwargs...)
-    S = eigen_dissipation_matrix(V, sigma)
-    return upwind_operators(D, S, source)
+    sigma = dissipation_eigenvalues(test_functions, D, V, length(basis_functions), source;
+                                    kwargs...)
+    check_dissipation_eigenvalues(sigma)
+    return eigen_dissipation_matrix(V, sigma)
 end
-
-# Placeholder for computing the negative eigenvalues of the dissipation matrix. This method is
-# extended in backend-specific implementations.
-function compute_dissipation_eigenvalues end
 
 # Legendre polynomials of the lowest degrees whose nodal values are not already contained in the
 # span of the columns of `M`, mapped from the reference interval `[-1, 1]` to the interval spanned
@@ -316,42 +339,110 @@ function enriched_orthonormal_vandermonde(basis_functions, nodes, enrichment_fun
     return Matrix(factorization.Q)
 end
 
-# Vector of the `N - K` negative eigenvalues of the dissipation matrix from the `lambda` argument,
-# which is either a scalar (flat choice) or a vector.
-function dissipation_eigenvalues(lambda::Real, n_enrichment, ::Type{T}) where {T}
-    return fill(convert(T, lambda), n_enrichment)
+"""
+    StiffnessBudget(; tol = 1 // 5, num_elements = 2, max_scale = 100, rtol = 1e-10)
+
+Determine the scale of the dissipation matrix from a *stiffness budget*: the largest scale such
+that the spectral radius of the semidiscretization grows by at most a factor `1 + tol` over the
+one of the central operator. Pass it as the `lambda` argument of [`dissipation_matrix`](@ref) or
+[`upwind_operators`](@ref).
+
+The semidiscretization is the periodic upwind FSBP-SAT discretization of the linear advection
+equation with a positive wave speed and the global Lax-Friedrichs splitting, discretized on
+`num_elements` elements. For that splitting only `D^-` and the upwind coupling to the left
+neighbor remain, so the assembled matrix is
+`-a * couple_discontinuously(D^-, mesh, Val(:minus))`.
+
+The scale is found by bisection on `[0, max_scale]`, which assumes the spectral radius to grow
+monotonically with it. The search stops once the bracket is smaller than `rtol` relative to its
+upper end. An error is thrown if the budget is not binding below `max_scale`.
+
+See also [`dissipation_matrix`](@ref), [`upwind_operators`](@ref),
+and [`GlaubitzLampertMattssonNiemeläWinters2026DG`](@ref).
+
+!!! warning "Experimental implementation"
+    This is an experimental feature and may change in future releases.
+"""
+struct StiffnessBudget{T <: Real}
+    tol::T
+    num_elements::Int
+    max_scale::T
+    rtol::T
 end
 
-function dissipation_eigenvalues(lambda::AbstractVector, n_enrichment, ::Type{T}) where {T}
-    if length(lambda) != n_enrichment
-        throw(DimensionMismatch("length(lambda) = $(length(lambda)) must be equal to N - K = $n_enrichment"))
+function StiffnessBudget(; tol = 1 // 5, num_elements = 2, max_scale = 100, rtol = 1.0e-10)
+    tol, max_scale, rtol = promote(float(tol), float(max_scale), float(rtol))
+    return StiffnessBudget(tol, num_elements, max_scale, rtol)
+end
+
+# Spectral radius of the periodic upwind FSBP-SAT semidiscretization of linear advection built
+# from the pair `D +- P^{-1} S / 2`, see the docstring of `StiffnessBudget`. The wave speed and
+# the element width only enter as a common factor, so we use the unit interval and `a = 1`.
+# For a negative wave speed one would coup1e `D^+` with `Val(:plus)` instead; the two agree
+# whenever grid and operator are symmetric under `x -> -x`, which need not hold in general.
+function semidiscretization_spectral_radius(D, S, source, num_elements)
+    T = eltype(D)
+    D_upwind = upwind_operators(D, S, source)
+    mesh = UniformPeriodicMesh1D(xmin = zero(T), xmax = one(T), Nx = num_elements)
+    coupled = couple_discontinuously(D_upwind.minus, mesh, Val(:minus))
+    return maximum(abs, eigvals(Matrix(coupled)))
+end
+
+# Largest `scale >= 0` with `rho(scale * S_shape) <= (1 + tol) * rho(0)`, cf. `StiffnessBudget`.
+function calibrate_stiffness_budget(D, S_shape, source, budget::StiffnessBudget)
+    (; tol, num_elements, max_scale, rtol) = budget
+    rho(scale) = semidiscretization_spectral_radius(D, scale * S_shape, source,
+                                                    num_elements)
+
+    target = (1 + tol) * rho(zero(tol))
+    if rho(max_scale) <= target
+        throw(ArgumentError("the stiffness budget is not binding for any scale up to max_scale = $max_scale; increase `max_scale` or decrease `tol`"))
     end
-    return convert(Vector{T}, lambda)
+
+    lower, upper = zero(max_scale), max_scale
+    while upper - lower > rtol * upper
+        middle = (lower + upper) / 2
+        if rho(middle) <= target
+            lower = middle
+        else
+            upper = middle
+        end
+    end
+    return lower
+end
+
+# Non-negative weights `w_j` such that the eigenvalues are `-scale * w_j`, cf.
+# Only the flat choice for now.
+function dissipation_weights(::StiffnessBudget, ::Type{T}, n_enrichment) where {T}
+    return ones(T, n_enrichment)
 end
 
 """
-    dissipation_matrix(basis_functions, nodes, source::GlaubitzLampertMattssonNiemeläWinters2026DG;
-                       lambda, enrichment_functions = nothing, rtol = sqrt(eps(eltype(nodes))))
+    dissipation_matrix(basis_functions, D, source::GlaubitzLampertMattssonNiemeläWinters2026DG;
+                       lambda = StiffnessBudget(), enrichment_functions = nothing,
+                       rtol = sqrt(eps(eltype(grid(D)))))
 
-Construct a dissipation matrix `S` on the `nodes` for the function space spanned by the
-`basis_functions` following the DG-type construction of the reference in
-[`GlaubitzLampertMattssonNiemeläWinters2026DG`](@ref).
+Construct a dissipation matrix `S` on the grid of the central derivative operator `D` for the
+function space spanned by the `basis_functions` following the DG-type construction of the
+reference in [`GlaubitzLampertMattssonNiemeläWinters2026DG`](@ref).
 
 The matrix is given by `S = V * Diagonal([0, ..., 0, lambda...]) * V'`, where `V` is an orthogonal
 matrix whose first `K = length(basis_functions)` columns span the nodal values of the
 `basis_functions` and whose remaining `N - K` columns are an orthonormal complement obtained from
-the `enrichment_functions` (`N = length(nodes)`). The resulting `S` is symmetric and negative
-semi-definite, satisfies `S * f == 0` for all `f` in the function space, and `f' * S * f < 0`
-otherwise, provided all entries of `lambda` are negative.
+the `enrichment_functions` (`N` being the number of nodes of `D`). The resulting `S` is symmetric
+and negative semi-definite, satisfies `S * f == 0` for all `f` in the function space, and
+`f' * S * f < 0` otherwise, provided all entries of `lambda` are negative.
 
-The `lambda` keyword argument holds the `N - K` eigenvalues of `S` that are not forced to be zero.
-It is either a `Real`, which is used for all of them (the flat choice used as the default in the
-reference), or an `AbstractVector` of length `N - K`. All values must be non-positive.
+The `lambda` keyword argument determines the `N - K` eigenvalues of `S` that are not forced to be
+zero. It is either a [`StiffnessBudget`](@ref), which calibrates them from the semidiscretization
+built with `D` and is the choice proposed in the reference, a `Real`, which is used for all of
+them (the flat choice), or an `AbstractVector` of length `N - K`. All values must be non-positive.
+Note that `D` enters only through its grid unless `lambda` is a [`StiffnessBudget`](@ref).
 
 The `enrichment_functions` are the functions `g_j` used to complete the basis. If `nothing` is
 passed, the Legendre polynomials of the lowest degrees whose nodal values are not already in the
-span of the `basis_functions` are used. The `rtol` is the relative tolerance used to detect such
-linear dependence.
+span of the `basis_functions` are used, as proposed in the reference. The `rtol` is the relative
+tolerance used to detect such linear dependence.
 
 !!! note "The flat choice does not depend on the enrichment"
     For a flat `lambda = -c`, the construction simplifies to `S = -c * (I - P)` with `P` being the
@@ -363,22 +454,53 @@ See also [`upwind_operators`](@ref).
 !!! warning "Experimental implementation"
     This is an experimental feature and may change in future releases.
 """
-function dissipation_matrix(basis_functions, nodes::AbstractVector,
+function dissipation_matrix(basis_functions, D::AbstractNonperiodicDerivativeOperator,
                             source::GlaubitzLampertMattssonNiemeläWinters2026DG;
-                            lambda, enrichment_functions = nothing,
-                            rtol = sqrt(eps(eltype(nodes))))
+                            lambda = StiffnessBudget(), enrichment_functions = nothing,
+                            rtol = sqrt(eps(eltype(grid(D)))))
+    nodes = grid(D)
     V = enriched_orthonormal_vandermonde(basis_functions, nodes, enrichment_functions, rtol)
-    sigma = dissipation_eigenvalues(lambda, length(nodes) - length(basis_functions),
-                                    eltype(nodes))
+    sigma = dissipation_eigenvalues(lambda, D, V, length(basis_functions), source)
     check_dissipation_eigenvalues(sigma)
     return eigen_dissipation_matrix(V, sigma)
 end
 
-"""
-    upwind_operators(D, basis_functions, source::GlaubitzLampertMattssonNiemeläWinters2026DG;
-                     lambda, enrichment_functions = nothing, rtol = sqrt(eps(eltype(grid(D)))))
+# Vector of the `N - K` negative eigenvalues of the dissipation matrix from the `lambda` argument,
+# which is either a scalar (flat choice) or a vector.
+# The `N - K` eigenvalues of the dissipation matrix that are not forced to be zero. The first
+# argument specifies how they are determined, which is why its meaning depends on the `source` -
+# just as for `dissipation_matrix`. The method for
+# `GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized` needs to solve an optimization
+# problem and is therefore provided by a package extension.
 
-Create upwind function space SBP operators of DG type with central derivative operator `D`, e.g. a
+# Fixed eigenvalues do not depend on the operator
+function dissipation_eigenvalues(lambda::Real, D, V, K,
+                                 source::GlaubitzLampertMattssonNiemeläWinters2026DG)
+    return fill(convert(eltype(V), lambda), size(V, 1) - K)
+end
+
+function dissipation_eigenvalues(lambda::AbstractVector, D, V, K,
+                                 source::GlaubitzLampertMattssonNiemeläWinters2026DG)
+    n_enrichment = size(V, 1) - K
+    if length(lambda) != n_enrichment
+        throw(DimensionMismatch("length(lambda) = $(length(lambda)) must be equal to N - K = $n_enrichment"))
+    end
+    return convert(Vector{eltype(V)}, lambda)
+end
+
+function dissipation_eigenvalues(budget::StiffnessBudget, D, V, K,
+                                 source::GlaubitzLampertMattssonNiemeläWinters2026DG)
+    T = eltype(V)
+    weights = dissipation_weights(budget, T, size(V, 1) - K)
+    S_shape = eigen_dissipation_matrix(V, -weights)
+    scale = calibrate_stiffness_budget(D, S_shape, source, budget)
+    return -convert(T, scale) * weights
+end
+
+"""
+    upwind_operators(D, basis_functions, source; kwargs...)
+
+Create upwind function space SBP operators with central derivative operator `D`, e.g. a
 [`function_space_operator`](@ref) created by
 `D = function_space_operator(basis_functions, nodes, GlaubitzNordströmÖffner2023())`, which is
 exact for the function space spanned by the `basis_functions`. The dissipation matrix `S` is
@@ -390,14 +512,16 @@ D^- = D - M^{-1} S / 2, \\qquad D^+ = D + M^{-1} S / 2,
 where ``M`` is the mass matrix. Since `S` annihilates the nodal values of the function space `D`
 is exact for, `D^-` and `D^+` are exact for the same function space.
 
-See also [`GlaubitzLampertMattssonNiemeläWinters2026DG`](@ref) and [`dissipation_matrix`](@ref).
+Which construction is used, and which keyword arguments are accepted, is determined by the
+`source`; see the corresponding methods of [`dissipation_matrix`](@ref) for
+[`GlaubitzLampertMattssonNiemeläWinters2026DG`](@ref) and
+[`GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized`](@ref).
 
 !!! warning "Experimental implementation"
     This is an experimental feature and may change in future releases.
 """
 function upwind_operators(D::AbstractNonperiodicDerivativeOperator,
-                          basis_functions::AbstractVector,
-                          source::GlaubitzLampertMattssonNiemeläWinters2026DG; kwargs...)
-    S = dissipation_matrix(basis_functions, grid(D), source; kwargs...)
+                          basis_functions::AbstractVector, source; kwargs...)
+    S = dissipation_matrix(basis_functions, D, source; kwargs...)
     return upwind_operators(D, S, source)
 end

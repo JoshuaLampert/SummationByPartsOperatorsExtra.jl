@@ -35,6 +35,9 @@
         end
         @test !isapprox(S * x .^ (N - length(sigma)), zeros(N), atol = 1e-12)
 
+        # `dissipation_matrix` gives the same `S` on its own
+        @test isapprox(Matrix(dissipation_matrix(sigma, D, source)), S, atol = 1e-13)
+
         # Accuracy order tests
         Km1 = accuracy_order(D_upw.minus)
         for i in 1:Km1
@@ -83,8 +86,8 @@ end
         enrichment_functions_derivatives = [x -> j * x^(j - 1) for j in 2:(N - 2)]
         @test length(enrichment_functions) == N - K
 
-        D_upw = upwind_operators(D, basis_functions, test_functions, source;
-                                 enrichment_functions)
+        D_upw = upwind_operators(D, basis_functions, source;
+                                 test_functions, enrichment_functions)
         x = grid(D_upw)
         Dp = Matrix(D_upw.plus)
         Dm = Matrix(D_upw.minus)
@@ -134,8 +137,8 @@ end
         nodes = collect(range(x_L, x_R, length = N))
         D = function_space_operator(basis_functions, nodes,
                                     GlaubitzNordströmÖffner2023())
-        @test_throws DimensionMismatch upwind_operators(D, basis_functions, test_functions,
-                                                        source,
+        @test_throws DimensionMismatch upwind_operators(D, basis_functions, source,
+                                                        test_functions = test_functions,
                                                         enrichment_functions = [x -> x^2])
     end
 
@@ -145,8 +148,8 @@ end
         nodes = collect(range(x_L, x_R, length = N))
         D = function_space_operator(basis_functions, nodes,
                                     GlaubitzNordströmÖffner2023())
-        D_upw = upwind_operators(D, basis_functions, test_functions, source)
-        D_upw_explicit = upwind_operators(D, basis_functions, test_functions, source;
+        D_upw = upwind_operators(D, basis_functions, source; test_functions)
+        D_upw_explicit = upwind_operators(D, basis_functions, source; test_functions,
                                           enrichment_functions = [x -> x^2, x -> x^3])
         @test isapprox(Matrix(D_upw.plus), Matrix(D_upw_explicit.plus), atol = 1e-10)
     end
@@ -157,7 +160,7 @@ end
         D = function_space_operator(basis_functions, nodes,
                                     GlaubitzNordströmÖffner2023())
         enrichment_functions = [x -> x^2, x -> x^3]
-        D_upw = upwind_operators(D, basis_functions, test_functions, source;
+        D_upw = upwind_operators(D, basis_functions, source; test_functions,
                                  enrichment_functions, sigma0 = [-2.0, -1.0])
         @test eltype(D_upw) == Float64
     end
@@ -189,10 +192,8 @@ end
                                                                         nodes,
                                                                         enrichment_functions,
                                                                         sqrt(eps()))
-    sigma = SummationByPartsOperatorsExtra.compute_dissipation_eigenvalues(D, V,
-                                                                           test_functions,
-                                                                           K,
-                                                                           source; sigma0)
+    sigma = SummationByPartsOperatorsExtra.dissipation_eigenvalues(test_functions, D, V, K,
+                                                                   source; sigma0)
     # The modes seen by the objective are driven to zero ...
     @test isapprox(sigma[1], 0.0, atol = 1e-8)
     @test isapprox(sigma[2], 0.0, atol = 1e-8)
@@ -201,7 +202,7 @@ end
 
     # The objective is driven to (almost) zero, i.e. this is a global minimizer and not a
     # failure of the optimizer
-    D_upw = upwind_operators(D, basis_functions, test_functions, source;
+    D_upw = upwind_operators(D, basis_functions, source; test_functions,
                              enrichment_functions, sigma0)
     x = grid(D_upw)
     objective = sum(sum(abs2, D_op * f.(x) - f_x.(x))
@@ -214,7 +215,7 @@ end
 
     # Changing the initial guess changes the resulting operators, which is exactly the
     # artifact described in the docstring
-    D_upw2 = upwind_operators(D, basis_functions, test_functions, source;
+    D_upw2 = upwind_operators(D, basis_functions, source; test_functions,
                               enrichment_functions, sigma0 = [-1.0, -1.0, -2.0])
     @test !isapprox(Matrix(D_upw.plus), Matrix(D_upw2.plus))
 end
@@ -275,29 +276,31 @@ end
     end
 
     # `S == 0` if `N == K`, i.e. there are no unresolved modes
-    let nodes = collect(range(x_L, x_R, length = K))
-        S = dissipation_matrix(basis_functions, nodes, source; lambda = -1.0)
+    let D = legendre_derivative_operator(x_L, x_R, K)
+        S = dissipation_matrix(basis_functions, D, source; lambda = -1.0)
         @test isapprox(Matrix(S), zeros(K, K), atol = 1e-12)
     end
 
     # For a flat `lambda`, `S == -c * (I - P)` with `P` the orthogonal projection onto the
     # nodal values of the function space, independently of the enrichment functions
     let N = 6, c = 0.8
-        nodes = collect(range(x_L, x_R, length = N))
-        V_basis = SummationByPartsOperatorsExtra.vandermonde_matrix(basis_functions, nodes)
+        # only the grid of `D` is used for a fixed `lambda`
+        D = legendre_derivative_operator(x_L, x_R, N)
+        V_basis = SummationByPartsOperatorsExtra.vandermonde_matrix(basis_functions,
+                                                                    grid(D))
         projection = V_basis * ((V_basis' * V_basis) \ V_basis')
-        S = dissipation_matrix(basis_functions, nodes, source; lambda = -c)
+        S = dissipation_matrix(basis_functions, D, source; lambda = -c)
         @test isapprox(Matrix(S), -c * (I - projection), atol = 1e-12)
 
         # A different (valid) enrichment gives the same `S` for a flat `lambda` ...
         enrichment_functions = [x -> x^2, x -> x^5, cos]
-        S2 = dissipation_matrix(basis_functions, nodes, source; lambda = -c,
+        S2 = dissipation_matrix(basis_functions, D, source; lambda = -c,
                                 enrichment_functions)
         @test isapprox(Matrix(S), Matrix(S2), atol = 1e-12)
         # ... but not for a non-constant one
         lambda = [-1.0, -0.5, -0.25]
-        S3 = dissipation_matrix(basis_functions, nodes, source; lambda)
-        S4 = dissipation_matrix(basis_functions, nodes, source; lambda,
+        S3 = dissipation_matrix(basis_functions, D, source; lambda)
+        S4 = dissipation_matrix(basis_functions, D, source; lambda,
                                 enrichment_functions)
         @test !isapprox(Matrix(S3), Matrix(S4), atol = 1e-8)
     end
@@ -319,19 +322,80 @@ end
 
     # Error handling
     let N = 6
-        nodes = collect(range(x_L, x_R, length = N))
-        @test_throws ArgumentError dissipation_matrix(basis_functions, nodes, source;
+        D = legendre_derivative_operator(x_L, x_R, N)
+        @test_throws ArgumentError dissipation_matrix(basis_functions, D, source;
                                                       lambda = 1.0)
-        @test_throws DimensionMismatch dissipation_matrix(basis_functions, nodes, source;
+        @test_throws DimensionMismatch dissipation_matrix(basis_functions, D, source;
                                                           lambda = [-1.0, -1.0])
-        @test_throws DimensionMismatch dissipation_matrix(basis_functions, nodes, source;
+        @test_throws DimensionMismatch dissipation_matrix(basis_functions, D, source;
                                                           lambda = -1.0,
                                                           enrichment_functions = [x -> x^2])
         # Linearly dependent enrichment: `x^2` is used twice
-        @test_throws ArgumentError dissipation_matrix(basis_functions, nodes, source;
+        @test_throws ArgumentError dissipation_matrix(basis_functions, D, source;
                                                       lambda = -1.0,
                                                       enrichment_functions = [x -> x^2,
                                                           x -> x^2,
                                                           x -> x^3])
     end
+end
+
+@testitem "Upwind operators (stiffness budget)" begin
+    using LinearAlgebra: eigvals, issymmetric
+    import Optim, ForwardDiff
+
+    SBPE = SummationByPartsOperatorsExtra
+    source = GlaubitzLampertMattssonNiemeläWinters2026DG()
+    basis_functions = [one, identity, exp]
+    K = length(basis_functions)
+    N = 6
+    nodes = collect(range(-1.0, 1.0, length = N))
+    D = function_space_operator(basis_functions, nodes, GlaubitzNordströmÖffner2023())
+
+    V = SBPE.enriched_orthonormal_vandermonde(basis_functions, nodes, nothing, sqrt(eps()))
+    S_shape = SBPE.eigen_dissipation_matrix(V, -ones(N - K))
+
+    # Reference values of the reference given in `GlaubitzLampertMattssonNiemeläWinters2026DG`:
+    # the budget-calibrated flat rate is `lambda* = 0.80` at a spectral radius ratio of `1.20`
+    budget = StiffnessBudget()
+    scale = SBPE.calibrate_stiffness_budget(D, S_shape, source, budget)
+    @test isapprox(scale, 0.7989, atol = 1e-4)
+    rho_0 = SBPE.semidiscretization_spectral_radius(D, 0 * S_shape, source,
+                                                    budget.num_elements)
+    rho = SBPE.semidiscretization_spectral_radius(D, scale * S_shape, source,
+                                                  budget.num_elements)
+    @test isapprox(rho / rho_0, 1 + budget.tol, rtol = 1e-8)
+
+    # The ratio of the spectral radii, and hence the calibrated scale, does not depend on the
+    # number of elements used for the calibration
+    for num_elements in (3, 4, 8)
+        scale_j = SBPE.calibrate_stiffness_budget(D, S_shape, source,
+                                                  StiffnessBudget(; num_elements))
+        @test isapprox(scale_j, scale, rtol = 1e-6)
+    end
+
+    # A tighter budget gives less dissipation, a looser one more
+    @test SBPE.calibrate_stiffness_budget(D, S_shape, source,
+                                          StiffnessBudget(tol = 1 // 10)) < scale
+    @test SBPE.calibrate_stiffness_budget(D, S_shape, source,
+                                          StiffnessBudget(tol = 1 // 2)) > scale
+
+    # The budget is the default and yields a valid pair of upwind operators
+    D_upw = upwind_operators(D, basis_functions, source)
+    x = grid(D_upw)
+    M = mass_matrix(D_upw)
+    B = mass_matrix_boundary(D_upw)
+    @test isapprox(Matrix(D_upw.minus)' * M + M * Matrix(D_upw.plus), B, atol = 1e-11)
+    S = M * Matrix(D_upw.plus) - B / 2 + (M * Matrix(D_upw.plus) - B / 2)'
+    @test issymmetric(S)
+    @test maximum(eigvals(S)) < 1e-10
+    for basis_function in basis_functions
+        @test isapprox(S * basis_function.(x), zeros(N), atol = 1e-10)
+    end
+    # ... and it is the same as passing the calibrated value directly
+    D_upw_explicit = upwind_operators(D, basis_functions, source; lambda = -scale)
+    @test isapprox(Matrix(D_upw.plus), Matrix(D_upw_explicit.plus), atol = 1e-12)
+
+    # A budget that is never binding cannot be calibrated
+    @test_throws ArgumentError SBPE.calibrate_stiffness_budget(D, S_shape, source,
+                                                               StiffnessBudget(tol = 1e6))
 end
