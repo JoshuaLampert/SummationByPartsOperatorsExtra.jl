@@ -31,8 +31,7 @@ end
 Function space upwind SBP operators of DG type, i.e. with a dense dissipation matrix acting on
 the whole unresolved complement of the function space, given in
 - Glaubitz, Lampert, Mattsson, Niemelä, Winters (2026):
-  Upwind summation-by-parts operators for general function spaces:
-  Discontinuous Galerkin-type operators.
+  Upwind summation-by-parts operators for general function spaces.
   [DOI: TODO](TODO)
 
 See [`dissipation_matrix`](@ref), [`upwind_operators`](@ref),
@@ -46,8 +45,33 @@ function Base.show(io::IO, source::GlaubitzLampertMattssonNiemeläWinters2026DG)
     else
         print(io,
               "Glaubitz, Lampert, Mattsson, Niemelä, Winters (2026) \n",
-              "  Upwind summation-by-parts operators for general function spaces: \n",
-              "  Discontinuous Galerkin-type operators. \n",
+              "  Upwind summation-by-parts operators for general function spaces. \n",
+              "  TODO.")
+    end
+end
+
+"""
+    GlaubitzLampertMattssonNiemeläWinters2026FD()
+
+Function space upwind SBP operators of FD type, i.e. with a banded dissipation matrix built from
+generalized divided differences, which acts locally instead of on the whole unresolved complement
+of the function space, given in
+- Glaubitz, Lampert, Mattsson, Niemelä, Winters (2026):
+  Upwind summation-by-parts operators for general function spaces.
+  [DOI: TODO](TODO)
+
+See [`dissipation_matrix`](@ref), [`upwind_operators`](@ref), [`annihilation_matrix`](@ref),
+and [`StiffnessBudget`](@ref).
+"""
+struct GlaubitzLampertMattssonNiemeläWinters2026FD <: SourceOfCoefficients end
+
+function Base.show(io::IO, source::GlaubitzLampertMattssonNiemeläWinters2026FD)
+    if get(io, :compact, false)
+        summary(io, source)
+    else
+        print(io,
+              "Glaubitz, Lampert, Mattsson, Niemelä, Winters (2026) \n",
+              "  Upwind summation-by-parts operators for general function spaces. \n",
               "  TODO.")
     end
 end
@@ -130,7 +154,9 @@ The central operator `D` is stored unchanged in the resulting
 function upwind_operators(D::AbstractNonperiodicDerivativeOperator, S::AbstractMatrix,
                           source;
                           accuracy_order = SummationByPartsOperators.accuracy_order(D))
-    nodes = grid(D)
+    # `MatrixDerivativeOperator` needs a `Vector` of nodes, while `grid` may return a range, e.g.
+    # for the classical FD-SBP operators of SummationByPartsOperators.jl
+    nodes = collect(grid(D))
     N = length(nodes)
     if size(S) != (N, N)
         throw(DimensionMismatch("size(S) = $(size(S)) does not match the number of nodes N = $N"))
@@ -625,6 +651,159 @@ function dissipation_eigenvalues(budget::StiffnessBudget, D, enriched_basis, K,
     return -convert(eltype(V), scale) * weights
 end
 
+@doc raw"""
+    annihilation_matrix(basis_functions, nodes; normalization = :two_norm,
+                        rtol = sqrt(eps(eltype(nodes))))
+
+Banded matrix ``\widetilde{D} \in \mathbb{R}^{(N - K) \times N}`` of generalized divided
+differences of the function space ``\mathcal{F}`` spanned by the `K` `basis_functions` on the `N`
+`nodes`, following the reference in
+[`GlaubitzLampertMattssonNiemeläWinters2026FD`](@ref). The `i`-th row is supported on the window
+`i:(i + K)` of `K + 1` consecutive nodes and holds the coefficient vector
+``\mathbf{d}^{(i)}``, unique up to scaling, with
+```math
+\sum_{j = 0}^{K} d^{(i)}_j f(x_{i + j}) = 0
+\quad \text{for all } f \in \mathcal{F},
+```
+i.e. `annihilation_matrix(basis_functions, nodes) * f.(nodes) == 0` for all `f` in the function
+space. It is used by [`dissipation_matrix`](@ref) to build the FD-type dissipation matrix.
+
+The coefficients are computed as the left singular vector of the local Vandermonde matrix
+associated with its vanishing singular value, which requires the null spaces of `N - K` matrices
+of size `(K + 1) x K` and is therefore cheap. This assumes that every window stays
+``\mathcal{F}``-unisolvent after removing any single one of its nodes, which holds in particular
+whenever ``\mathcal{F}`` is an extended complete Chebyshev system. An `ArgumentError` is thrown if
+a window violates it; `rtol` is the relative tolerance of that check.
+
+The `normalization` fixes the remaining scaling of each row:
+- `:two_norm` (default, as in the reference) scales it to `norm(d) == 1`.
+- `:undivided` scales it to `d[end] == 1`. For ``\mathcal{F}`` the polynomials of degree at most
+  `K - 1` on equidistant nodes, this reproduces the classical undivided differences of order `K`
+  exactly, e.g. `[-1, 3, -3, 1]` for `K = 3`.
+In both cases the sign is fixed by making the last entry positive. If the nodes are equidistant
+and the function space is translation invariant, all windows are congruent, the two choices differ
+by a single global factor that is absorbed by the scaling parameter of
+[`dissipation_matrix`](@ref), and ``\widetilde{D}`` is a Toeplitz matrix. On a non-uniform grid the
+choice weights the windows differently and does matter.
+
+!!! warning "Experimental implementation"
+    This is an experimental feature and may change in future releases.
+"""
+function annihilation_matrix(basis_functions, nodes; normalization = :two_norm,
+                             rtol = sqrt(eps(eltype(nodes))))
+    N = length(nodes)
+    K = length(basis_functions)
+    @argcheck K<N "length(basis_functions) = $K must be smaller than the number of nodes N = $N"
+    V = vandermonde_matrix(basis_functions, nodes)
+    D_tilde = zeros(eltype(V), N - K, N)
+    for i in 1:(N - K)
+        window = i:(i + K)
+        D_tilde[i, window] .= divided_difference_coefficients(V[window, :], normalization,
+                                                              rtol)
+    end
+    return D_tilde
+end
+
+# Coefficient vector spanning the null space of `V_window'`, normalized as described in
+# `annihilation_matrix`.
+function divided_difference_coefficients(V_window, normalization, rtol)
+    K = size(V_window, 2)
+    factorization = svd(V_window; full = true)
+    singular_values = factorization.S
+    if singular_values[K] <= rtol * singular_values[1]
+        throw(ArgumentError("the nodal values of the basis functions are (numerically) linearly dependent on a window of $(K + 1) consecutive nodes"))
+    end
+    # The last left singular vector spans the orthogonal complement of the range of `V_window`,
+    # which is the null space of `V_window'`. It has unit 2-norm.
+    d = factorization.U[:, K + 1]
+    # By the cofactor representation of `d`, no entry vanishes if and only if the window stays
+    # unisolvent after removing any single node. Without it, the rows of the annihilation matrix
+    # can be linearly dependent, leaving some unresolved mode undamped.
+    if minimum(abs, d) <= rtol
+        throw(ArgumentError("a window of $(K + 1) consecutive nodes is not unisolvent for the function space after removing one of its nodes"))
+    end
+    d = sign(d[end]) * d
+    if normalization === :two_norm
+        return d
+    elseif normalization === :undivided
+        return d / d[end]
+    else
+        throw(ArgumentError("unknown normalization $normalization, use `:two_norm` or `:undivided`"))
+    end
+end
+
+@doc raw"""
+    dissipation_matrix(basis_functions, D, source::GlaubitzLampertMattssonNiemeläWinters2026FD;
+                       epsilon = StiffnessBudget(), C = I, normalization = :two_norm,
+                       rtol = sqrt(eps(eltype(grid(D)))))
+
+Construct a banded dissipation matrix `S` on the grid of the central derivative operator `D`, e.g.
+a banded [`function_space_operator`](@ref), for the function space ``\mathcal{F}`` spanned by the
+`basis_functions` following the FD-type construction of the reference in
+[`GlaubitzLampertMattssonNiemeläWinters2026FD`](@ref),
+```math
+S = -\varepsilon \, \widetilde{D}^T C \widetilde{D},
+```
+with the annihilation matrix ``\widetilde{D}`` of [`annihilation_matrix`](@ref), a diagonal
+positive definite weighting matrix `C`, and a single scaling parameter ``\varepsilon > 0``. The
+resulting `S` is symmetric and negative semi-definite, satisfies `S * f == 0` for all `f` in the
+function space, and `f' * S * f < 0` otherwise, provided the unisolvence assumption of
+[`annihilation_matrix`](@ref) holds and ``\varepsilon > 0``.
+
+In contrast to the DG-type construction for
+[`GlaubitzLampertMattssonNiemeläWinters2026DG`](@ref), the dissipation acts *locally*: `S` is
+banded with bandwidth at most `2K + 1`, and each row of ``\widetilde{D}`` behaves like
+``h_\mathrm{loc}^K`` times a fixed differential operator with kernel ``\mathcal{F}`` on functions
+that are smooth relative to the local node spacing. Hence ``P^{-1} S`` vanishes under refinement on
+all smooth functions, not only on ``\mathcal{F}``, so that `D^-` and `D^+` stay consistent. This is
+what makes the construction the appropriate one in the FD regime `N >> K`, where interfaces are
+rare and dissipation in the volume cannot be substituted by dissipation at interfaces.
+
+The `epsilon` keyword argument sets the dissipation strength. It is either a
+[`StiffnessBudget`](@ref), which calibrates it from the semidiscretization built with `D` and is
+the choice proposed in the reference, or a non-negative `Real`. Note that `D` enters only through
+its grid unless `epsilon` is a [`StiffnessBudget`](@ref). It plays the role that the flat rate
+`lambda` plays for the DG-type construction; per-mode weights have no analogue here, since the
+window weighting `C` is the corresponding degree of freedom.
+
+The reference uses `C = I` throughout, which is the default: on an equidistant grid with a
+translation invariant function space all interior windows are congruent, so any weighting derived
+from the local errors of the central operator is constant in the interior anyway.
+
+See also [`upwind_operators`](@ref).
+
+!!! warning "Experimental implementation"
+    This is an experimental feature and may change in future releases.
+"""
+function dissipation_matrix(basis_functions, D::AbstractNonperiodicDerivativeOperator,
+                            source::GlaubitzLampertMattssonNiemeläWinters2026FD;
+                            epsilon = StiffnessBudget(), C = I,
+                            normalization = :two_norm,
+                            rtol = sqrt(eps(eltype(grid(D)))))
+    D_tilde = annihilation_matrix(basis_functions, grid(D); normalization, rtol)
+    S_shape = Symmetric(-D_tilde' * (C * D_tilde))
+    scale = dissipation_scale(epsilon, D, S_shape, source)
+    return scale * S_shape
+end
+
+# The scaling parameter `epsilon` of the FD-type dissipation matrix. As for
+# `dissipation_eigenvalues`, the first argument specifies how it is determined.
+function dissipation_scale(epsilon::Real, D, S_shape,
+                           source::GlaubitzLampertMattssonNiemeläWinters2026FD)
+    if epsilon < 0
+        throw(ArgumentError("the scaling parameter of the dissipation matrix must be non-negative, got $epsilon"))
+    end
+    return epsilon
+end
+
+function dissipation_scale(budget::StiffnessBudget, D, S_shape,
+                           source::GlaubitzLampertMattssonNiemeläWinters2026FD)
+    if !(budget.weights isa FlatWeights)
+        throw(ArgumentError("the FD-type dissipation matrix has a single scaling parameter and no per-mode weights; use `StiffnessBudget()` and the weighting matrix `C` of `dissipation_matrix` instead"))
+    end
+    return calibrate_stiffness_budget(D, S_shape, source, budget)
+end
+
 """
     upwind_operators(D, basis_functions, source; kwargs...)
 
@@ -642,7 +821,8 @@ is exact for, `D^-` and `D^+` are exact for the same function space.
 
 Which construction is used, and which keyword arguments are accepted, is determined by the
 `source`; see the corresponding methods of [`dissipation_matrix`](@ref) for
-[`GlaubitzLampertMattssonNiemeläWinters2026DG`](@ref) and
+[`GlaubitzLampertMattssonNiemeläWinters2026DG`](@ref),
+[`GlaubitzLampertMattssonNiemeläWinters2026FD`](@ref), and
 [`GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized`](@ref).
 
 !!! warning "Experimental implementation"

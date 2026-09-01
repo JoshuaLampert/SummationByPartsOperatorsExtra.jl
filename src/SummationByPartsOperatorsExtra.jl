@@ -15,8 +15,8 @@ module SummationByPartsOperatorsExtra
 using AutoHashEquals: @auto_hash_equals
 using ArgCheck: @argcheck
 using DiffEqCallbacks: PeriodicCallback, PeriodicCallbackAffect
-using LinearAlgebra: LinearAlgebra, Diagonal, UpperTriangular, Symmetric,
-                     diag, dot, eigvals, issymmetric, qr
+using LinearAlgebra: LinearAlgebra, Diagonal, I, UpperTriangular, Symmetric,
+                     diag, dot, eigvals, issymmetric, qr, svd
 import LinearAlgebra: mul!, diagind, norm
 using Reexport: @reexport
 import SciMLBase: SciMLBase, get_tmp_cache
@@ -72,8 +72,10 @@ export SubcellOperator, GlaubitzLampertWintersNordström2025, subcell_operator,
        right_projection_left, right_projection_right
 export GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025,
        GlaubitzLampertMattssonNiemeläWinters2026DG,
+       GlaubitzLampertMattssonNiemeläWinters2026FD,
        GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized,
-       dissipation_matrix, StiffnessBudget, FlatWeights, ErrorWeights
+       dissipation_matrix, annihilation_matrix,
+       StiffnessBudget, FlatWeights, ErrorWeights
 export AnalysisCallback, tstops, quantities
 export MultidimensionalLinearAdvectionNonperiodicSemidiscretization
 end

@@ -503,3 +503,236 @@ end
                                                                                             basis_functions_derivatives = [zero,
                                                                                                 one])))
 end
+
+@testitem "Upwind operators (FD construction)" begin
+    using LinearAlgebra: Diagonal, det, dot, eigvals, issymmetric, norm, rank
+    import Optim, ForwardDiff
+
+    SBPE = SummationByPartsOperatorsExtra
+    source = GlaubitzLampertMattssonNiemeläWinters2026FD()
+    for compact in (true, false)
+        show(IOContext(devnull, :compact => compact), source)
+    end
+
+    x_L = 0.0
+    x_R = 1.0
+
+    # Reduction to the polynomial case: for `F` the polynomials of degree at most `K - 1` on
+    # equidistant nodes, the generalized divided differences are the classical undivided
+    # differences of order `K`, and the annihilation matrix is Toeplitz
+    let N = 12
+        monomials = [x -> x^k for k in 0:2]
+        nodes = collect(range(x_L, x_R, length = N))
+        D_tilde = annihilation_matrix(monomials, nodes; normalization = :undivided)
+        @test size(D_tilde) == (N - 3, N)
+        for i in 1:(N - 3)
+            @test isapprox(D_tilde[i, i:(i + 3)], [-1.0, 3.0, -3.0, 1.0], atol = 1e-12)
+            @test all(iszero, D_tilde[i, 1:(i - 1)])
+            @test all(iszero, D_tilde[i, (i + 4):N])
+        end
+        # The two normalizations differ by a single global factor on an equidistant grid
+        D_tilde_2 = annihilation_matrix(monomials, nodes)
+        @test isapprox(D_tilde, sqrt(20) * D_tilde_2, atol = 1e-12)
+        @test all(isapprox(norm(D_tilde_2[i, :]), 1) for i in 1:(N - 3))
+        # The rows are linearly independent, so the kernel is exactly the function space
+        @test rank(D_tilde) == N - 3
+    end
+
+    # Determinant representation of the generalized divided differences: the coefficients are
+    # the cofactors of the local Vandermonde matrix, and the generalized divided difference of a
+    # function is the determinant of that matrix with the sampled function appended as a column.
+    # This is an independent route to the same vectors, checked on a non-uniform grid and a
+    # non-polynomial function space, where neither the polynomial reduction above nor a Toeplitz
+    # structure applies.
+    let basis_functions = [one, identity, exp]
+        K = length(basis_functions)
+        nodes = [0.0, 0.13, 0.31, 0.52, 0.6, 0.87, 1.0]
+        N = length(nodes)
+        D_tilde = annihilation_matrix(basis_functions, nodes)
+        V = SBPE.vandermonde_matrix(basis_functions, nodes)
+        for i in 1:(N - K)
+            window = i:(i + K)
+            V_window = V[window, :]
+            # `(-1)^(K + j)` times the determinant of `V_window` with the row of the node
+            # `x_{i + j}` deleted
+            cofactors = [(-1)^(K + j) * det(V_window[setdiff(1:(K + 1), j + 1), :])
+                         for j in 0:K]
+            # Appending the nodal values of a function to the local Vandermonde matrix and
+            # expanding the determinant along that column gives its generalized divided
+            # difference
+            for f in (sin, exp, x -> x^4)
+                values = f.(nodes[window])
+                @test isapprox(det(hcat(V_window, values)), dot(cofactors, values),
+                               atol = 1e-14)
+            end
+            # The computed coefficients agree with the cofactors up to the normalization
+            @test isapprox(D_tilde[i, window],
+                           sign(cofactors[end]) * cofactors / norm(cofactors), atol = 1e-12)
+            # The span of `1`, `x`, and `exp` is an extended complete Chebyshev system, so the
+            # cofactors share their sign and the coefficients alternate like the classical
+            # difference stencils
+            @test all(sign(D_tilde[i, i + j]) == (-1)^(K + j) for j in 0:K)
+        end
+    end
+
+    # The classical upwind SBP operators of Mattsson (2017) with interior order 5 are members of
+    # the family: their central operator has the same half bandwidth `K` as the dissipation
+    # matrix, and with the scaling `epsilon = 2 / 3` the interior agrees. The boundary closure
+    # needs the weighting matrix `C`, which gives the outermost window half the weight - the
+    # trapezoidal rule for the dissipation functional, where `C = I` is the rectangle rule.
+    let N = 24
+        monomials = [x -> x^k for k in 0:2]
+        D_classical = upwind_operators(Mattsson2017, derivative_order = 1,
+                                       accuracy_order = 5, xmin = x_L, xmax = x_R, N = N)
+        K = length(monomials)
+        D_central = D_classical.central
+        M = mass_matrix(D_classical)
+        B = mass_matrix_boundary(D_classical)
+        Qp = M * Matrix(D_classical.plus) - B / 2
+        S_classical = Qp + Qp'
+        D_tilde = annihilation_matrix(monomials, collect(grid(D_classical)))
+        S = -D_tilde' * D_tilde
+        i = N ÷ 2
+        epsilon = S_classical[i, i] / S[i, i]
+        @test isapprox(epsilon, 2 / 3, atol = 1e-12)
+        @test isapprox(S_classical[i, :], epsilon * S[i, :], atol = 1e-12)
+
+        # With `C = I` the interior of the operators agrees, but the boundary closure does not
+        D_upwind = upwind_operators(D_central, monomials, source; epsilon)
+        @test isapprox(mass_matrix(D_upwind), M)
+        difference = Matrix(D_upwind.minus) - Matrix(D_classical.minus)
+        @test isapprox(difference[(2 * K - 1):(N - 2 * K + 2), :],
+                       zeros(N - 4 * K + 4, N), atol = 1e-11)
+        @test all(norm(difference[r, :]) > 0.1 for r in (1:(2 * K - 2)))
+
+        # The trapezoidal weighting reproduces the classical operators completely
+        C = Diagonal([0.5; ones(N - K - 2); 0.5])
+        D_trapezoidal = upwind_operators(D_central, monomials, source; epsilon, C)
+        @test isapprox(Matrix(dissipation_matrix(monomials, D_central, source; epsilon, C)),
+                       S_classical, atol = 1e-11)
+        @test isapprox(Matrix(D_trapezoidal.minus), Matrix(D_classical.minus), atol = 1e-11)
+        @test isapprox(Matrix(D_trapezoidal.plus), Matrix(D_classical.plus), atol = 1e-11)
+    end
+
+    # Properties of the dissipation matrix for a non-polynomial function space
+    let N = 12
+        basis_functions = [one, identity, exp]
+        basis_functions_derivatives = [zero, one, exp]
+        K = length(basis_functions)
+        nodes = collect(range(-1.0, 1.0, length = N))
+        D = function_space_operator(basis_functions, nodes, GlaubitzNordströmÖffner2023())
+        D_upw = upwind_operators(D, basis_functions, source)
+        x = grid(D_upw)
+        M = mass_matrix(D_upw)
+        B = mass_matrix_boundary(D_upw)
+        @test isapprox(Matrix(D_upw.minus)' * M + M * Matrix(D_upw.plus), B, atol = 1e-11)
+        Qp = M * Matrix(D_upw.plus) - B / 2
+        S = Qp + Qp'
+        @test issymmetric(S)
+        @test maximum(eigvals(S)) < 1e-12
+        # `S` is banded with bandwidth at most `2K + 1`
+        for i in 1:N, j in 1:N
+            abs(i - j) > K && @test isapprox(S[i, j], 0, atol = 1e-14)
+        end
+        # `S` annihilates the function space, the upwind operators are exact for it, and `S` is
+        # strictly dissipative outside of it
+        for (basis_function, basis_function_derivative) in zip(basis_functions,
+                                                               basis_functions_derivatives)
+            @test isapprox(S * basis_function.(x), zeros(N), atol = 1e-12)
+            for D_op in (D_upw.minus, D_upw.plus, D_upw.central)
+                @test isapprox(D_op * basis_function.(x), basis_function_derivative.(x),
+                               atol = 1e-10)
+            end
+        end
+        for f in (x -> x^2, x -> x^3, sin)
+            @test dot(f.(x), S * f.(x)) < -1e-12
+        end
+        @test isapprox((Matrix(D_upw.minus) + Matrix(D_upw.plus)) / 2, Matrix(D))
+
+        # A non-constant weighting matrix `C` gives a different, but still admissible, `S`
+        C = Diagonal(range(0.5, 2.0, length = N - K))
+        S_weighted = Matrix(dissipation_matrix(basis_functions, D, source; epsilon = 1.0,
+                                               C))
+        @test !isapprox(S_weighted,
+                        Matrix(dissipation_matrix(basis_functions, D, source;
+                                                  epsilon = 1.0)))
+        @test issymmetric(S_weighted)
+        @test maximum(eigvals(S_weighted)) < 1e-12
+        for basis_function in basis_functions
+            @test isapprox(S_weighted * basis_function.(x), zeros(N), atol = 1e-12)
+        end
+    end
+
+    # Locality: in contrast to the DG-type construction, the dissipation vanishes under
+    # refinement on smooth functions outside of the function space, so that the upwind operators
+    # stay consistent. In the interior it does so at the expected rate `2K - 1 = 5`; the overall
+    # rate is limited by the one-sided windows at the boundary.
+    let monomials = [x -> x^k for k in 0:2]
+        source_dg = GlaubitzLampertMattssonNiemeläWinters2026DG()
+        residuals_fd = Float64[]
+        residuals_fd_interior = Float64[]
+        residuals_dg = Float64[]
+        for N in (24, 48)
+            D = derivative_operator(MattssonNordström2004(), 1, 4, x_L, x_R, N)
+            x = collect(grid(D))
+            P = mass_matrix(D)
+            S_fd = dissipation_matrix(monomials, D, source; epsilon = 1.0)
+            S_dg = dissipation_matrix(monomials, D, source_dg; lambda = -1.0)
+            push!(residuals_fd, maximum(abs, P \ (S_fd * sin.(x))))
+            push!(residuals_fd_interior, maximum(abs, (P \ (S_fd * sin.(x)))[9:(N - 8)]))
+            push!(residuals_dg, maximum(abs, P \ (S_dg * sin.(x))))
+        end
+        @test residuals_fd[1] / residuals_fd[2] > 2
+        @test residuals_fd_interior[1] / residuals_fd_interior[2] > 16
+        @test residuals_dg[2] >= residuals_dg[1]
+    end
+
+    # Stiffness budget
+    let monomials = [x -> x^k for k in 0:2]
+        budget = StiffnessBudget()
+        epsilons = Float64[]
+        for N in (24, 48, 96)
+            D = derivative_operator(MattssonNordström2004(), 1, 4, x_L, x_R, N)
+            D_tilde = annihilation_matrix(monomials, collect(grid(D)))
+            S_shape = -D_tilde' * D_tilde
+            epsilon = SBPE.calibrate_stiffness_budget(D, S_shape, source, budget)
+            push!(epsilons, epsilon)
+            rho_0 = SBPE.semidiscretization_spectral_radius(D, 0 * S_shape, source,
+                                                            budget.num_elements)
+            rho = SBPE.semidiscretization_spectral_radius(D, epsilon * S_shape, source,
+                                                          budget.num_elements)
+            @test isapprox(rho / rho_0, 1 + budget.tol, rtol = 1e-8)
+            # The budget is the default, so it gives the same dissipation matrix
+            @test isapprox(Matrix(dissipation_matrix(monomials, D, source)),
+                           epsilon * S_shape, atol = 1e-12)
+            # A tighter budget gives less dissipation
+            @test SBPE.calibrate_stiffness_budget(D, S_shape, source,
+                                                  StiffnessBudget(tol = 1 // 10)) < epsilon
+        end
+        # The calibrated scaling is essentially resolution independent
+        @test all(isapprox(epsilon, 1.0, rtol = 0.1) for epsilon in epsilons)
+    end
+
+    # Error handling
+    let N = 10
+        monomials = [x -> x^k for k in 0:2]
+        nodes = collect(range(x_L, x_R, length = N))
+        D = derivative_operator(MattssonNordström2004(), 1, 4, x_L, x_R, N)
+        @test_throws ArgumentError dissipation_matrix(monomials, D, source;
+                                                      epsilon = -1.0)
+        @test_throws ArgumentError dissipation_matrix(monomials, D, source;
+                                                      normalization = :unknown)
+        # The FD construction has no per-mode weights
+        weights = ErrorWeights(basis_functions_derivatives = [zero, one, x -> 2 * x])
+        @test_throws ArgumentError dissipation_matrix(monomials, D, source;
+                                                      epsilon = StiffnessBudget(weights))
+        # There must be at least one window of `K + 1` nodes
+        @test_throws ArgumentError annihilation_matrix([x -> x^k for k in 0:(N - 1)], nodes)
+        # Linearly dependent basis functions
+        @test_throws ArgumentError annihilation_matrix([one, one], nodes)
+        # A window that is not unisolvent after removing one of its nodes: for `F` spanned by
+        # `1` and `x^2` on nodes symmetric about the origin, removing the node at the origin
+        # leaves two nodes with the same value of `x^2`
+        @test_throws ArgumentError annihilation_matrix([one, x -> x^2], [-1.0, 0.0, 1.0])
+    end
+end
