@@ -7,6 +7,11 @@ end
     @test_trixi_include(joinpath(examples_dir(), "RBF_FSBP_advection.jl"))
 end
 
+@testitem "upwind_FSBP_advection.jl" setup=[Examples] begin
+    @test_trixi_include(joinpath(examples_dir(), "upwind_FSBP_advection.jl"),
+                        tspan=(0.0, 0.1))
+end
+
 @testitem "RBF_MFSBP.jl" setup=[Examples] begin
     # This example takes a long time to run, so we only test it with a small number of iterations.
     @test_trixi_include(joinpath(examples_dir(), "RBF_MFSBP.jl"),
