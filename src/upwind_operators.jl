@@ -498,8 +498,11 @@ end
 # Spectral radius of the periodic upwind FSBP-SAT semidiscretization of linear advection built
 # from the pair `D +- P^{-1} S / 2`, see the docstring of `StiffnessBudget`. The wave speed and
 # the element width only enter as a common factor, so we use the unit interval and `a = 1`.
-# For a negative wave speed one would coup1e `D^+` with `Val(:plus)` instead; the two agree
-# whenever grid and operator are symmetric under `x -> -x`, which need not hold in general.
+# For a negative wave speed one would couple `D^+` with `Val(:plus)` instead, but that gives the
+# same value: on a periodic mesh there is no boundary term, so `Q_- = -Q_+'` carries over to the
+# coupled operators as `P A_- + A_+' P = 0`. Hence `A_+` is similar to `-A_-'` and the two spectra
+# are negatives of each other, which leaves the spectral radius unchanged. The calibration is
+# therefore independent of the sign of the wave speed.
 function semidiscretization_spectral_radius(D, S, source, num_elements)
     T = eltype(D)
     D_upwind = upwind_operators(D, S, source)

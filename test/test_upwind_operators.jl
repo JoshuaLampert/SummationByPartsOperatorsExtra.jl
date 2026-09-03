@@ -736,3 +736,32 @@ end
         @test_throws ArgumentError annihilation_matrix([one, x -> x^2], [-1.0, 0.0, 1.0])
     end
 end
+
+@testitem "Upwind operators (stiffness budget is independent of the wave speed)" begin
+    using LinearAlgebra: eigvals
+    import Optim, ForwardDiff
+
+    basis_functions = [one, identity, exp]
+    nodes = collect(range(-1.0, 1.0, length = 6))
+    D = function_space_operator(basis_functions, nodes, GlaubitzNordströmÖffner2023())
+    source = GlaubitzLampertMattssonNiemeläWinters2026DG()
+    S = dissipation_matrix(basis_functions, D, source; lambda = -0.8)
+    D_upwind = upwind_operators(D, S, source)
+
+    # On a periodic mesh, `Q_- = -Q_+'` carries over to the coupled operators. The two
+    # couplings, one for each sign of the wave speed, therefore have negated spectra and the
+    # same spectral radius, so that the stiffness budget does not depend on that sign.
+    mesh = UniformPeriodicMesh1D(xmin = 0.0, xmax = 1.0, Nx = 4)
+    coupled_minus = couple_discontinuously(D_upwind.minus, mesh, Val(:minus))
+    coupled_plus = couple_discontinuously(D_upwind.plus, mesh, Val(:plus))
+    A_minus = Matrix(coupled_minus)
+    A_plus = Matrix(coupled_plus)
+    P = mass_matrix(coupled_minus)
+    @test P == mass_matrix(coupled_plus)
+    @test isapprox(P * A_minus + A_plus' * P, zeros(size(A_minus)), atol = 1e-13)
+    by = z -> (real(z), imag(z))
+    @test isapprox(sort(eigvals(A_minus), by = by), sort(-eigvals(A_plus), by = by),
+                   atol = 1e-11)
+    @test isapprox(maximum(abs, eigvals(A_minus)), maximum(abs, eigvals(A_plus)),
+                   rtol = 1e-12)
+end
