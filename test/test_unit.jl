@@ -117,6 +117,52 @@ end
     end
 end
 
+@testitem "MultidimensionalLinearAdvectionNonperiodicSemidiscretization energy stability" begin
+    using LinearAlgebra: Symmetric, eigmax
+    # The SAT has to be energy stable for every advection direction, in particular when a
+    # corner is adjacent to one inflow and one outflow face, e.g. a = (1, -0.5) at the lower
+    # left corner. With a = (1, 1) on a square, the mixed corners have τ = 0 and hide the issue.
+    function system_matrix(semi, n)
+        M = zeros(n, n)
+        u = zeros(n)
+        du = zeros(n)
+        for j in 1:n
+            fill!(u, 0.0)
+            u[j] = 1.0
+            semi(du, u, nothing, 0.0)
+            M[:, j] .= du
+        end
+        return M
+    end
+    g_zero(x, t) = 0.0
+    g(x, t) = sin(x[1]) + x[2]^2 + t
+    D_fd = derivative_operator(MattssonNordström2004(), derivative_order = 1,
+                               accuracy_order = 4, xmin = 0.0, xmax = 1.0, N = 10)
+    D_lgl = legendre_derivative_operator(-1.0, 1.0, 5)
+    for D_2 in (tensor_product_operator_2D(D_fd), tensor_product_operator_2D(D_lgl))
+        n = length(grid(D_2))
+        P = mass_matrix(D_2)
+        directions = [(cos(θ), sin(θ)) for θ in range(0, 2pi; length = 73)[1:72]]
+        push!(directions, (1.0, -0.5), (-0.5, 1.0))
+        for a in directions
+            semi = MultidimensionalLinearAdvectionNonperiodicSemidiscretization(D_2, a,
+                                                                                g_zero)
+            M = system_matrix(semi, n)
+            @test eigmax(Symmetric(P * M + M' * P)) <= 1e-12
+
+            # conservation and energy balance reported by `analyze_quantities`
+            semi = MultidimensionalLinearAdvectionNonperiodicSemidiscretization(D_2, a, g)
+            u = sin.(3 .* first.(grid(D_2))) .* cos.(2 .* last.(grid(D_2)))
+            du = similar(u)
+            semi(du, u, nothing, 0.3)
+            q = SummationByPartsOperatorsExtra.analyze_quantities(semi, du, u, nothing, 0.3)
+            @test abs(q[3]) <= 1e-12 # mass rate minus boundary flux
+            @test abs(q[7]) <= 1e-12 # energy rate minus boundary terms
+            @test q[6] <= 1e-12      # boundary dissipation is nonpositive
+        end
+    end
+end
+
 @testitem "orthonormal_vandermonde_matrices" begin
     using LinearAlgebra: I, cond, norm
     import Optim, ForwardDiff
