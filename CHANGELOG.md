@@ -10,3 +10,11 @@ for human readability.
 #### Added
 
 - Allow Julia v1.10 ([#94]).
+
+#### Fixed
+
+- `MultidimensionalLinearAdvectionNonperiodicSemidiscretization` was not energy stable at corners
+  adjacent to one inflow and one outflow boundary face, e.g., for tensor product operators and
+  operators constructed with `corners`. The boundary data is now imposed at the nodes with
+  `τ_j < 0`, where `τ = diag(a[1] * B_1 + a[2] * B_2)`, which coincides with the previous rule
+  at boundary nodes with a single normal ([#112]).
