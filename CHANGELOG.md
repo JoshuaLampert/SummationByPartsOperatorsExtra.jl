@@ -26,3 +26,7 @@ for human readability.
   entries for weights equal to one and threw a `DomainError` for weights larger than one. The
   weights are now normalized before inverting the sigmoid function, which yields the same mass
   matrix in the optimization.
+- The quantities `energy_rate_boundary` and `energy_rate_boundary_dissipation` computed by the
+  `AnalysisCallback` for `VariableLinearAdvectionNonperiodicSemidiscretization` were wrong if the
+  advection velocity was negative at the right boundary or had different signs at the two
+  boundaries. The left and right boundaries are now treated independently.

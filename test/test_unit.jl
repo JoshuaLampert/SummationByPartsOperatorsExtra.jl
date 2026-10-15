@@ -163,6 +163,31 @@ end
     end
 end
 
+@testitem "analyze_quantities for VariableLinearAdvectionNonperiodicSemidiscretization" begin
+    D = derivative_operator(MattssonNordström2004(), derivative_order = 1,
+                            accuracy_order = 4, xmin = -1.0, xmax = 1.0, N = 41)
+    x = grid(D)
+    left_bc(t) = 0.7
+    right_bc(t) = -0.3
+    u = sin.(3 .* x) .+ 0.2
+    du = similar(u)
+    # All combinations of inflow and outflow at the left and right boundary
+    for afunc in (x -> 1 + 0.5 * x^2, x -> -1 - 0.5 * x^2, x -> -x - 0.5, x -> x + 0.2)
+        semi = VariableLinearAdvectionNonperiodicSemidiscretization(D, nothing, afunc,
+                                                                    Val(true), left_bc,
+                                                                    right_bc)
+        semi(du, u, nothing, 0.0)
+        q = SummationByPartsOperatorsExtra.analyze_quantities(semi, du, u, nothing, 0.0)
+        a_left = afunc(first(x))
+        a_right = afunc(last(x))
+        dissipation = -0.5 * max(a_left, 0) * (u[1] - left_bc(0.0))^2 +
+                      0.5 * min(a_right, 0) * (u[end] - right_bc(0.0))^2
+        @test abs(q[3]) <= 1e-12 # mass rate minus boundary flux
+        @test isapprox(q[6], dissipation; atol = 1e-12) # boundary dissipation
+        @test abs(q[7]) <= 1e-12 # energy rate minus boundary terms
+    end
+end
+
 @testitem "orthonormal_vandermonde_matrices" begin
     using LinearAlgebra: I, cond, norm
     import Optim, ForwardDiff

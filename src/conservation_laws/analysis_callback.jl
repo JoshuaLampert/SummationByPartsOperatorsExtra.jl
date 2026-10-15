@@ -149,12 +149,25 @@ function analyze_quantities(semi::VariableLinearAdvectionNonperiodicSemidiscreti
 
     energy = 0.5 * sum(P * (u .^ 2)) # = 1/2 ||u||_P^2
     energy_rate = sum(P * (du .* u)) # = 1/2 d/dt||u||_P^2 = u' * P * du
+    # For the split form with Godunov fluxes at the boundaries, we have
+    # energy_rate + 0.5 * (u .^ 2)' * P * (D * a) = l + r with
+    # l = -0.5 * a[1] * (u[1] - left_bc(t))^2 + 0.5 * a[1] * left_bc(t)^2   if a[1] > 0 (inflow)
+    # l = 0.5 * a[1] * u[1]^2                                                otherwise (outflow)
+    # r = 0.5 * a[end] * (u[end] - right_bc(t))^2 - 0.5 * a[end] * right_bc(t)^2   if a[end] < 0 (inflow)
+    # r = -0.5 * a[end] * u[end]^2                                                  otherwise (outflow)
+    # The left and right boundaries are treated independently since the signs of a[1] and
+    # a[end] can differ. `energy_rate_boundary` only contains the dissipation of the inflow
+    # boundaries and `energy_rate_boundary_dissipation` should vanish.
     energy_rate_boundary = energy_rate + 0.5 * (u .^ 2)' * P * (D * a)
     if a[1] > 0.0
-        energy_rate_boundary += 0.5 * (-a[1] * left_bc(t)^2 + a[end] * u[end]^2)
+        energy_rate_boundary -= 0.5 * a[1] * left_bc(t)^2
+    else
+        energy_rate_boundary -= 0.5 * a[1] * u[1]^2
     end
     if a[end] < 0.0
-        energy_rate_boundary += 0.5 * (-a[1] * u[1]^2 + a[end] * right_bc(t)^2)
+        energy_rate_boundary += 0.5 * a[end] * right_bc(t)^2
+    else
+        energy_rate_boundary += 0.5 * a[end] * u[end]^2
     end
     energy_rate_boundary_dissipation = energy_rate_boundary
     # We could also write `energy_rate_boundary_dissipation` as
@@ -166,7 +179,7 @@ function analyze_quantities(semi::VariableLinearAdvectionNonperiodicSemidiscreti
         energy_rate_boundary_dissipation += 0.5 * a[1] * (u[1] - left_bc(t))^2
     end
     if a[end] < 0.0
-        energy_rate_boundary_dissipation += 0.5 * a[end] * (u[end] - right_bc(t))^2
+        energy_rate_boundary_dissipation -= 0.5 * a[end] * (u[end] - right_bc(t))^2
     end
     return [mass, mass_rate, mass_rate_boundary,
             energy, energy_rate, energy_rate_boundary, energy_rate_boundary_dissipation]
