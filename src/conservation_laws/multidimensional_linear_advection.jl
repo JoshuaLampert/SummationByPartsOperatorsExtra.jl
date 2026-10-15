@@ -48,7 +48,8 @@ semidiscretization energy stable when one face is an inflow and the other an out
         tau = diag(a[1] * B_x + a[2] * B_y)
         inflow_indices = findall(<(0), tau)
         tmp1 = zeros(T, size(derivative, 1))
-        cache = (; A, B, tmp1, inflow_indices)
+        tmp2 = zeros(T, size(derivative, 1))
+        cache = (; A, B, tmp1, tmp2, inflow_indices)
         return new{Dim, T, Derivative, BC, typeof(cache)}(derivative, a, bc, cache)
     end
 end
@@ -76,9 +77,16 @@ end
 # data is imposed exactly at the nodes with `τ_j < 0`, `τ = diag(a[1] * B_1 + a[2] * B_2)`, which
 # gives `d/dt ‖u‖²_P ≤ Σ_{τ_j < 0} |τ_j| g_j²` for any diagonal boundary matrices. `tmp1` holds the
 # values entering the boundary terms: the boundary data at those nodes and `u` elsewhere.
-function set_bc!(tmp1, u, bc, D, inflow_indices, t)
+# `bc::BC` forces specialization on the function `bc`, which is only passed through here
+function set_bc!(tmp1, u, bc::BC, D, inflow_indices, t) where {BC}
     copyto!(tmp1, u)
-    nodes = grid(D)
+    # Function barrier since `grid(D)` is not type stable for all operators, e.g., for a
+    # `TensorProductOperator`
+    set_inflow_values!(tmp1, bc, grid(D), inflow_indices, t)
+    return nothing
+end
+
+function set_inflow_values!(tmp1, bc, nodes, inflow_indices, t)
     for j in inflow_indices
         tmp1[j] = bc(nodes[j], t)
     end
@@ -87,10 +95,14 @@ end
 
 function (disc::MultidimensionalLinearAdvectionNonperiodicSemidiscretization)(du, u, p, t)
     @unpack bc, derivative, cache = disc
-    @unpack A, B, tmp1, inflow_indices = cache
+    @unpack A, B, tmp1, tmp2, inflow_indices = cache
 
     set_bc!(tmp1, u, bc, derivative, inflow_indices, t)
-    du .= -A * u + B * (u - tmp1)
+    # du = -A * u + B * (u - tmp1). `tmp1` must not be overwritten since it is used in
+    # `analyze_quantities`.
+    @. tmp2 = u - tmp1
+    mul!(du, A, u, -1, false)
+    mul!(du, B, tmp2, true, true)
 
     return nothing
 end

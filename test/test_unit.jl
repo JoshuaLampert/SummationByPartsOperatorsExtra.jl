@@ -117,6 +117,40 @@ end
     end
 end
 
+@testitem "MultidimensionalLinearAdvectionNonperiodicSemidiscretization right-hand side" begin
+    D = derivative_operator(MattssonNordström2004(), derivative_order = 1,
+                            accuracy_order = 4, xmin = 0.0, xmax = 1.0, N = 10)
+    D_2 = tensor_product_operator_2D(D)
+    g(x, t) = sin(x[1]) + x[2]^2 + t
+    function allocations_rhs(semi, du, u, t)
+        semi(du, u, nothing, t)
+        return @allocated semi(du, u, nothing, t)
+    end
+    # The `TensorProductOperator` wraps a `MultidimensionalMatrixDerivativeOperator`
+    for D_op in (D_2, D_2.D_multi)
+        semi = MultidimensionalLinearAdvectionNonperiodicSemidiscretization(D_op,
+                                                                            (1.0, -0.5), g)
+        (; A, B, tmp1, inflow_indices) = semi.cache
+        x = grid(D_op)
+        u = sin.(3 .* first.(x)) .* cos.(2 .* last.(x))
+        du = similar(u)
+        semi(du, u, nothing, 0.3)
+        # `tmp1` holds the boundary data at the inflow nodes and `u` elsewhere, which is
+        # used in `analyze_quantities`
+        u_bc = copy(u)
+        u_bc[inflow_indices] .= g.(x[inflow_indices], 0.3)
+        @test tmp1 == u_bc
+        @test du ≈ -A * u + B * (u - u_bc)
+    end
+    # `grid(::TensorProductOperator)` is not type stable, which costs one dynamic dispatch.
+    # Therefore, we check the allocations with the wrapped
+    # `MultidimensionalMatrixDerivativeOperator`.
+    semi = MultidimensionalLinearAdvectionNonperiodicSemidiscretization(D_2.D_multi,
+                                                                        (1.0, -0.5), g)
+    u = ones(length(grid(D_2)))
+    @test allocations_rhs(semi, similar(u), u, 0.3) == 0
+end
+
 @testitem "MultidimensionalLinearAdvectionNonperiodicSemidiscretization energy stability" begin
     using LinearAlgebra: Symmetric, eigmax
     # The SAT has to be energy stable for every advection direction, in particular when a

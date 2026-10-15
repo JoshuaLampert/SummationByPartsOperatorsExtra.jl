@@ -11,6 +11,11 @@ for human readability.
 
 - Allow Julia v1.10 ([#94]).
 
+#### Changed
+
+- The right-hand side of `MultidimensionalLinearAdvectionNonperiodicSemidiscretization` does not
+  allocate temporary vectors anymore and is about 7 times faster for 400 nodes ([#119]).
+
 #### Fixed
 
 - `MultidimensionalLinearAdvectionNonperiodicSemidiscretization` was not energy stable at corners
