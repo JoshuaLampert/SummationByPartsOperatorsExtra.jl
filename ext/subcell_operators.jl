@@ -112,7 +112,7 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
     assert_correct_bandwidth(N_R, bandwidths[2], size_boundaries[2])
     for (i, sparsity_pattern) in enumerate(sparsity_patterns)
         if !isnothing(sparsity_pattern)
-            assert_correct_sparsity_pattern(sparsity_patterns)
+            assert_correct_sparsity_pattern(sparsity_pattern)
             sparsity_patterns[i] = UpperTriangular(sparsity_patterns[i])
         end
     end
