@@ -107,10 +107,17 @@ The initial guess for the optimization problem can be passed with the keyword ar
 If `nothing` is passed, a default initial guess (zeros for the entries of the differentiation matrix and
 equal values for all the weights) is used.
 
-You can weight each basis function with the keyword argument `basis_functions_weights`, which is a vector of
-weights for each basis function. The default is a vector of ones, which means that all basis functions
-are equally weighted. This can be used to, e.g., enforce exactness for certain basis functions (high weights),
-but allow non-exactness for others only minimizing the error (low weights).
+You can weight the basis functions with the keyword argument `basis_functions_weights`, which is a vector
+with one weight per basis function. The default is a vector of ones, which means that all basis functions
+are equally weighted. Note that the weights are applied after orthonormalizing the basis: the basis functions
+``f_1, \\dots, f_K`` are orthonormalized in the given order with respect to the discrete inner product
+``\\langle f, g \\rangle = \\sum_n f(x_n) g(x_n) + \\sum_n f'(x_n) g'(x_n)``, which yields functions
+``g_k = \\sum_{j \\le k} a_{kj} f_j`` with ``a_{kk} > 0``. The weight `basis_functions_weights[k]` multiplies the
+residual of the exactness condition for ``g_k``, not for ``f_k``. Hence, the result depends on the order of
+the basis functions. Since ``g_1, \\dots, g_m`` span the same space as ``f_1, \\dots, f_m``, you can enforce
+exactness for certain basis functions (high weights), but allow non-exactness for others only minimizing the
+error (low weights), by putting the functions to be reproduced at the beginning of `basis_functions` and
+assigning the high weights to them.
 
 When using the source [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref) there are two alternative
 ways to enforce sparsity of the resulting operator.

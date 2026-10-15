@@ -75,3 +75,21 @@ end
         @test M * D.D + D.D' * M ≈ mass_matrix_boundary(D)
     end
 end
+
+@testitem "FSBP basis function weights with Optim.jl" setup=[FSBP_Optim] begin
+    # With 4 equidistant nodes, the basis functions 1, x, x^2, x^3 cannot all be reproduced
+    # exactly. Since the weights act on the basis orthonormalized in the given order, a basis
+    # function that should be reproduced (almost) exactly has to come first and get a high weight.
+    nodes = collect(range(-1.0, 1.0, length = 4))
+    source = GlaubitzNordströmÖffner2023()
+    options = Optim.Options(g_tol = 1e-16, iterations = 20000)
+    error_cubic(D) = maximum(abs, D * nodes .^ 3 - 3 * nodes .^ 2)
+
+    D = function_space_operator([one, identity, x -> x^2, x -> x^3], nodes, source;
+                                options)
+    @test error_cubic(D) > 0.1
+    D_weighted = function_space_operator([x -> x^3, one, identity, x -> x^2], nodes,
+                                         source; options,
+                                         basis_functions_weights = [1e3, 1.0, 1.0, 1.0])
+    @test error_cubic(D_weighted) < 1e-4
+end
