@@ -122,7 +122,9 @@ function construct_function_space_operator(basis_functions, nodes,
                                    for i in 1:K]
     V, V_x = orthonormal_vandermonde_matrices(basis_functions, basis_functions_derivatives,
                                               nodes)
-    # This weights column k, i.e. basis function k, with the weight `basis_functions_weights[k]`
+    # This weights column k, i.e. the k-th orthonormalized basis function, which is a linear combination
+    # of the first k basis functions, with the weight `basis_functions_weights[k]`, see the docstring of
+    # `function_space_operator`
     V = V * Diagonal(basis_functions_weights)
     V_x = V_x * Diagonal(basis_functions_weights)
     B = spzeros(T, N, N)
