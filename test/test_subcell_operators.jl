@@ -124,6 +124,24 @@ end
     end
 end
 
+@testitem "Sub-cell operators on long intervals" setup=[SubCell] begin
+    # The sub-cells are longer than their number of nodes, so the weights cannot be
+    # bounded by one if the operator should be exact for constants.
+    nodes = collect(range(0.0, 20.0, length = 12))
+    x_M = 9.6
+    basis_functions = [one, identity, x -> 0.5 * x^2]
+    basis_functions_derivatives = [zero, one, identity]
+    source = GlaubitzLampertWintersNordström2025()
+    Dop = subcell_operator(basis_functions, nodes, x_M, source;
+                           options = Optim.Options(; iterations = 20000, g_tol = 1e-16))
+    @test sum(mass_matrix_left(Dop)) ≈ x_M - first(nodes)
+    @test sum(mass_matrix_right(Dop)) ≈ last(nodes) - x_M
+    @test sum(mass_matrix(Dop)) ≈ last(nodes) - first(nodes)
+    for (f, f_derivative) in zip(basis_functions, basis_functions_derivatives)
+        @test all(isapprox.(Dop * f.(nodes), f_derivative.(nodes); atol = 1e-11))
+    end
+end
+
 @testitem "Couple SBP operators to sub-cell operators" setup=[SubCell] begin
     basis_functions = [one, identity, x -> 0.5 * x^2]
     x_L = -2.3

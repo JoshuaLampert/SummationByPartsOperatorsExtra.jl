@@ -54,13 +54,15 @@ function set_S_right!(S_R, sigma_R, N_R, bandwidth, size_boundary,
                   size_boundary, different_values, sparsity_pattern)
 end
 
+# The weights are scaled by the length `vol` of the sub-cell since `sig` maps to (0, 1).
+# Otherwise, the weights could not sum up to `vol` if the sub-cell is longer than the number
+# of its nodes, and the operator could not be exact for constants.
 function create_P_left(rho, N, vol)
     N_L = length(rho)
     P_L = Diagonal(zeros(eltype(rho), N))
     for i in 1:N_L
-        P_L[i, i] = sig(rho[i])
+        P_L[i, i] = vol * sig(rho[i])
     end
-    # P_L *= vol / sum(P_L)
     return P_L
 end
 
@@ -68,9 +70,8 @@ function create_P_right(rho, N, vol)
     N_R = length(rho)
     P_R = Diagonal(zeros(eltype(rho), N))
     for i in (N - N_R + 1):N
-        P_R[i, i] = sig(rho[i - (N - N_R)])
+        P_R[i, i] = vol * sig(rho[i - (N - N_R)])
     end
-    # P_R *= vol / sum(P_R)
     return P_R
 end
 

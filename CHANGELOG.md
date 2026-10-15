@@ -18,3 +18,7 @@ for human readability.
   operators constructed with `corners`. The boundary data is now imposed at the nodes with
   `τ_j < 0`, where `τ = diag(a[1] * B_1 + a[2] * B_2)`, which coincides with the previous rule
   at boundary nodes with a single normal ([#112]).
+- The weights of sub-cell operators constructed with `subcell_operator` were bounded by one, such
+  that the operators were not exact (without any warning) if a sub-cell was longer than its number
+  of nodes. The weights are now scaled by the length of the sub-cell. Note that this changes the
+  meaning of the weight entries of a user-provided initial guess `x0`.
