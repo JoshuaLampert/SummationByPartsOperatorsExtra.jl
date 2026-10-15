@@ -11,6 +11,12 @@ for human readability.
 
 - Allow Julia v1.10 ([#94]).
 
+#### Changed
+
+- Multiplying a `SubcellOperator` with a vector (`D * u` and `mul!(dest, D, u)`) does not form
+  the dense derivative matrix anymore. This avoids allocations and is about 19 times faster for
+  40 nodes ([#118]).
+
 #### Fixed
 
 - `MultidimensionalLinearAdvectionNonperiodicSemidiscretization` was not energy stable at corners

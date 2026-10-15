@@ -177,6 +177,27 @@ end
     end
 end
 
+@testitem "Multiplication with sub-cell operators" setup=[SubCell] begin
+    using LinearAlgebra: mul!
+    D1 = legendre_derivative_operator(-1.0, 0.0, 6)
+    D2 = derivative_operator(MattssonNordström2004(), 1, 4, 0.0, 1.0, 12)
+    function allocations_mul!(dest, D, u)
+        mul!(dest, D, u)
+        return @allocated mul!(dest, D, u)
+    end
+    for coupling in (Val(:no), Val(:central), Val(:plus), Val(:minus))
+        Dop = couple_subcell(D1, D2, 0.0; coupling)
+        D = Matrix(Dop)
+        u = sin.(grid(Dop))
+        dest = cos.(grid(Dop))
+        for (α, β) in ((true, false), (2.5, 0.0), (1.0, 1.0), (-0.5, 2.0))
+            @test mul!(copy(dest), Dop, u, α, β) ≈ mul!(copy(dest), D, u, α, β)
+        end
+        @test Dop * u ≈ D * u
+        @test allocations_mul!(dest, Dop, u) == 0
+    end
+end
+
 @testitem "Couple SBP operators to sub-cell operators" setup=[SubCell] begin
     basis_functions = [one, identity, x -> 0.5 * x^2]
     x_L = -2.3
