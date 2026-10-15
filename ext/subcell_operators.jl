@@ -8,7 +8,7 @@ function SummationByPartsOperatorsExtra.subcell_operator(basis_functions,
                                                                            SourceOfCoefficients
                                                                            }
     assert_first_derivative_order(derivative_order)
-    sort!(nodes)
+    nodes = sort(nodes)
     x_L = first(nodes)
     x_R = last(nodes)
     if x_M < x_L || x_M > x_R

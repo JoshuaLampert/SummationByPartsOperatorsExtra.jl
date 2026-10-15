@@ -7,7 +7,7 @@ function SummationByPartsOperatorsExtra.function_space_operator(basis_functions,
                                                                                   SourceOfCoefficients
                                                                                   }
     assert_first_derivative_order(derivative_order)
-    sort!(nodes)
+    nodes = sort(nodes)
     weights, D = construct_function_space_operator(basis_functions, nodes, source;
                                                    kwargs...)
     return MatrixDerivativeOperator(first(nodes), last(nodes), nodes, weights, D,
