@@ -16,6 +16,8 @@ for human readability.
 - Multiplying a `SubcellOperator` with a vector (`D * u` and `mul!(dest, D, u)`) does not form
   the dense derivative matrix anymore. This avoids allocations and is about 19 times faster for
   40 nodes ([#118]).
+- The right-hand side of `MultidimensionalLinearAdvectionNonperiodicSemidiscretization` does not
+  allocate temporary vectors anymore and is about 7 times faster for 400 nodes ([#119]).
 
 #### Fixed
 
