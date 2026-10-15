@@ -30,4 +30,4 @@ for human readability.
   `AnalysisCallback` for `VariableLinearAdvectionNonperiodicSemidiscretization` were wrong if the
   advection velocity was negative at the right boundary or had different signs at the two
   boundaries. The left and right boundaries are now treated independently.
-- Passing `sparsity_patterns` to `subcell_operator` always threw a `MethodError` ([#115]).
+- Passing `sparsity_patterns` to `subcell_operator` always threw a `MethodError` ([#116]).
