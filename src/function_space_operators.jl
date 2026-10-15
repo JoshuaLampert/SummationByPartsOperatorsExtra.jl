@@ -77,8 +77,8 @@ end
                             min_real_eigen = 0.1,
                             bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
                             different_values = true, sparsity_pattern = nothing,
-                            opt_alg = Optim.BFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
-                            autodiff = ADTypes.AutoForwardDiff(), x0 = nothing, verbose = false)
+                            opt_alg, options, autodiff = ADTypes.AutoForwardDiff(),
+                            x0 = nothing, verbose = false)
 
 Construct an operator that represents a first-derivative operator in a function space spanned by
 the `basis_functions`, which is an iterable of functions. The operator is constructed on the
@@ -97,6 +97,12 @@ Optim.jl about [configurable options](https://julianlsolvers.github.io/Optim.jl/
 and [automatic differentiation](https://julianlsolvers.github.io/Optim.jl/stable/user/gradientsandhessians/#Automatic-differentiation)
 or of Manopt.jl about [algorithm options for, e.g., `augmented_Lagrangian_method`](https://manoptjl.org/stable/solvers/augmented_Lagrangian_method/#Manopt.augmented_Lagrangian_method)
 or [`debug` output](https://manoptjl.org/stable/tutorials/HowToDebug/).
+The defaults depend on the `source`: for [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref),
+`opt_alg = Optim.BFGS()` and `options = Optim.Options(g_tol = 1e-16, iterations = 10000, show_trace = verbose)`.
+For the other sources, `opt_alg` is `Manopt.quasi_Newton` ([`GlaubitzIskeLampertÖffner2026Basic`](@ref)) or
+`Manopt.augmented_Lagrangian_method` ([`GlaubitzIskeLampertÖffner2026Regularized`](@ref) and
+[`GlaubitzIskeLampertÖffner2026EigenvalueProperty`](@ref)), and `options` is a `NamedTuple` of keyword arguments
+passed to it, by default a `stopping_criterion` and a `debug` output if `verbose` is `true`.
 For higher number of nodes, reverse mode automatic differentiation is usually significantly faster than forward mode.
 We recommend using `autodiff = ADTypes.AutoMooncake(; config = nothing)` or
 `autodiff = ADTypes.AutoEnzyme(; mode = Enzyme.Reverse, function_annotation = Enzyme.Duplicated)`. Note that
@@ -129,7 +135,7 @@ The second way is to use a banded-block structure for the operator as is common,
 The keyword arguments `bandwidth` and `size_boundary` specify the bandwidth and the size of the
 boundary blocks of the operator, where the default of `bandwidth` is set to `length(nodes) - 1`,
 i.e., a dense operator (in this case `size_boundary` is ignored). To construct a sparse operator, you can set the
-bandwidth to a smaller value, such that `2 * size_boundary + bandwidth < length(nodes)`, which is a
+bandwidth to a smaller value, such that `2 * size_boundary + bandwidth <= length(nodes)`, which is a
 requirement for the boundary blocks in the upper left and lower right of the resulting operator.
 If `different_values` is set to `true` all the entries in the upper right triangle of S (the skew symmetric
 part of D) are different, which is generally meaningful for non-equidistant nodes and general bases, if it

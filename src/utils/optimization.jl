@@ -201,11 +201,12 @@ end
                                               bandwidth = div(accuracy_order(D), 2),
                                               size_boundary = SummationByPartsOperators.lower_bandwidth(D) + 1,
                                               different_values = false,
-                                              sparsity_pattern = nothing)
+                                              sparsity_patterns = nothing)
 
 Get the entries to optimize for in an optimization-based construction procedure of multidimensional summation-by-parts operators
 from a derivative operator `D`. It contains the entries of the skew-symmetric part of the operator ``D``, the
-entries of the diagonal mass matrix ``M``, and the entries of the diagonal boundary mass matrix. For more details,
+entries of the diagonal mass matrix ``M``, and the entries of the diagonal boundary mass matrix. If `sparsity_patterns`
+is given, it has to be a tuple with one sparsity pattern for each direction. For more details,
 see [`multidimensional_function_space_operator`](@ref). The output can be passed as initial values to the optimization problem as `x0`.
 """
 function get_multidimensional_optimization_entries(D;

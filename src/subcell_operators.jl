@@ -4,10 +4,13 @@
                     weights_left::Vector{T}, weights_right::Vector{T},
                     Q_left::QType, Q_right::QType,
                     B_left::BType, B_right::BType,
+                    e_L::ProjectionType, e_M_L::ProjectionType,
+                    e_M_R::ProjectionType, e_R::ProjectionType,
                     accuracy_order::Int,
                     source::SourceOfCoefficients) where {T <: Real,
                                                          QType <: AbstractMatrix{T},
                                                          BType <: AbstractMatrix{T},
+                                                         ProjectionType <: AbstractVector{T},
                                                          SourceOfCoefficients}
 
 A sub-cell derivative operator on a non-periodic grid with scalar type `T`. A sub-cell operator
@@ -93,9 +96,23 @@ function PolynomialBases.integrate(func, u, D::SubcellOperator)
     return integrate(func, u, weights(D))
 end
 
+"""
+    integrate_left(func, u, D::SubcellOperator)
+
+Map the function `func` to the coefficients `u` and integrate with respect to the quadrature rule
+associated with the left part of the sub-cell operator `D`, i.e., with the weights of
+[`mass_matrix_left`](@ref).
+"""
 function integrate_left(func, u, D::SubcellOperator)
     return integrate(func, u, weights_left(D))
 end
+"""
+    integrate_right(func, u, D::SubcellOperator)
+
+Map the function `func` to the coefficients `u` and integrate with respect to the quadrature rule
+associated with the right part of the sub-cell operator `D`, i.e., with the weights of
+[`mass_matrix_right`](@ref).
+"""
 function integrate_right(func, u, D::SubcellOperator)
     return integrate(func, u, weights_right(D))
 end
@@ -309,7 +326,7 @@ end
 """
     couple_subcell(D_left::AbstractNonperiodicDerivativeOperator,
                    D_right::AbstractNonperiodicDerivativeOperator,
-                   x_M, [coupling=Val(:no)])
+                   x_M; coupling = Val(:no))
 
 Construct a [`SubcellOperator`](@ref) from two non-periodic derivative operators `D_left` and `D_right` from
 SummationByPartsOperators.jl. `D_left` is defined on the left sub-cell, which is the interval
@@ -470,7 +487,7 @@ The second way is to use a banded-block structure for the parts of the operator 
 The keyword arguments `bandwidths` and `size_boundaries` specify the bandwidth and the size of the
 boundary blocks of the operators, where the default of `bandwidths` is set to the number of nodes in the left and right
 sub-cell minus one, i.e., a dense operator (in this case `size_boundaries` is ignored). To construct a sparse operator, you can set the
-bandwidth to a smaller value, such that `2 * size_boundaries[i] + bandwidths[i] < N_{L/R}`, which is a
+bandwidth to a smaller value, such that `2 * size_boundaries[i] + bandwidths[i] <= N_{L/R}`, which is a
 requirement for the boundary blocks in the upper left and lower right of the resulting operator.
 If `different_values` is set to `true` all the entries in the upper right triangle of S (the skew symmetric
 parts of the differentiation matrix blocks) are different, which is generally meaningful for non-equidistant nodes and general bases, if it
@@ -489,9 +506,6 @@ Returns a [`SubcellOperator`](@ref) object.
 In order to use this function, the packages `Optim` and `ForwardDiff` must be loaded.
 
 See also [`GlaubitzLampertWintersNordström2025`](@ref).
-
-!!! compat "Julia 1.9"
-    This function requires at least Julia 1.9.
 
 !!! warning "Experimental implementation"
     This is an experimental feature and may change in future releases.
