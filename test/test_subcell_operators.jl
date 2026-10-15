@@ -142,6 +142,41 @@ end
     end
 end
 
+@testitem "Sub-cell operators with sparsity patterns" setup=[SubCell] begin
+    using LinearAlgebra: UpperTriangular
+    nodes = collect(-1.1:0.1:0.4)
+    x_M = -0.42
+    N_L = count(<=(x_M), nodes)
+    N_R = length(nodes) - N_L
+    basis_functions = [one, identity, x -> 0.5 * x^2]
+    basis_functions_derivatives = [zero, one, identity]
+    source = GlaubitzLampertWintersNordström2025()
+    options = Optim.Options(; iterations = 10000, g_tol = 1e-16)
+    banded_pattern(n, b) = UpperTriangular([0 < j - i <= b for i in 1:n, j in 1:n])
+
+    # A full sparsity pattern uses the same parameterization as a dense operator
+    Dop_dense = subcell_operator(basis_functions, copy(nodes), x_M, source; options)
+    sparsity_patterns = [banded_pattern(N_L, N_L - 1), banded_pattern(N_R, N_R - 1)]
+    Dop_full = subcell_operator(basis_functions, copy(nodes), x_M, source;
+                                sparsity_patterns, options)
+    @test Matrix(Dop_full) ≈ Matrix(Dop_dense)
+
+    sparsity_patterns = [banded_pattern(N_L, 4), banded_pattern(N_R, 4)]
+    Dop = subcell_operator(basis_functions, copy(nodes), x_M, source; sparsity_patterns,
+                           options)
+    # The skew-symmetric parts vanish outside of the sparsity patterns
+    S_L = (Dop.Q_left - Dop.Q_left')[1:N_L, 1:N_L]
+    S_R = (Dop.Q_right - Dop.Q_right')[(N_L + 1):end, (N_L + 1):end]
+    for (S, sparsity_pattern) in ((S_L, sparsity_patterns[1]),
+                                  (S_R, sparsity_patterns[2]))
+        P = Matrix(sparsity_pattern)
+        @test all(iszero, S[.!(P .| P')])
+    end
+    for (f, f_derivative) in zip(basis_functions, basis_functions_derivatives)
+        @test all(isapprox.(Dop * f.(nodes), f_derivative.(nodes); atol = 1e-11))
+    end
+end
+
 @testitem "Couple SBP operators to sub-cell operators" setup=[SubCell] begin
     basis_functions = [one, identity, x -> 0.5 * x^2]
     x_L = -2.3
