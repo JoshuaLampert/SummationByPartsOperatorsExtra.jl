@@ -90,6 +90,58 @@ end
     end
 end
 
+@testitem "Optimization entries for weights not smaller than one" begin
+    using Optim: Optim
+    import ForwardDiff
+    using StaticArrays: SVector
+    using LinearAlgebra: diag
+
+    # The weights of this operator are 1 and 2, which are not in the range (0, 1) of the
+    # logistic function used to parameterize the weights
+    xmin = 0.0
+    xmax = 20.0
+    vol = xmax - xmin
+    N = 11
+    D_poly = derivative_operator(MattssonNordström2004(), 1, 2, xmin, xmax, N)
+    @test maximum(diag(mass_matrix(D_poly))) >= 1
+    basis = [one, identity]
+    nodes = collect(grid(D_poly))
+    bandwidth = 1
+    size_boundary = SummationByPartsOperators.lower_bandwidth(D_poly) + 1
+    different_values = false
+    # Only evaluate the initial guess
+    options = Optim.Options(iterations = 0)
+    atol = 1e-13
+
+    x_poly = get_optimization_entries(D_poly; bandwidth, size_boundary, different_values)
+    @test all(isfinite, x_poly)
+    D = function_space_operator(basis, nodes, GlaubitzNordströmÖffner2023();
+                                bandwidth, size_boundary, different_values, options,
+                                x0 = x_poly)
+    @test isapprox(Matrix(D), Matrix(D_poly); atol)
+    @test isapprox(mass_matrix(D), mass_matrix(D_poly); atol)
+
+    x_poly = get_multidimensional_optimization_entries(D_poly; bandwidth, size_boundary,
+                                                       different_values)
+    @test all(isfinite, x_poly)
+    basis = [x -> one(x[1]), x -> x[1]]
+    nodes = SVector.(nodes)
+    boundary_indices = [1, N]
+    normals = [SVector(-1.0), SVector(1.0)]
+    moments = compute_moments_boundary(basis, nodes, normals)
+    D = multidimensional_function_space_operator(basis, nodes, boundary_indices, normals,
+                                                 moments, vol,
+                                                 GlaubitzIskeLampertÖffner2026Multidimensional();
+                                                 bandwidth, size_boundary, different_values,
+                                                 options, x0 = x_poly)
+    @test isapprox(Matrix(D[1]), Matrix(D_poly); atol)
+    @test isapprox(mass_matrix(D), mass_matrix(D_poly); atol)
+    x = get_multidimensional_optimization_entries(D; bandwidth, size_boundary,
+                                                  different_values)
+    @test all(isfinite, x)
+    @test isapprox(x, x_poly; atol)
+end
+
 @testitem "Reproducing MattssonNordström2004" setup=[Reproducing1D] begin
     source = MattssonNordström2004()
     for p in (2, 4)

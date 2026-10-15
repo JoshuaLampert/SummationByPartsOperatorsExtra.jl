@@ -122,10 +122,10 @@ function get_optimization_entries(D;
                                   different_values = false,
                                   sparsity_pattern = nothing)
     p = diag(mass_matrix(D))
-    # for sig = exp this is only equal to the values from the optimization up to a constant, but they give the same P
-    # if sig is the logistic function, inverting the normalized logistic function is harder, but this still works
-    # (eventhough it is not the exaxt inverse)
-    rho = invsig.(p)
+    # The optimization normalizes `sig.(rho)` to the volume of the domain, i.e., `P` only depends on
+    # `sig.(rho)` up to a positive factor. Since the logistic function `sig` maps to (0, 1), we
+    # normalize the weights to sum up to one before inverting it. This yields the same `P`.
+    rho = invsig.(p ./ sum(p))
     Matrix_D = if D isa AbstractMultidimensionalMatrixDerivativeOperator{1}
         Matrix(D[1])
     else
@@ -234,7 +234,8 @@ function get_multidimensional_optimization_entries(D::AbstractMultidimensionalMa
                                                    sparsity_patterns = nothing) where {Dim,
                                                                                        T}
     p = D.weights
-    rho = invsig.(p)
+    # See the comment in `get_optimization_entries`
+    rho = invsig.(p ./ sum(p))
     v = D.weights_boundary
     phi = invsig_b.(v)
     sigmas = T[]
