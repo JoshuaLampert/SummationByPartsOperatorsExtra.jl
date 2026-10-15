@@ -196,7 +196,7 @@ function SummationByPartsOperators.scale_by_mass_matrix!(u::AbstractVector,
             throw(DimensionMismatch("sizes of input vector and operator do not match"))
     end
 
-    @inbounds @simd for i in eachindex(u, weights(D))
+    @inbounds @simd for i in eachindex(u)
         u[i] = factor * u[i] * get_weight(D, i)
     end
 
@@ -212,7 +212,7 @@ function SummationByPartsOperators.scale_by_inverse_mass_matrix!(u::AbstractVect
             throw(DimensionMismatch("sizes of input vector and operator do not match"))
     end
 
-    @inbounds @simd for i in eachindex(u, weights(D))
+    @inbounds @simd for i in eachindex(u)
         u[i] = factor * u[i] / get_weight(D, i)
     end
 
@@ -269,14 +269,19 @@ end
 
 function mul!(dest::AbstractVector, Dop::SubcellOperator, u::AbstractVector,
               α = true, β = false)
-    D = Matrix(Dop)
-    N, _ = size(D)
+    N, _ = size(Dop)
     @boundscheck begin
         @argcheck N == length(u)
         @argcheck N == length(dest)
     end
 
-    return mul!(dest, D, u, α, β)
+    # For β = 0, we can apply D = P^{-1} (Q_L + Q_R) without forming the dense matrix D
+    if iszero(β)
+        mul!(dest, Dop.Q_left, u, α, false)
+        mul!(dest, Dop.Q_right, u, α, true)
+        return scale_by_inverse_mass_matrix!(dest, Dop)
+    end
+    return mul!(dest, Matrix(Dop), u, α, β)
 end
 
 function SummationByPartsOperators.lower_bandwidth(D::SubcellOperator)
