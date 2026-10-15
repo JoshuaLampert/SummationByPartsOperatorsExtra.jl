@@ -22,3 +22,7 @@ for human readability.
   that the operators were not exact (without any warning) if a sub-cell was longer than its number
   of nodes. The weights are now scaled by the length of the sub-cell. Note that this changes the
   meaning of the weight entries of a user-provided initial guess `x0`.
+- `get_optimization_entries` and `get_multidimensional_optimization_entries` returned infinite
+  entries for weights equal to one and threw a `DomainError` for weights larger than one. The
+  weights are now normalized before inverting the sigmoid function, which yields the same mass
+  matrix in the optimization.
