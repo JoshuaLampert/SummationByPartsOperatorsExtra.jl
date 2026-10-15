@@ -82,6 +82,29 @@ end
     end
 end
 
+@testitem "MFSBP basis function weights" setup=[MFSBP] begin
+    # On Legendre nodes, the basis functions 1, x, x^2 can be reproduced exactly. Hence, the
+    # weights of the basis functions must not change the resulting operator.
+    D_legendre = legendre_derivative_operator(-1.0, 1.0, 5)
+    x = grid(D_legendre)
+    nodes = SVector.(x)
+    basis_functions = [x -> one(x[1]), x -> x[1], x -> x[1]^2]
+    boundary_indices = [1, 5]
+    normals = [SVector(-1.0), SVector(1.0)]
+    moments = compute_moments_boundary(basis_functions, nodes, normals)
+    source = GlaubitzIskeLampertÖffner2026Multidimensional()
+    options = Optim.Options(g_tol = 1e-16, iterations = 50000)
+    for basis_functions_weights in ([1.0, 1.0, 1.0], [1.0, 1.0, 2.0], [3.0, 0.5, 2.0])
+        D = multidimensional_function_space_operator(basis_functions, nodes,
+                                                     boundary_indices, normals, moments,
+                                                     2.0, source;
+                                                     basis_functions_weights, options)
+        @test isapprox(D[1] * x, ones(length(x)); atol = 1e-12)
+        @test isapprox(D[1] * x .^ 2, 2 * x; atol = 1e-12)
+        @test isapprox(D.weights_boundary, ones(2); atol = 1e-12)
+    end
+end
+
 @testitem "MFSBP 2D" setup=[MFSBP] begin
     N_x, N_y = 5, 5
     N = N_x * N_y

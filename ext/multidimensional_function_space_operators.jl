@@ -70,6 +70,11 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
     V_xis = ntuple(j -> vandermonde_matrix([x -> basis_functions_gradients[i](x)[j]
                                             for i in 1:K], nodes) *
                         Diagonal(basis_functions_weights), d)
+    # The moments have to be weighted consistently with `V` since they are compared with `V' * B * V`
+    # in the optimization, i.e., the moment of the basis functions k and l is weighted with
+    # `basis_functions_weights[k] * basis_functions_weights[l]`
+    moments = map(moment -> Diagonal(basis_functions_weights) * moment *
+                            Diagonal(basis_functions_weights), moments)
 
     if isnothing(x0)
         # x0 = zeros(T, sum(Ls) + N + N_boundary)
