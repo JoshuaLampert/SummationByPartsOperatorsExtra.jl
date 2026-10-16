@@ -141,11 +141,14 @@ end
         2 * (N_x + N_y)] # upper right corner
     corners = (corners_x_dir, corners_y_dir)
 
+    # With the default `g_tol = 1e-14`, the exactness errors are of the order of the tolerances
+    # below and depend on the rounding of the platform. Converging further makes the tests robust.
+    options = Optim.Options(g_tol = 1e-16, iterations = 10000)
     D = multidimensional_function_space_operator(basis_functions, nodes,
                                                  boundary_indices_, normals_,
                                                  moments, vol, source;
                                                  sparsity_patterns,
-                                                 corners,)
+                                                 corners, options)
     for compact in (true, false)
         show(IOContext(devnull, :compact => compact), D)
     end
