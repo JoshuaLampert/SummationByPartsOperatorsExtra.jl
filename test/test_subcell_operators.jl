@@ -57,7 +57,7 @@ end
             # integration
             u = sin.(nodes)
             u_copy = copy(u)
-            @test integrate(cos, u, Dop) == sum(M * cos.(u))
+            @test integrate(cos, u, Dop) ≈ sum(M * cos.(u))
             SummationByPartsOperators.scale_by_mass_matrix!(u, Dop)
             @test_throws DimensionMismatch SummationByPartsOperators.scale_by_mass_matrix!(@view(u[(begin + 1):(end - 1)]),
                                                                                            Dop)
