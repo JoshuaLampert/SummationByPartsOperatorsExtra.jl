@@ -11,9 +11,11 @@ using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       GlaubitzNordströmÖffner2023,
                                       GlaubitzLampertWintersNordström2025,
                                       GlaubitzIskeLampertÖffner2026Multidimensional,
-                                      MatrixDerivativeOperator,
+                                      SourceOfCoefficients,
                                       MultidimensionalMatrixDerivativeOperator,
-                                      SubcellOperator
+                                      SubcellOperator,
+                                      invsig_b,
+                                      assert_first_derivative_order
 
 using PreallocationTools: DiffCache, get_tmp
 

@@ -178,8 +178,8 @@ end
         options = (; debug = debug)
         let basis_functions = [x -> x^i for i in 0:3]
             # Test errors
-            @test_throws AssertionError function_space_operator(basis_functions, nodes,
-                                                                source)
+            @test_throws ArgumentError function_space_operator(basis_functions, nodes,
+                                                               source)
 
             D_basic = function_space_operator(basis_functions, nodes,
                                               GlaubitzIskeLampertÖffner2026Basic())

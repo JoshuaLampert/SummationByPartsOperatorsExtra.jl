@@ -68,7 +68,8 @@ function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026EigenvaluePrope
     end
 end
 
-# This function is extended in the package extensions SummationByPartsOperatorsExtraOptimForwardDiffExt and SummationByPartsOperatorsExtraManifoldsManoptForwardDiffExt
+# The construction of the operator is implemented in the package extensions OptimForwardDiffExt and
+# ManifoldsManoptForwardDiffExt, which extend `construct_function_space_operator`
 """
     function_space_operator(basis_functions, nodes, source;
                             derivative_order = 1, accuracy_order = 0,
@@ -165,6 +166,24 @@ See also [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref), [
     This is an experimental feature and may change in future releases.
 """
 function function_space_operator end
+
+function function_space_operator(basis_functions, nodes::Vector{T},
+                                 source::SourceOfCoefficients;
+                                 derivative_order = 1, accuracy_order = 0,
+                                 kwargs...) where {T}
+    assert_first_derivative_order(derivative_order)
+    nodes = sort(nodes)
+    weights, D = construct_function_space_operator(basis_functions, nodes, source;
+                                                   kwargs...)
+    return MatrixDerivativeOperator(first(nodes), last(nodes), nodes, weights, D,
+                                    accuracy_order, source)
+end
+
+function assert_first_derivative_order(derivative_order)
+    if derivative_order != 1
+        throw(ArgumentError("Derivative order $derivative_order not implemented."))
+    end
+end
 
 # We need to define these functions here, because we dispatch on the type of `source` in the
 # different extensions

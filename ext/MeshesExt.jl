@@ -199,7 +199,9 @@ function SummationByPartsOperatorsExtra.multidimensional_function_space_operator
                                                                                             sampler_boundary)
     corners = find_corners(boundary_indices)
     if !isnothing(ellipsoid_lengths)
-        @assert length(ellipsoid_lengths)==d "ellipsoid_lengths has to be of length $(d)"
+        if length(ellipsoid_lengths) != d
+            throw(ArgumentError("`ellipsoid_lengths` has to be of length $(d)."))
+        end
         sparsity_patterns = ntuple(i -> neighborhood_sparsity_pattern(nodes,
                                                                       ellipsoid_lengths[i]),
                                    d)
