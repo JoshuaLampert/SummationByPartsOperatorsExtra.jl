@@ -27,6 +27,7 @@ end
 """
     multidimensional_function_space_operator(basis_functions, nodes, boundary_indices, normals, moments, vol, source;
                                              derivative_order = 1, accuracy_order = 0,
+                                             basis_functions_weights = ones(length(basis_functions)),
                                              bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
                                              different_values = true, sparsity_patterns = nothing,
                                              corners = nothing,
@@ -57,6 +58,14 @@ package to use these modes.
 The initial guess for the optimization problem can be passed with the keyword argument `x0`, which is optional.
 If `nothing` is passed, a default initial guess (zeros for the entries of the differentiation matrix and
 equal values for all the weights and boundary weights) is used.
+
+You can weight the basis functions with the keyword argument `basis_functions_weights`, which is a vector
+with one weight per basis function. The default is a vector of ones, which means that all basis functions
+are equally weighted. In contrast to [`function_space_operator`](@ref), the basis is not orthonormalized:
+the residual of the exactness condition for `basis_functions[k]` is weighted with `basis_functions_weights[k]`
+and the residual of the condition on the moments of `basis_functions[k]` and `basis_functions[l]` with
+`basis_functions_weights[k] * basis_functions_weights[l]`. This can be used to, e.g., enforce exactness for
+certain basis functions (high weights), but allow non-exactness for others only minimizing the error (low weights).
 
 If a boundary node is a corner, it can appear twice in `boundary_indices` with one normal for each of
 the two adjacent faces. In this case, `corners` is a tuple with one vector per direction containing the
