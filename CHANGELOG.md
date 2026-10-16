@@ -21,6 +21,9 @@ for human readability.
 - Invalid arguments to the operator constructors in the package extensions, e.g., missing
   `regularization_functions` for `GlaubitzIskeLampertÖffner2026Regularized`, now throw an
   `ArgumentError` instead of an `AssertionError` ([#123]).
+- `function_space_operator` and `subcell_operator` accept any `AbstractVector` of nodes, e.g.,
+  ranges or integer nodes, and `subcell_operator` accepts any real `x_M`. The collections passed
+  as keyword arguments to `subcell_operator` are not modified anymore, and tuples are supported ([#124]).
 
 #### Fixed
 
