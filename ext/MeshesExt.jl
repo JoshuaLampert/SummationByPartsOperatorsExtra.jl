@@ -7,13 +7,16 @@ using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       neighborhood_sparsity_pattern,
                                       compute_moments_boundary,
                                       find_corners,
-                                      integrate_boundary,
                                       SVector
 include("normals.jl")
 
 uto(p::Point) = Meshes.ustrip.(to(p))
-Meshes.Point(x::AbstractVector) = Point(Tuple(x))
-Meshes.PointSet(xs::Vector{<:AbstractVector}) = PointSet(Point.(xs))
+# Convert nodes given as vectors (e.g., `SVector`s) to a `PointSet` without extending the
+# constructors of Meshes.jl for types we do not own
+to_point(x::Point) = x
+to_point(x) = Point(Tuple(x))
+to_pointset(nodes::PointSet) = nodes
+to_pointset(nodes) = PointSet(to_point.(nodes))
 # This function samples in the whole geometry using `sampler` and uses
 # the boundary nodes as nodes on the boundary.
 function SummationByPartsOperatorsExtra.compute_nodes_normals(geometry, sampler, ::Nothing)
@@ -70,7 +73,7 @@ function find_corners!(boundary_indices, ring::Ring, nodes)
     if !allunique(boundary_indices)
         throw(ArgumentError("The boundary indices should be unique"))
     end
-    nodes = PointSet(nodes)
+    nodes = to_pointset(nodes)
     corners_x = Int[]
     corners_y = Int[]
     counter_boundary_nodes = 0
@@ -105,7 +108,7 @@ end
 # By reversing the ring, we can find the other segment.
 # I'm not 100% sure this works in any case, but for a `Box` it seems to work.
 function fix_corner_normals!(normals, corners, ring::Ring, nodes, boundary_indices)
-    nodes = PointSet(nodes)
+    nodes = to_pointset(nodes)
     (corners_x, corners_y) = corners
     for corner_x in corners_x
         normal_1 = outer_normal(ring, nodes[boundary_indices[corner_x]])
@@ -144,7 +147,7 @@ function push_to_boundary_indices!(boundary_indices, boundary_geometry, node, i)
 end
 
 function divide_into_inner_and_boundary(geometry, nodes)
-    nodes = PointSet(nodes)
+    nodes = to_pointset(nodes)
     boundary_geometry = boundary(geometry)
     nodes_inner = eltype(nodes)[]
     nodes_boundary = eltype(nodes)[]
@@ -160,13 +163,13 @@ function divide_into_inner_and_boundary(geometry, nodes)
     return PointSet(nodes_inner), PointSet(nodes_boundary), boundary_indices
 end
 
-# if geometry is already the boundary
-function SummationByPartsOperatorsExtra.integrate_boundary(func,
-                                                           geometry::Union{Ring, Sphere})
+# Integrate `func` over the boundary of `geometry`.
+# If `geometry` is already the boundary, we integrate over `geometry` itself.
+function integrate_over_boundary(func, geometry::Union{Ring, Sphere})
     return Meshes.ustrip(integral(func, geometry))
 end
-function SummationByPartsOperatorsExtra.integrate_boundary(func, geometry::Geometry)
-    return integrate_boundary(func, boundary(geometry))
+function integrate_over_boundary(func, geometry::Geometry)
+    return integrate_over_boundary(func, boundary(geometry))
 end
 
 function SummationByPartsOperatorsExtra.compute_moments_boundary(functions,
@@ -178,7 +181,7 @@ function SummationByPartsOperatorsExtra.compute_moments_boundary(functions,
             for l in 1:K
                 f = x -> functions[k](uto(x)) * functions[l](uto(x)) *
                          outer_normal(geometry, x)[i]
-                M[k, l] = integrate_boundary(f, geometry)
+                M[k, l] = integrate_over_boundary(f, geometry)
             end
         end
         return M

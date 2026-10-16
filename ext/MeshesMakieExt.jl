@@ -1,10 +1,17 @@
 module MeshesMakieExt
 
 using LinearAlgebra: Symmetric
-using Meshes: Meshes, PointSet, coords, viz, viz!
+using Meshes: Meshes, Point, PointSet, coords, viz, viz!
 import Makie
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra, grid,
                                       boundary_indices, restrict_boundary
+
+# Convert nodes given as vectors (e.g., `SVector`s) to a `PointSet` without extending the
+# constructors of Meshes.jl for types we do not own
+to_point(x::Point) = x
+to_point(x) = Point(Tuple(x))
+to_pointset(nodes::PointSet) = nodes
+to_pointset(nodes) = PointSet(to_point.(nodes))
 
 function SummationByPartsOperatorsExtra.plot_nodes(nodes_inner, nodes_boundary;
                                                    corners = nothing, kwargs...)
@@ -19,10 +26,10 @@ end
 function SummationByPartsOperatorsExtra.plot_nodes(nodes, boundary_indices::Vector{Int};
                                                    corner_indices = nothing,
                                                    kwargs...)
-    nodes_inner = PointSet(nodes[setdiff(1:end, boundary_indices)])
-    nodes_boundary = PointSet(nodes[boundary_indices])
+    nodes_inner = to_pointset(nodes[setdiff(1:end, boundary_indices)])
+    nodes_boundary = to_pointset(nodes[boundary_indices])
     if !isnothing(corner_indices)
-        corners = PointSet(nodes[boundary_indices[corner_indices]])
+        corners = to_pointset(nodes[boundary_indices[corner_indices]])
     else
         corners = nothing
     end
@@ -36,7 +43,7 @@ function SummationByPartsOperatorsExtra.plot_nodes(D; kwargs...)
 end
 
 function SummationByPartsOperatorsExtra.plot_normals(nodes_boundary, normals; kwargs...)
-    nodes_boundary = PointSet(nodes_boundary)
+    nodes_boundary = to_pointset(nodes_boundary)
     N_boundary = length(nodes_boundary)
     x_vals = [Meshes.ustrip(coords(nodes_boundary[i]).x) for i in 1:N_boundary]
     y_vals = [Meshes.ustrip(coords(nodes_boundary[i]).y) for i in 1:N_boundary]
@@ -57,7 +64,7 @@ end
 function SummationByPartsOperatorsExtra.plot_sparsity_pattern(sparsity_pattern, nodes,
                                                               node_index)
     sparsity_pattern = Symmetric(sparsity_pattern)
-    nodes = PointSet(nodes)
+    nodes = to_pointset(nodes)
     viz(nodes[node_index], color = :red, pointsize = 10)
     for i in eachindex(nodes)
         if i == node_index
