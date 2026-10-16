@@ -28,14 +28,15 @@ end
     multidimensional_function_space_operator(basis_functions, nodes, boundary_indices, normals, moments, vol, source;
                                              derivative_order = 1, accuracy_order = 0,
                                              bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
-                                             different_values = true, sparsity_pattern = nothing,
+                                             different_values = true, sparsity_patterns = nothing,
+                                             corners = nothing,
                                              opt_alg = Optim.BFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
                                              autodiff = ADTypes.AutoForwardDiff(), x0 = nothing, verbose = false)
 
 Construct a [`SummationByPartsOperators.MultidimensionalMatrixDerivativeOperator`](@extref) that represents a first-derivative operator in a function
 space spanned by the `basis_functions`, which is an iterable of functions. The operator is constructed on the
 scattered nodes `nodes`. They should be provided as an iterable of `SVector{Dim, T}`. The `boundary_indices`
-is a vector of indies that indicates, which nodes are on the boundary. `normals` is a vector of `SVector{Dim, T}`
+is a vector of indices that indicates, which nodes are on the boundary. `normals` is a vector of `SVector{Dim, T}`
 that contains the normal vectors of the boundary nodes. The `moments` are a `Tuple` of matrices that represent
 the moments of the basis functions in each direction. The total volume of the domain is given by `vol`.
 
@@ -57,23 +58,29 @@ The initial guess for the optimization problem can be passed with the keyword ar
 If `nothing` is passed, a default initial guess (zeros for the entries of the differentiation matrix and
 equal values for all the weights and boundary weights) is used.
 
+If a boundary node is a corner, it can appear twice in `boundary_indices` with one normal for each of
+the two adjacent faces. In this case, `corners` is a tuple with one vector per direction containing the
+positions in `boundary_indices` (not the indices of the nodes) of the corner entries that are ignored for
+the boundary mass matrix in this direction. The default `nothing` means that there are no corners.
+
 There are two alternative ways to enforce sparsity of the resulting operator. The first is by passing
-a matrix `sparsity_pattern` that is a matrix of zeros and ones, where the ones indicate the non-zero
-entries of the operator. This matrix should be symmetric or `UpperTriangular` and have zeros on the diagonal.
+a tuple `sparsity_patterns` with one matrix of zeros and ones for each direction, where the ones indicate the
+non-zero entries of the operator in this direction. These matrices should be symmetric or `UpperTriangular`
+and have zeros on the diagonal.
 
 The second way is to use a banded-block structure for the operator as is common, e.g., in finite difference methods.
 The keyword arguments `bandwidth` and `size_boundary` specify the bandwidth and the size of the
 boundary blocks of the differentiation matrices in each direction, where the default of `bandwidth`
 is set to `length(nodes) - 1`, i.e., dense operators (in this case `size_boundary` is ignored). To
 construct sparse operators, you can set the bandwidth to a smaller value, such that
-`2 * size_boundary + bandwidth < length(nodes)`, which is a requirement for the boundary blocks in
+`2 * size_boundary + bandwidth <= length(nodes)`, which is a requirement for the boundary blocks in
 the upper left and lower right of the resulting operator. If `different_values` is set to `true` all
 the entries in the upper right triangle of all matrices S (the skew symmetric parts of the
 differentiation matrices D) are different, which is generally meaningful for non-equidistant nodes and
 general bases, if it is `false` the entries of the stencil are repeated in the central part and the
 two boundary closures share their values (makes sense for uniformly distributed nodes and, e.g., a
 polynomial basis). The keyword argument `different_values` is ignored for dense operators.
-The parameters `bandwidth`, `size_boundary`, and `different_values` are only used if `sparsity_pattern`
+The parameters `bandwidth`, `size_boundary`, and `different_values` are only used if `sparsity_patterns`
 is not provided.
 
 The keyword argument `verbose` can be set to `true` to print information about the optimization process.
