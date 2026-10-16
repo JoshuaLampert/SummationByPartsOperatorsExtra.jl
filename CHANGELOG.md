@@ -41,3 +41,5 @@ for human readability.
 - Passing `sparsity_patterns` to `subcell_operator` always threw a `MethodError` ([#116]).
 - `function_space_operator` and `subcell_operator` sorted the passed vector of `nodes` in place.
   They now sort a copy and leave the passed vector unchanged ([#117]).
+- Passing `basis_functions_weights` different from one to `multidimensional_function_space_operator`
+  led to wrong operators since the moments were not weighted consistently with the basis functions ([#121]).
