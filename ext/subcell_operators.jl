@@ -1,12 +1,14 @@
 function SummationByPartsOperatorsExtra.subcell_operator(basis_functions,
-                                                         nodes::Vector{T},
-                                                         x_M::T,
+                                                         nodes::AbstractVector,
+                                                         x_M::Real,
                                                          source::SourceOfCoefficients;
                                                          derivative_order = 1,
                                                          accuracy_order = 0,
-                                                         kwargs...) where {T}
+                                                         kwargs...)
     assert_first_derivative_order(derivative_order)
-    nodes = sort(nodes)
+    # Work on a sorted floating point copy, such that, e.g., ranges or integer nodes are supported
+    nodes = sort!(collect(float.(nodes)))
+    x_M = convert(eltype(nodes), x_M)
     x_L = first(nodes)
     x_R = last(nodes)
     if x_M < x_L || x_M > x_R
@@ -73,6 +75,14 @@ function create_P_right(rho, N, vol)
     return P_R
 end
 
+default_if_zero(value, default) = iszero(value) ? default : value
+
+prepare_sparsity_pattern(::Nothing) = nothing
+function prepare_sparsity_pattern(sparsity_pattern)
+    assert_correct_sparsity_pattern(sparsity_pattern)
+    return UpperTriangular(sparsity_pattern)
+end
+
 function construct_subcell_operator(basis_functions, nodes, x_M,
                                     ::GlaubitzLampertWintersNordström2025;
                                     bandwidths = [0, 0],
@@ -94,32 +104,17 @@ function construct_subcell_operator(basis_functions, nodes, x_M,
     # If x_M is in the nodes, we just put it in the left sub-cell, but not in the right one
     N_R = N - N_L
 
-    if bandwidths[1] == 0
-        bandwidths[1] = N_L - 1
-    end
-    if bandwidths[2] == 0
-        bandwidths[2] = N_R - 1
-    end
-    if size_boundaries[1] == 0
-        size_boundaries[1] = 2 * bandwidths[1]
-    end
-    if size_boundaries[2] == 0
-        size_boundaries[2] = 2 * bandwidths[2]
-    end
+    # Replace the default values (zeros) by local values. We do not modify the passed collections.
+    bandwidths = (default_if_zero(bandwidths[1], N_L - 1),
+                  default_if_zero(bandwidths[2], N_R - 1))
+    size_boundaries = (default_if_zero(size_boundaries[1], 2 * bandwidths[1]),
+                       default_if_zero(size_boundaries[2], 2 * bandwidths[2]))
     assert_correct_bandwidth(N_L, bandwidths[1], size_boundaries[1])
     assert_correct_bandwidth(N_R, bandwidths[2], size_boundaries[2])
-    for (i, sparsity_pattern) in enumerate(sparsity_patterns)
-        if !isnothing(sparsity_pattern)
-            assert_correct_sparsity_pattern(sparsity_pattern)
-            sparsity_patterns[i] = UpperTriangular(sparsity_patterns[i])
-        end
-    end
-    if M_local_approximation[1] == 0
-        M_local_approximation[1] = N_L
-    end
-    if M_local_approximation[2] == 0
-        M_local_approximation[2] = N_R
-    end
+    sparsity_patterns = (prepare_sparsity_pattern(sparsity_patterns[1]),
+                         prepare_sparsity_pattern(sparsity_patterns[2]))
+    M_local_approximation = (default_if_zero(M_local_approximation[1], N_L),
+                             default_if_zero(M_local_approximation[2], N_R))
     L_L = get_nsigma(N_L; bandwidth = bandwidths[1], size_boundary = size_boundaries[1],
                      different_values = different_values[1],
                      sparsity_pattern = sparsity_patterns[1])

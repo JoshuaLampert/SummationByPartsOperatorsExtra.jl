@@ -284,3 +284,39 @@ end
         end
     end
 end
+
+@testitem "Arguments of operator constructors" begin
+    import Optim, ForwardDiff
+    basis_functions = [one, identity]
+    nodes = collect(range(0.0, 1.0, length = 8))
+    source = GlaubitzNordströmÖffner2023()
+    D = function_space_operator(basis_functions, nodes, source)
+    # Ranges and integer nodes
+    D_range = function_space_operator(basis_functions, range(0.0, 1.0, length = 8), source)
+    @test Matrix(D_range) == Matrix(D)
+    D_int = function_space_operator(basis_functions, 0:7, source)
+    @test eltype(D_int) == Float64
+    @test D_int * grid(D_int) ≈ ones(8)
+
+    source = GlaubitzLampertWintersNordström2025()
+    Dop = subcell_operator(basis_functions, nodes, 0.4, source)
+    Dop_range = subcell_operator(basis_functions, range(0.0, 1.0, length = 8), 2 // 5,
+                                 source)
+    @test Matrix(Dop_range) == Matrix(Dop)
+    Dop_int = subcell_operator(basis_functions, 0:7, 3.5, source)
+    @test Dop_int * grid(Dop_int) ≈ ones(8)
+
+    # Passed collections of keyword arguments are not modified and tuples are supported
+    bandwidths = [0, 0]
+    size_boundaries = [0, 0]
+    M_local_approximation = [0, 0]
+    Dop_vectors = subcell_operator(basis_functions, nodes, 0.4, source; bandwidths,
+                                   size_boundaries, M_local_approximation)
+    @test bandwidths == size_boundaries == M_local_approximation == [0, 0]
+    Dop_tuples = subcell_operator(basis_functions, nodes, 0.4, source;
+                                  bandwidths = (0, 0), size_boundaries = (0, 0),
+                                  M_local_approximation = (0, 0),
+                                  sparsity_patterns = (nothing, nothing),
+                                  different_values = (true, true))
+    @test Matrix(Dop_vectors) == Matrix(Dop_tuples) == Matrix(Dop)
+end
