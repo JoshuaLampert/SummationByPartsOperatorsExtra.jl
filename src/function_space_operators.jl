@@ -167,12 +167,13 @@ See also [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref), [
 """
 function function_space_operator end
 
-function function_space_operator(basis_functions, nodes::Vector{T},
+function function_space_operator(basis_functions, nodes::AbstractVector,
                                  source::SourceOfCoefficients;
                                  derivative_order = 1, accuracy_order = 0,
-                                 kwargs...) where {T}
+                                 kwargs...)
     assert_first_derivative_order(derivative_order)
-    nodes = sort(nodes)
+    # Work on a sorted floating point copy, such that, e.g., ranges or integer nodes are supported
+    nodes = sort!(collect(float.(nodes)))
     weights, D = construct_function_space_operator(basis_functions, nodes, source;
                                                    kwargs...)
     return MatrixDerivativeOperator(first(nodes), last(nodes), nodes, weights, D,
