@@ -42,10 +42,26 @@ function get_nsigma(N; bandwidth = N - 1,
     end
 end
 
-# This requires sig(x) = 1 / (1 + exp(-x))
+# Parameterization of the weights of the mass matrix and the boundary mass matrix in the
+# optimization-based construction procedures. `invsig` and `invsig_b` are the inverse functions
+# of `sig` and `sig_b`, respectively.
+
+# sig(x) = x
+# invsig(p) = p
+
+sig(x) = 1 / (1 + exp(-x))
 invsig(p) = log(p / (1 - p))
-# This requires sig_b(x) = x
+
+# leading to softmax
+# sig(x) = exp(x)
+# invsig(p) = log(p)
+
+# For b, no sigmoid function seems to perform better
+sig_b(x) = x
 invsig_b(p) = p
+
+# sig_b(x) = 1 / (1 + exp(-x))
+# invsig_b(p) = log(p / (1 - p))
 
 function reconstruct_sparsity_pattern!(sigma, S, sparsity_pattern)
     N = size(S, 1)

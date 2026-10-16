@@ -11,7 +11,9 @@ end
 function outer_normal(ring::Ring, point)
     # When sampling points on the boundary, they might not be exactly on the boundary
     with(Meshes.ATOL64 => 1e-8) do
-        @assert point in ring "point has to be on the boundary"
+        if !(point in ring)
+            throw(ArgumentError("The point has to be on the boundary."))
+        end
         segs = segments(ring)
         for seg in segs
             if point in seg
@@ -26,7 +28,9 @@ end
 # and the outer normal is the normal pointing outwards of the polygon.
 # Otherwise one might need to take the negative of the normal.
 function outer_normal(segment::Segment, point)
-    @assert point in segment "point has to be on the boundary"
+    if !(point in segment)
+        throw(ArgumentError("The point has to be on the boundary."))
+    end
     x1, x2 = extrema(segment)
     d = x2 - x1
     n = Vec(d[2], -d[1])

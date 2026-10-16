@@ -7,7 +7,7 @@ function SummationByPartsOperatorsExtra.multidimensional_function_space_operator
                                                                                  source::SourceOfCoefficients;
                                                                                  derivative_order = 1,
                                                                                  accuracy_order = 0,
-                                                                                 kwargs...) where {SourceOfCoefficients}
+                                                                                 kwargs...)
     assert_first_derivative_order(derivative_order)
     weights, weights_boundary, Ds = construct_multidimensional_function_space_operator(basis_functions,
                                                                                        nodes,
@@ -44,7 +44,9 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
     N = length(nodes)
     N_boundary = length(boundary_indices)
 
-    @assert length(normals)==N_boundary "You must provide normals for all boundary nodes (length(normals) = $(length(normals)), N_boundary = $N_boundary)."
+    if length(normals) != N_boundary
+        throw(ArgumentError("You must provide normals for all boundary nodes (length(normals) = $(length(normals)), N_boundary = $N_boundary)."))
+    end
     assert_correct_bandwidth(N, bandwidth, size_boundary)
     if !isnothing(sparsity_patterns)
         for sparsity_pattern in sparsity_patterns

@@ -1,4 +1,4 @@
-using SummationByPartsOperatorsExtra: get_nsigma
+using SummationByPartsOperatorsExtra: get_nsigma, sig, invsig, sig_b
 using LinearAlgebra: Diagonal, UpperTriangular, I, diag, issymmetric, qr
 using SparseArrays: spzeros
 
@@ -147,23 +147,6 @@ function set_S_sparsity_pattern!(S, sigma, N, sparsity_pattern)
     end
 end
 
-# sig(x) = x
-# invsig(p) = p
-
-sig(x) = 1 / (1 + exp(-x))
-invsig(p) = log(p / (1 - p))
-
-# leading to softmax
-# sig(x) = exp(x)
-# invsig(p) = log(p)
-
-# For b, no sigmoid function seems to perform better
-sig_b(x) = x
-invsig_b(p) = p
-
-# sig_b(x) = 1 / (1 + exp(-x))
-# invsig_b(p) = log(p / (1 - p))
-
 function create_P(rho, vol)
     P = Diagonal(sig.(rho))
     P *= vol / sum(P)
@@ -232,12 +215,6 @@ function orthonormal_vandermonde_matrices(basis_functions, basis_functions_deriv
         end
     end
     return Q[1:N, :], Q[(N + 1):(2 * N), :]
-end
-
-function assert_first_derivative_order(derivative_order)
-    if derivative_order != 1
-        throw(ArgumentError("Derivative order $derivative_order not implemented."))
-    end
 end
 
 function assert_correct_bandwidth(N, bandwidth, size_boundary)

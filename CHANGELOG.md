@@ -18,6 +18,9 @@ for human readability.
   40 nodes ([#118]).
 - The right-hand side of `MultidimensionalLinearAdvectionNonperiodicSemidiscretization` does not
   allocate temporary vectors anymore and is about 7 times faster for 400 nodes ([#119]).
+- Invalid arguments to the operator constructors in the package extensions, e.g., missing
+  `regularization_functions` for `GlaubitzIskeLampertÖffner2026Regularized`, now throw an
+  `ArgumentError` instead of an `AssertionError` ([#123]).
 
 #### Fixed
 

@@ -1,4 +1,3 @@
-include("function_space_operators.jl")
 
 default_opt_alg(::GlaubitzNordströmÖffner2023) = BFGS()
 function default_options(::GlaubitzNordströmÖffner2023, verbose)

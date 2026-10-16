@@ -14,11 +14,9 @@ import SummationByPartsOperatorsExtra: construct_function_space_operator,
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       GlaubitzIskeLampertÖffner2026Basic,
                                       GlaubitzIskeLampertÖffner2026Regularized,
-                                      GlaubitzIskeLampertÖffner2026EigenvalueProperty,
-                                      MatrixDerivativeOperator
+                                      GlaubitzIskeLampertÖffner2026EigenvalueProperty
 
 include("utils.jl")
-include("function_space_operators.jl")
 
 function default_opt_alg(::GlaubitzIskeLampertÖffner2026Basic)
     return quasi_Newton
@@ -113,8 +111,9 @@ function construct_function_space_operator(basis_functions, nodes,
         throw(ArgumentError("Passing a sparsity pattern is currently not supported."))
     end
     assert_correct_length_basis_functions_weights(basis_functions_weights, basis_functions)
-    if source isa GlaubitzIskeLampertÖffner2026Regularized
-        @assert !isnothing(regularization_functions) "regularization_functions must be provided for GlaubitzIskeLampertÖffner2026Regularized"
+    if source isa GlaubitzIskeLampertÖffner2026Regularized &&
+       isnothing(regularization_functions)
+        throw(ArgumentError("`regularization_functions` must be provided for GlaubitzIskeLampertÖffner2026Regularized."))
     end
     L = get_nsigma(N; bandwidth, size_boundary, different_values, sparsity_pattern)
 
@@ -204,7 +203,6 @@ function get_objective_function(::GlaubitzIskeLampertÖffner2026Regularized,
 end
 function get_objective_function(::GlaubitzIskeLampertÖffner2026EigenvalueProperty,
                                 param, autodiff)
-    N, N = size(param.V)
     f(M, x) = optimization_function_function_space_operator(M, x, param)
     grad_f(M, x) = optimization_gradient_function_space_operator(M, f, x, autodiff)
     hess_f(M, p, Xp) = ApproxHessianBFGS(M, p, grad_f)(M, p, Xp)

@@ -4,9 +4,7 @@ function SummationByPartsOperatorsExtra.subcell_operator(basis_functions,
                                                          source::SourceOfCoefficients;
                                                          derivative_order = 1,
                                                          accuracy_order = 0,
-                                                         kwargs...) where {T,
-                                                                           SourceOfCoefficients
-                                                                           }
+                                                         kwargs...) where {T}
     assert_first_derivative_order(derivative_order)
     nodes = sort(nodes)
     x_L = first(nodes)
