@@ -525,16 +525,6 @@ end
             source = GlaubitzIskeLampertÖffner2026Multidimensional()
             sparsity_patterns = get_sparsity_pattern(D_t)
 
-            corners_x_dir = [N_y + 1, # lower left corner
-                N_x + N_y, # lower right corner
-                N_x + N_y + 1, # upper left corner
-                2 * N_x + N_y] # upper right corner
-            corners_y_dir = [1, # lower left corner
-                N_y,  # upper left corner
-                2 * N_x + N_y + 1, # lower right corner
-                2 * (N_x + N_y)] # upper right corner
-            corners = (corners_x_dir, corners_y_dir)
-
             D = multidimensional_function_space_operator(basis,
                                                          nodes,
                                                          boundary_indices_,
@@ -543,18 +533,16 @@ end
                                                          vol,
                                                          source;
                                                          sparsity_patterns,
-                                                         corners,
                                                          verbose,
                                                          opt_kwargs...)
 
-            D_t_MFSBP = TensorProductOperator(D, N_x, N_y)
             atol = p == 2 ? 1e-11 : 1e1 # almost equal (some tests also pass with lower `atol`)
-            @test isapprox(Matrix(D_t_MFSBP[1]), Matrix(D_t[1]); atol) # equal
-            @test isapprox(Matrix(D_t_MFSBP[2]), Matrix(D_t[2]); atol) # equal
-            @test isapprox(mass_matrix(D_t_MFSBP), mass_matrix(D_t); atol) # equal
-            @test isapprox(mass_matrix_boundary(D_t_MFSBP, 1),
+            @test isapprox(Matrix(D[1]), Matrix(D_t[1]); atol) # equal
+            @test isapprox(Matrix(D[2]), Matrix(D_t[2]); atol) # equal
+            @test isapprox(mass_matrix(D), mass_matrix(D_t); atol) # equal
+            @test isapprox(mass_matrix_boundary(D, 1),
                            mass_matrix_boundary(D_t, 1); atol) # equal
-            @test isapprox(mass_matrix_boundary(D_t_MFSBP, 2),
+            @test isapprox(mass_matrix_boundary(D, 2),
                            mass_matrix_boundary(D_t, 2); atol) # equal
 
             # This needs only 1 (or 2) iteration(s)
@@ -568,21 +556,19 @@ end
                                                             vol,
                                                             source;
                                                             sparsity_patterns,
-                                                            corners,
                                                             verbose,
                                                             opt_kwargs...,
                                                             x0 = x_tensor)
 
-            D_t_x0 = TensorProductOperator(D_x0, N_x, N_y)
             atol = 1e-13
-            @test isapprox(Matrix(D_t_x0[1]), Matrix(D_t[1]); atol) # equal
-            @test isapprox(Matrix(D_t_x0[2]), Matrix(D_t[2]); atol) # equal
-            @test isapprox(mass_matrix(D_t_x0), mass_matrix(D_t); atol) # equal
-            @test isapprox(mass_matrix_boundary(D_t_x0, 1),
+            @test isapprox(Matrix(D_x0[1]), Matrix(D_t[1]); atol) # equal
+            @test isapprox(Matrix(D_x0[2]), Matrix(D_t[2]); atol) # equal
+            @test isapprox(mass_matrix(D_x0), mass_matrix(D_t); atol) # equal
+            @test isapprox(mass_matrix_boundary(D_x0, 1),
                            mass_matrix_boundary(D_t, 1); atol) # equal
-            @test isapprox(mass_matrix_boundary(D_t_x0, 2),
+            @test isapprox(mass_matrix_boundary(D_x0, 2),
                            mass_matrix_boundary(D_t, 2); atol) # equal
-            x = get_multidimensional_optimization_entries(D_t_x0; sparsity_patterns)
+            x = get_multidimensional_optimization_entries(D_x0; sparsity_patterns)
             @test isapprox(x, x_tensor; atol)
         end
     end

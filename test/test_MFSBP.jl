@@ -131,24 +131,13 @@ end
     source = GlaubitzIskeLampertÖffner2026Multidimensional()
     sparsity_patterns = get_sparsity_pattern(D_t)
 
-    corners_x_dir = [N_y + 1, # lower left corner
-        N_x + N_y, # lower right corner
-        N_x + N_y + 1, # upper left corner
-        2 * N_x + N_y] # upper right corner
-    corners_y_dir = [1, # lower left corner
-        N_y,  # upper left corner
-        2 * N_x + N_y + 1, # lower right corner
-        2 * (N_x + N_y)] # upper right corner
-    corners = (corners_x_dir, corners_y_dir)
-
     # With the default `g_tol = 1e-14`, the exactness errors are of the order of the tolerances
     # below and depend on the rounding of the platform. Converging further makes the tests robust.
     options = Optim.Options(g_tol = 1e-16, iterations = 10000)
     D = multidimensional_function_space_operator(basis_functions, nodes,
                                                  boundary_indices_, normals_,
                                                  moments, vol, source;
-                                                 sparsity_patterns,
-                                                 corners, options)
+                                                 sparsity_patterns, options)
     for compact in (true, false)
         show(IOContext(devnull, :compact => compact), D)
     end
@@ -163,9 +152,20 @@ end
     @test all(isapprox.(D[1] * y, zeros(N); atol = 1e-13))
     @test D[2] * y ≈ ones(N)
     M = mass_matrix(D)
-    # Wrap operator in TensorProductOperator, such that we can call `mass_matrix_boundary`
-    # because we know the corners
-    D_t_FSBP = TensorProductOperator(D, N_x, N_y)
-    @test M * D[1] + D[1]' * M ≈ mass_matrix_boundary(D_t_FSBP, 1)
-    @test M * D[2] + D[2]' * M ≈ mass_matrix_boundary(D_t_FSBP, 2)
+    # The corners appear twice in `boundary_indices`, and the boundary matrices sum both entries
+    @test M * D[1] + D[1]' * M ≈ mass_matrix_boundary(D, 1)
+    @test M * D[2] + D[2]' * M ≈ mass_matrix_boundary(D, 2)
+
+    # The keyword argument `corners` is deprecated and ignored
+    corners = SummationByPartsOperatorsExtra.find_corners(boundary_indices_)
+    D_corners = @test_deprecated multidimensional_function_space_operator(basis_functions,
+                                                                          nodes,
+                                                                          boundary_indices_,
+                                                                          normals_,
+                                                                          moments, vol,
+                                                                          source;
+                                                                          sparsity_patterns,
+                                                                          corners, options)
+    @test mass_matrix_boundary(D_corners, 1) == mass_matrix_boundary(D, 1)
+    @test mass_matrix_boundary(D_corners, 2) == mass_matrix_boundary(D, 2)
 end

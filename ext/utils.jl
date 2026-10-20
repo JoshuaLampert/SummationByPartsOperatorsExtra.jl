@@ -153,24 +153,21 @@ function create_P(rho, vol)
     return P
 end
 
-function create_B(N, phi, normals, boundary_indices, dim;
-                  corners = ntuple(_ -> eltype(phi)[], dim))
+function create_B(N, phi, normals, boundary_indices, dim)
     b = zeros(eltype(phi), N)
     B = Diagonal(b)
-    set_B!(B, phi, normals, boundary_indices, dim; corners)
+    set_B!(B, phi, normals, boundary_indices, dim)
     return B
 end
 
-function set_B!(B, phi, normals, boundary_indices, dim;
-                corners = ntuple(_ -> eltype(phi)[], dim))
+function set_B!(B, phi, normals, boundary_indices, dim)
     fill!(B, zero(eltype(B)))
     for j in eachindex(boundary_indices)
         k = boundary_indices[j]
-        # If we have corners, we store multiple weights (boundary_indices is not unique)
-        # and we need to make sure to not overwrite the corner weights
-        if !(j in corners[dim])
-            B[k, k] = sig_b(phi[j]) * normals[j][dim]
-        end
+        # A corner appears several times in `boundary_indices`, once for each adjacent face
+        # with the normal of this face. The boundary matrix contains the sum of these
+        # contributions, consistent with `mass_matrix_boundary` in SummationByPartsOperators.jl.
+        B[k, k] += sig_b(phi[j]) * normals[j][dim]
     end
 end
 
