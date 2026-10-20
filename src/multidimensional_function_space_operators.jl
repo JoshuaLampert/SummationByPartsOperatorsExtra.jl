@@ -71,7 +71,7 @@ adjacent face, with the normal of this face in the corresponding entry of `norma
 mass matrices sum the contributions of all entries of a node, i.e., the diagonal entry of
 ``B_\\xi`` belonging to a corner shared by two faces is ``v_k \\xi\\cdot n_k + v_l \\xi\\cdot n_l``,
 where ``v_k`` and ``v_l`` are the boundary weights of the two entries. This is consistent with
-[`SummationByPartsOperators.mass_matrix_boundary`](@extref). The keyword argument `corners` is
+`mass_matrix_boundary` from SummationByPartsOperators.jl. The keyword argument `corners` is
 deprecated and ignored.
 
 There are two alternative ways to enforce sparsity of the resulting operator. The first is by passing
