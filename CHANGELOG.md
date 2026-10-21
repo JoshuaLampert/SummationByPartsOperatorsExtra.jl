@@ -24,6 +24,11 @@ for human readability.
 - `function_space_operator` and `subcell_operator` accept any `AbstractVector` of nodes, e.g.,
   ranges or integer nodes, and `subcell_operator` accepts any real `x_M`. The collections passed
   as keyword arguments to `subcell_operator` are not modified anymore, and tuples are supported ([#124]).
+- `mass_matrix_boundary` is not extended for `MultidimensionalMatrixDerivativeOperator`s (type
+  piracy) anymore. SummationByPartsOperators.jl v0.5.103 sums the contributions of all entries of a
+  node in `boundary_indices`, e.g., of the two faces adjacent to a corner, which does not depend on
+  the order of these entries. `multidimensional_function_space_operator` uses the same convention,
+  so the keyword argument `corners` is deprecated and ignored ([#127]).
 
 #### Fixed
 
@@ -49,3 +54,6 @@ for human readability.
   They now sort a copy and leave the passed vector unchanged ([#117]).
 - Passing `basis_functions_weights` different from one to `multidimensional_function_space_operator`
   led to wrong operators since the moments were not weighted consistently with the basis functions ([#121]).
+- `multidimensional_function_space_operator` constructed operators that did not satisfy the SBP
+  property with the boundary matrices from `mass_matrix_boundary` if a corner appeared twice in
+  `boundary_indices` and `corners` was not passed or did not match the order of the normals ([#127]).

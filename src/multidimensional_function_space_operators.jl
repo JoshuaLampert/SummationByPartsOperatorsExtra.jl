@@ -30,7 +30,6 @@ end
                                              basis_functions_weights = ones(length(basis_functions)),
                                              bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
                                              different_values = true, sparsity_patterns = nothing,
-                                             corners = nothing,
                                              opt_alg = Optim.BFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
                                              autodiff = ADTypes.AutoForwardDiff(), x0 = nothing, verbose = false)
 
@@ -67,10 +66,13 @@ and the residual of the condition on the moments of `basis_functions[k]` and `ba
 `basis_functions_weights[k] * basis_functions_weights[l]`. This can be used to, e.g., enforce exactness for
 certain basis functions (high weights), but allow non-exactness for others only minimizing the error (low weights).
 
-If a boundary node is a corner, it can appear twice in `boundary_indices` with one normal for each of
-the two adjacent faces. In this case, `corners` is a tuple with one vector per direction containing the
-positions in `boundary_indices` (not the indices of the nodes) of the corner entries that are ignored for
-the boundary mass matrix in this direction. The default `nothing` means that there are no corners.
+If a boundary node is a corner, it can appear several times in `boundary_indices`, once for each
+adjacent face, with the normal of this face in the corresponding entry of `normals`. The boundary
+mass matrices sum the contributions of all entries of a node, i.e., the diagonal entry of
+``B_\\xi`` belonging to a corner shared by two faces is ``v_k \\xi\\cdot n_k + v_l \\xi\\cdot n_l``,
+where ``v_k`` and ``v_l`` are the boundary weights of the two entries. This is consistent with
+`mass_matrix_boundary` from SummationByPartsOperators.jl. The keyword argument `corners` is
+deprecated and ignored.
 
 There are two alternative ways to enforce sparsity of the resulting operator. The first is by passing
 a tuple `sparsity_patterns` with one matrix of zeros and ones for each direction, where the ones indicate the

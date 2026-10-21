@@ -11,13 +11,11 @@
                                 # Since package extensions cannot have additional dependencies,
                                 # we need to load them in the main module.
                                 ignore = [:PreallocationTools, :ScopedValues]),
-                  # We use type piracy for `mass_matrix_boundary`. This probably doesn't want to live
-                  # in SummationByPartsOperators.jl since it has some assumptions. The same holds for
-                  # `interpolation_matrix(!)` for general derivative operators.
+                  # We use type piracy for `interpolation_matrix(!)` for general derivative operators.
+                  # This probably doesn't want to live in PolynomialBases.jl since it has some assumptions.
                   piracies = (;
                               treat_as_own = [PolynomialBases.interpolation_matrix,
-                                  PolynomialBases.interpolation_matrix!,
-                                  SummationByPartsOperators.mass_matrix_boundary]))
+                                  PolynomialBases.interpolation_matrix!]))
 
     # Check the package extensions for type piracy. Aqua.jl treats only names defined in an
     # extension itself as own, but methods for functions and types of this package are fine.

@@ -200,7 +200,6 @@ function SummationByPartsOperatorsExtra.multidimensional_function_space_operator
     nodes, normals, boundary_indices = SummationByPartsOperatorsExtra.compute_nodes_normals(geometry,
                                                                                             sampler,
                                                                                             sampler_boundary)
-    corners = find_corners(boundary_indices)
     if !isnothing(ellipsoid_lengths)
         if length(ellipsoid_lengths) != d
             throw(ArgumentError("`ellipsoid_lengths` has to be of length $(d)."))
@@ -216,7 +215,7 @@ function SummationByPartsOperatorsExtra.multidimensional_function_space_operator
     vol = Meshes.ustrip(measure(geometry))
     D = multidimensional_function_space_operator(basis_functions, nodes,
                                                  boundary_indices, normals, moments, vol,
-                                                 source; corners, sparsity_patterns,
+                                                 source; sparsity_patterns,
                                                  kwargs...)
     return D
 end

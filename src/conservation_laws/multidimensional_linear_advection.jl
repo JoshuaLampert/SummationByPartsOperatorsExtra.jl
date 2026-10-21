@@ -80,13 +80,7 @@ end
 # `bc::BC` forces specialization on the function `bc`, which is only passed through here
 function set_bc!(tmp1, u, bc::BC, D, inflow_indices, t) where {BC}
     copyto!(tmp1, u)
-    # Function barrier since `grid(D)` is not type stable for all operators, e.g., for a
-    # `TensorProductOperator`
-    set_inflow_values!(tmp1, bc, grid(D), inflow_indices, t)
-    return nothing
-end
-
-function set_inflow_values!(tmp1, bc, nodes, inflow_indices, t)
+    nodes = grid(D)
     for j in inflow_indices
         tmp1[j] = bc(nodes[j], t)
     end

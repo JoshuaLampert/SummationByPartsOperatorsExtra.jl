@@ -57,8 +57,11 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
         d = length(first(nodes))
         sparsity_patterns = ntuple(_ -> nothing, d)
     end
-    if isnothing(corners)
-        corners = ntuple(_ -> T[], d)
+    if !isnothing(corners)
+        Base.depwarn("The keyword argument `corners` is deprecated and ignored. The boundary " *
+                     "matrices sum the contributions of all entries of a node in " *
+                     "`boundary_indices`.",
+                     :multidimensional_function_space_operator)
     end
     assert_correct_length_basis_functions_weights(basis_functions_weights, basis_functions)
     Ls = ntuple(i -> get_nsigma(N; bandwidth, size_boundary, different_values,
@@ -103,7 +106,7 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
     C_cache = DiffCache(copy(M), chunksize)
     p = (; Ls, vol, normals, moments, boundary_indices, V, V_xis,
          S_cache, SV_cache, PV_xi_cache, B_cache, BV_cache, A_cache, VTBV_cache, C_cache,
-         bandwidth, size_boundary, different_values, sparsity_patterns, corners)
+         bandwidth, size_boundary, different_values, sparsity_patterns)
 
     f(x) = optimization_function_multidimensional_function_space_operator(x, p)
     result = optimize(f, x0, opt_alg, options; autodiff)
@@ -119,7 +122,7 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
         sigma = sigmas[i]
         S = SummationByPartsOperatorsExtra.create_S(sigma, N, bandwidth, size_boundary,
                                                     different_values, sparsity_patterns[i])
-        B = create_B(N, weights_boundary, normals, boundary_indices, i; corners)
+        B = create_B(N, weights_boundary, normals, boundary_indices, i)
         Q = S + B / 2
         D = inv(P) * Q
         return D
@@ -131,7 +134,7 @@ end
 @views function optimization_function_multidimensional_function_space_operator(x, p)
     (; Ls, vol, normals, moments, boundary_indices, V, V_xis,
     S_cache, SV_cache, PV_xi_cache, B_cache, BV_cache, A_cache, VTBV_cache, C_cache,
-    bandwidth, size_boundary, different_values, sparsity_patterns, corners) = p
+    bandwidth, size_boundary, different_values, sparsity_patterns) = p
     d = length(V_xis)
     N = size(V, 1)
     N_boundary = length(normals)
@@ -157,7 +160,7 @@ end
                sparsity_patterns[i])
         mul!(SV, S, V)
         mul!(PV_xi, P, V_xi)
-        set_B!(B, phi, normals, boundary_indices, i; corners)
+        set_B!(B, phi, normals, boundary_indices, i)
         mul!(BV, B, V)
         @. A = SV - PV_xi + 0.5 * BV
         mul!(VTBV, V', BV)
