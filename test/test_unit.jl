@@ -138,14 +138,8 @@ end
         u_bc[inflow_indices] .= g.(x[inflow_indices], 0.3)
         @test tmp1 == u_bc
         @test du ≈ -A * u + B * (u - u_bc)
+        @test allocations_rhs(semi, du, u, 0.3) == 0
     end
-    # `grid(::TensorProductOperator)` is not type stable, which costs one dynamic dispatch.
-    # Therefore, we check the allocations with the wrapped
-    # `MultidimensionalMatrixDerivativeOperator`.
-    semi = MultidimensionalLinearAdvectionNonperiodicSemidiscretization(D_2.D_multi,
-                                                                        (1.0, -0.5), g)
-    u = ones(length(grid(D_2)))
-    @test allocations_rhs(semi, similar(u), u, 0.3) == 0
 end
 
 @testitem "MultidimensionalLinearAdvectionNonperiodicSemidiscretization energy stability" begin
