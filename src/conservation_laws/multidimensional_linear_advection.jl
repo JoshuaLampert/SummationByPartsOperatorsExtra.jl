@@ -13,6 +13,14 @@ mass matrices of `D`. For a boundary node with a single normal `n`, `τ_j < 0` i
 inflow condition `a ⋅ n < 0`. At a corner, `τ_j` combines the contributions of both adjacent
 faces, and deciding by the sign of `τ_j` rather than by one of the normals is what keeps the
 semidiscretization energy stable when one face is an inflow and the other an outflow boundary.
+
+For any diagonal boundary mass matrices, this gives the energy estimate
+`d/dt ‖u‖²_P ≤ Σ_{τ_j < 0} |τ_j| bc(x_j, t)²`. If the boundary mass matrices are mimetic, i.e., the
+diagonal entry of `B_i` belonging to a node is the sum of `v_k * n_k[i]` over the entries `k` of this
+node in `boundary_indices` with boundary weights `v_k ≥ 0` and outward normals `n_k`, every node with
+`τ_j < 0` lies on (the closure of) the inflow boundary. For other boundary mass matrices, `τ_j < 0` can
+also hold at nodes on the outflow boundary, where `bc` is then evaluated as well. In this case, `bc`
+has to be defined on the whole boundary, e.g., as the exact solution.
 """
 @auto_hash_equals struct MultidimensionalLinearAdvectionNonperiodicSemidiscretization{Dim,
                                                                                       T,
