@@ -1,4 +1,5 @@
 /docs/build/
+/docs/src/changelog.md
 **/Manifest.toml
 **/*.vtu
 run
