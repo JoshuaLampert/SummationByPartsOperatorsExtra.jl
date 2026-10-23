@@ -1,0 +1,67 @@
+name: Downgrade
+
+on:
+  pull_request:
+    paths-ignore:
+      - 'AUTHORS.md'
+      - 'CITATION.bib'
+      - 'LICENSE.md'
+      - 'README.md'
+      - '.zenodo.json'
+      - '.github/workflows/benchmark.yml'
+      - '.github/workflows/CompatHelper.yml'
+      - '.github/workflows/Documenter.yml'
+      - '.github/workflows/Format-check.yml'
+      - '.github/workflows/TagBot.yml'
+      - '.github/workflows/SpellCheck.yml'
+      - '.github/workflows/JET.yml'
+      - 'benchmark/**'
+      - 'docs/**'
+  workflow_dispatch:
+
+# Cancel redundant CI tests automatically
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  downgrade_test:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    # We could also include the Julia version as in
+    # name: ${{ matrix.trixi_test }} - ${{ matrix.os }} - Julia ${{ matrix.version }} - ${{ github.event_name }}
+    # to be more specific. However, that requires us updating the required CI tests whenever we update Julia.
+    name: Downgrade ${{ matrix.os }} - ${{ github.event_name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - '1.10'
+          # - '~1.9.0-0' # including development versions
+          # - 'nightly'
+        os:
+          - ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: ${{ matrix.version }}
+      - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
+      - uses: julia-actions/cache@v3
+      - uses: julia-actions/julia-downgrade-compat@v2
+        with:
+          skip: LinearAlgebra,Random,Serialization,SparseArrays,Test
+          projects: ., test
+          mode: forcedeps
+      # We run the tests manually instead of using julia-action/julia-builpkg and julia-action/julia-runtest or `Pkg.test`
+      # because otherwise the downgraded Manifest.toml is not used in the tests under julia <v1.12
+      # see also https://github.com/julia-actions/julia-downgrade-compat/blob/00f940b7be2b50389571ed016d603be561649103/README.md#L89
+      - name: Run tests
+        run: |
+          julia --project=test --color=yes -e '
+            import Pkg
+            Pkg.develop(Pkg.PackageSpec(path=pwd()))
+            Pkg.instantiate()
+            Pkg.status(; mode = Pkg.PKGMODE_MANIFEST)
+            include("test/runtests.jl")
+          '
