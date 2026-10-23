@@ -65,15 +65,15 @@ function SummationByPartsOperatorsExtra.plot_sparsity_pattern(sparsity_pattern, 
                                                               node_index)
     sparsity_pattern = Symmetric(sparsity_pattern)
     nodes = to_pointset(nodes)
-    viz(nodes[node_index], color = :red, pointsize = 10)
+    viz(nodes[node_index], color = :red, size = 10)
     for i in eachindex(nodes)
         if i == node_index
             continue
         end
         if sparsity_pattern[node_index, i]
-            viz!(nodes[i], color = :green, pointsize = 10)
+            viz!(nodes[i], color = :green, size = 10)
         else
-            viz!(nodes[i], color = :blue, pointsize = 10)
+            viz!(nodes[i], color = :blue, size = 10)
         end
     end
     return Makie.current_figure()

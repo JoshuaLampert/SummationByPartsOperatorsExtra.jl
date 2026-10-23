@@ -73,9 +73,9 @@ end
         N_x + N_y, # lower right corner
         N_x + N_y + 1, # upper left corner
         2 * N_x + N_y] # upper right corner
-    @test_nowarn plot_nodes(D_2; pointsize = 10)
-    @test_nowarn plot_nodes(D_2; corner_indices = corner_indices, pointsize = 10)
-    @test_nowarn plot_normals(D_2; pointsize = 10)
+    @test_nowarn plot_nodes(D_2; size = 10)
+    @test_nowarn plot_nodes(D_2; corner_indices = corner_indices, size = 10)
+    @test_nowarn plot_normals(D_2; size = 10)
     @test_nowarn plot_sparsity_pattern(get_sparsity_pattern(D_2)[1], grid(D_2), 6)
 end
 
