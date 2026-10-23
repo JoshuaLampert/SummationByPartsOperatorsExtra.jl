@@ -35,7 +35,6 @@ using SummationByPartsOperators: AbstractDerivativeOperator,
                                  AbstractNonperiodicDerivativeOperator,
                                  AbstractMultidimensionalMatrixDerivativeOperator,
                                  AbstractSemidiscretization,
-                                 scale_by_mass_matrix!,
                                  scale_by_inverse_mass_matrix!
 
 include("utils/utils.jl")
