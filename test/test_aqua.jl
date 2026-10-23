@@ -1,9 +1,6 @@
 @testitem "Aqua.jl" begin
     import Aqua
-    using ExplicitImports: check_no_implicit_imports, check_no_stale_explicit_imports,
-                           check_all_explicit_imports_via_owners,
-                           check_all_qualified_accesses_via_owners,
-                           check_no_self_qualified_accesses
+    using ExplicitImports: test_explicit_imports
 
     Aqua.test_all(SummationByPartsOperatorsExtra,
                   stale_deps = (;
@@ -30,24 +27,67 @@
             push!(own, obj)
         end
     end
+    own_names = Tuple(nameof.(own))
     # `eigen` for `ForwardDiff.Dual`s is needed for the eigenvalue property and can be removed
     # once ForwardDiff.jl supports differentiating eigenvalues of non-symmetric matrices.
     push!(own, LinearAlgebra.eigen)
-    for name in (:OptimForwardDiffExt, :ManifoldsManoptForwardDiffExt, :MeshesExt,
-                 :MeshesMakieExt)
-        extension = Base.get_extension(SummationByPartsOperatorsExtra, name)
+    extension_names = (:OptimForwardDiffExt, :ManifoldsManoptForwardDiffExt, :MeshesExt,
+                       :MeshesMakieExt)
+    extensions = Base.get_extension.(Ref(SummationByPartsOperatorsExtra), extension_names)
+    for extension in extensions
         @test !isnothing(extension)
         Aqua.test_piracies(extension; treat_as_own = own)
     end
-    @test isnothing(check_no_implicit_imports(SummationByPartsOperatorsExtra,
-                                              skip = (Core, Base,
-                                                      SummationByPartsOperatorsExtra.SummationByPartsOperators,
-                                                      SummationByPartsOperatorsExtra.PolynomialBases)))
-    @test isnothing(check_no_stale_explicit_imports(SummationByPartsOperatorsExtra,
-                                                    ignore = (:derivative_discontinuity!,)))
-    @test isnothing(check_all_qualified_accesses_via_owners(SummationByPartsOperatorsExtra;
-                                                            ignore = (:ustrip,
-                                                                      :AutoForwardDiff,
-                                                                      :ManifoldDiff)))
-    @test isnothing(check_no_self_qualified_accesses(SummationByPartsOperatorsExtra))
+
+    # Names, which are not public in the upstream packages.
+    # `require_one_based_indexing` is only public from Julia v1.11.
+    imports_not_public = (:AbstractDerivativeOperator,
+                          :AbstractMultidimensionalMatrixDerivativeOperator,
+                          :AbstractNonperiodicDerivativeOperator,
+                          :AbstractSemidiscretization, :PeriodicCallbackAffect)
+    accesses_not_public = (:Line, :barycentric_weights, :get_weight,
+                           :godunov_flux_variablelinearadvection, :lower_bandwidth,
+                           :require_one_based_indexing, :upper_bandwidth, :xmax, :xmin)
+    # The package extensions use names of this package (e.g., the function stubs), which do not
+    # need to be public, and some names, which are not public in the upstream packages.
+    # `depwarn` is only public from Julia v1.11.
+    extension_imports_not_public = (own_names..., :Options, :minimizer)
+    extension_accesses_not_public = (own_names..., :ADTypes, :ATOL64, :AutoForwardDiff,
+                                     :Dual, :ManifoldDiff, :depwarn, :derivative, :gradient,
+                                     :pickchunksize, :tagtype, :ustrip)
+    # The owners Unitful.jl, ADTypes.jl, and ManifoldDiff.jl are no (weak) dependencies,
+    # so the package extensions cannot access these names via their owners.
+    extension_accesses_not_via_owners = (:ustrip, :AutoForwardDiff, :ManifoldDiff)
+
+    # ExplicitImports.jl analyzes the loaded package extensions as part of the package, but it
+    # reports their findings only on some Julia versions (e.g., v1.10). Thus, we ignore the names
+    # used in the package extensions here and check the package extensions separately below.
+    test_explicit_imports(SummationByPartsOperatorsExtra;
+                          # We reexport these packages.
+                          no_implicit_imports = (;
+                                                 skip = (Core, Base,
+                                                         SummationByPartsOperatorsExtra.SummationByPartsOperators,
+                                                         SummationByPartsOperatorsExtra.PolynomialBases)),
+                          # Only imported for newer versions of SciMLBase.jl
+                          no_stale_explicit_imports = (;
+                                                       ignore = (:derivative_discontinuity!,)),
+                          all_explicit_imports_are_public = (;
+                                                             ignore = (imports_not_public...,
+                                                                       extension_imports_not_public...)),
+                          all_qualified_accesses_via_owners = (;
+                                                               ignore = extension_accesses_not_via_owners),
+                          all_qualified_accesses_are_public = (;
+                                                               ignore = (accesses_not_public...,
+                                                                         extension_accesses_not_public...)))
+    for (name, extension) in zip(extension_names, extensions)
+        test_explicit_imports(extension,
+                              joinpath(pkgdir(SummationByPartsOperatorsExtra), "ext",
+                                       "$name.jl");
+                              all_explicit_imports_are_public = (;
+                                                                 ignore = extension_imports_not_public),
+                              all_qualified_accesses_via_owners = (;
+                                                                   ignore = extension_accesses_not_via_owners),
+                              all_qualified_accesses_are_public = (;
+                                                                   ignore = extension_accesses_not_public))
+    end
 end
