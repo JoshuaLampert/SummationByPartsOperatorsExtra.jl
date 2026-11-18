@@ -106,6 +106,14 @@ function Base.show(io::IO,
     end
 end
 
+# The sources of upwind operators defined in this package. The methods of `upwind_operators`
+# shared by all of them dispatch on this union, so that they do not extend the function of
+# SummationByPartsOperators.jl for argument types we do not own.
+const UpwindSourceOfCoefficients = Union{GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025,
+                                         GlaubitzLampertMattssonNiemeläWinters2026DG,
+                                         GlaubitzLampertMattssonNiemeläWinters2026FD,
+                                         GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized}
+
 # The dissipation matrix is negative semi-definite if and only if its non-zero eigenvalues are
 # non-positive.
 function check_dissipation_eigenvalues(sigma)
@@ -146,13 +154,18 @@ generally *not* the accuracy order of `D`: `D^\\pm` are exact for a function `f`
 `D` is exact for `f` *and* ``S \\mathbf{f} = \\mathbf{0}``.
 
 The central operator `D` is stored unchanged in the resulting
-[`UpwindOperators`](@extref SummationByPartsOperators.UpwindOperators).
+[`UpwindOperators`](@extref SummationByPartsOperators.UpwindOperators). The `source` is stored
+in `D^-` and `D^+` and must be one of the sources of upwind operators of this package, i.e.,
+[`GlaubitzRanochaWintersSchlottkeLakemperÖffnerGassner2025`](@ref),
+[`GlaubitzLampertMattssonNiemeläWinters2026DG`](@ref),
+[`GlaubitzLampertMattssonNiemeläWinters2026FD`](@ref), or
+[`GlaubitzLampertMattssonNiemeläWinters2026AccuracyOptimized`](@ref).
 
 !!! warning "Experimental implementation"
     This is an experimental feature and may change in future releases.
 """
 function upwind_operators(D::AbstractNonperiodicDerivativeOperator, S::AbstractMatrix,
-                          source;
+                          source::UpwindSourceOfCoefficients;
                           accuracy_order = SummationByPartsOperators.accuracy_order(D))
     # `MatrixDerivativeOperator` needs a `Vector` of nodes, while `grid` may return a range, e.g.
     # for the classical FD-SBP operators of SummationByPartsOperators.jl
@@ -832,7 +845,8 @@ Which construction is used, and which keyword arguments are accepted, is determi
     This is an experimental feature and may change in future releases.
 """
 function upwind_operators(D::AbstractNonperiodicDerivativeOperator,
-                          basis_functions::AbstractVector, source; kwargs...)
+                          basis_functions::AbstractVector,
+                          source::UpwindSourceOfCoefficients; kwargs...)
     S = dissipation_matrix(basis_functions, D, source; kwargs...)
     return upwind_operators(D, S, source)
 end

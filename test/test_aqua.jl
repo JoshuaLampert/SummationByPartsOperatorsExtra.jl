@@ -22,7 +22,8 @@
     for name in names(SummationByPartsOperatorsExtra; all = true)
         isdefined(SummationByPartsOperatorsExtra, name) || continue
         obj = getfield(SummationByPartsOperatorsExtra, name)
-        if (obj isa Function || obj isa Type) &&
+        # A `Union` alias has no parent module; its members are collected on their own.
+        if (obj isa Function || (obj isa Type && !(obj isa Union))) &&
            parentmodule(obj) === SummationByPartsOperatorsExtra
             push!(own, obj)
         end
@@ -44,7 +45,8 @@
     imports_not_public = (:AbstractDerivativeOperator,
                           :AbstractMultidimensionalMatrixDerivativeOperator,
                           :AbstractNonperiodicDerivativeOperator,
-                          :AbstractSemidiscretization, :PeriodicCallbackAffect)
+                          :AbstractSemidiscretization, :PeriodicCallbackAffect,
+                          :legendre_and_derivative)
     accesses_not_public = (:Line, :barycentric_weights, :get_weight,
                            :godunov_flux_variablelinearadvection, :lower_bandwidth,
                            :require_one_based_indexing, :upper_bandwidth, :xmax, :xmin)
