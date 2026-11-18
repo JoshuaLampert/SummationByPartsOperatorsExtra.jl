@@ -57,7 +57,7 @@ end
             # integration
             u = sin.(nodes)
             u_copy = copy(u)
-            @test integrate(cos, u, Dop) == sum(M * cos.(u))
+            @test integrate(cos, u, Dop) ≈ sum(M * cos.(u))
             SummationByPartsOperators.scale_by_mass_matrix!(u, Dop)
             @test_throws DimensionMismatch SummationByPartsOperators.scale_by_mass_matrix!(@view(u[(begin + 1):(end - 1)]),
                                                                                            Dop)
@@ -121,6 +121,80 @@ end
             @test M_L * D ≈ Q_L
             @test M_R * D ≈ Q_R
         end
+    end
+end
+
+@testitem "Sub-cell operators on long intervals" setup=[SubCell] begin
+    # The sub-cells are longer than their number of nodes, so the weights cannot be
+    # bounded by one if the operator should be exact for constants.
+    nodes = collect(range(0.0, 20.0, length = 12))
+    x_M = 9.6
+    basis_functions = [one, identity, x -> 0.5 * x^2]
+    basis_functions_derivatives = [zero, one, identity]
+    source = GlaubitzLampertWintersNordström2025()
+    Dop = subcell_operator(basis_functions, nodes, x_M, source;
+                           options = Optim.Options(; iterations = 20000, g_tol = 1e-16))
+    @test sum(mass_matrix_left(Dop)) ≈ x_M - first(nodes)
+    @test sum(mass_matrix_right(Dop)) ≈ last(nodes) - x_M
+    @test sum(mass_matrix(Dop)) ≈ last(nodes) - first(nodes)
+    for (f, f_derivative) in zip(basis_functions, basis_functions_derivatives)
+        @test all(isapprox.(Dop * f.(nodes), f_derivative.(nodes); atol = 1e-11))
+    end
+end
+
+@testitem "Sub-cell operators with sparsity patterns" setup=[SubCell] begin
+    using LinearAlgebra: UpperTriangular
+    nodes = collect(-1.1:0.1:0.4)
+    x_M = -0.42
+    N_L = count(<=(x_M), nodes)
+    N_R = length(nodes) - N_L
+    basis_functions = [one, identity, x -> 0.5 * x^2]
+    basis_functions_derivatives = [zero, one, identity]
+    source = GlaubitzLampertWintersNordström2025()
+    options = Optim.Options(; iterations = 10000, g_tol = 1e-16)
+    banded_pattern(n, b) = UpperTriangular([0 < j - i <= b for i in 1:n, j in 1:n])
+
+    # A full sparsity pattern uses the same parameterization as a dense operator
+    Dop_dense = subcell_operator(basis_functions, copy(nodes), x_M, source; options)
+    sparsity_patterns = [banded_pattern(N_L, N_L - 1), banded_pattern(N_R, N_R - 1)]
+    Dop_full = subcell_operator(basis_functions, copy(nodes), x_M, source;
+                                sparsity_patterns, options)
+    @test Matrix(Dop_full) ≈ Matrix(Dop_dense)
+
+    sparsity_patterns = [banded_pattern(N_L, 4), banded_pattern(N_R, 4)]
+    Dop = subcell_operator(basis_functions, copy(nodes), x_M, source; sparsity_patterns,
+                           options)
+    # The skew-symmetric parts vanish outside of the sparsity patterns
+    S_L = (Dop.Q_left - Dop.Q_left')[1:N_L, 1:N_L]
+    S_R = (Dop.Q_right - Dop.Q_right')[(N_L + 1):end, (N_L + 1):end]
+    for (S, sparsity_pattern) in ((S_L, sparsity_patterns[1]),
+                                  (S_R, sparsity_patterns[2]))
+        P = Matrix(sparsity_pattern)
+        @test all(iszero, S[.!(P .| P')])
+    end
+    for (f, f_derivative) in zip(basis_functions, basis_functions_derivatives)
+        @test all(isapprox.(Dop * f.(nodes), f_derivative.(nodes); atol = 1e-11))
+    end
+end
+
+@testitem "Multiplication with sub-cell operators" setup=[SubCell] begin
+    using LinearAlgebra: mul!
+    D1 = legendre_derivative_operator(-1.0, 0.0, 6)
+    D2 = derivative_operator(MattssonNordström2004(), 1, 4, 0.0, 1.0, 12)
+    function allocations_mul!(dest, D, u)
+        mul!(dest, D, u)
+        return @allocated mul!(dest, D, u)
+    end
+    for coupling in (Val(:no), Val(:central), Val(:plus), Val(:minus))
+        Dop = couple_subcell(D1, D2, 0.0; coupling)
+        D = Matrix(Dop)
+        u = sin.(grid(Dop))
+        dest = cos.(grid(Dop))
+        for (α, β) in ((true, false), (2.5, 0.0), (1.0, 1.0), (-0.5, 2.0))
+            @test mul!(copy(dest), Dop, u, α, β) ≈ mul!(copy(dest), D, u, α, β)
+        end
+        @test Dop * u ≈ D * u
+        @test allocations_mul!(dest, Dop, u) == 0
     end
 end
 

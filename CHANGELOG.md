@@ -10,3 +10,50 @@ for human readability.
 #### Added
 
 - Allow Julia v1.10 ([#94]).
+
+#### Changed
+
+- Multiplying a `SubcellOperator` with a vector (`D * u` and `mul!(dest, D, u)`) does not form
+  the dense derivative matrix anymore. This avoids allocations and is about 19 times faster for
+  40 nodes ([#118]).
+- The right-hand side of `MultidimensionalLinearAdvectionNonperiodicSemidiscretization` does not
+  allocate temporary vectors anymore and is about 7 times faster for 400 nodes ([#119]).
+- Invalid arguments to the operator constructors in the package extensions, e.g., missing
+  `regularization_functions` for `GlaubitzIskeLampertÖffner2026Regularized`, now throw an
+  `ArgumentError` instead of an `AssertionError` ([#123]).
+- `function_space_operator` and `subcell_operator` accept any `AbstractVector` of nodes, e.g.,
+  ranges or integer nodes, and `subcell_operator` accepts any real `x_M`. The collections passed
+  as keyword arguments to `subcell_operator` are not modified anymore, and tuples are supported ([#124]).
+- `mass_matrix_boundary` is not extended for `MultidimensionalMatrixDerivativeOperator`s (type
+  piracy) anymore. SummationByPartsOperators.jl v0.5.103 sums the contributions of all entries of a
+  node in `boundary_indices`, e.g., of the two faces adjacent to a corner, which does not depend on
+  the order of these entries. `multidimensional_function_space_operator` uses the same convention,
+  so the keyword argument `corners` is deprecated and ignored ([#127]).
+
+#### Fixed
+
+- `MultidimensionalLinearAdvectionNonperiodicSemidiscretization` was not energy stable at corners
+  adjacent to one inflow and one outflow boundary face, e.g., for tensor product operators and
+  operators constructed with `corners`. The boundary data is now imposed at the nodes with
+  `τ_j < 0`, where `τ = diag(a[1] * B_1 + a[2] * B_2)`, which coincides with the previous rule
+  at boundary nodes with a single normal ([#112]).
+- The weights of sub-cell operators constructed with `subcell_operator` were bounded by one, such
+  that the operators were not exact (without any warning) if a sub-cell was longer than its number
+  of nodes. The weights are now scaled by the length of the sub-cell. Note that this changes the
+  meaning of the weight entries of a user-provided initial guess `x0` ([#113]).
+- `get_optimization_entries` and `get_multidimensional_optimization_entries` returned infinite
+  entries for weights equal to one and threw a `DomainError` for weights larger than one. The
+  weights are now normalized before inverting the sigmoid function, which yields the same mass
+  matrix in the optimization ([#114]).
+- The quantities `energy_rate_boundary` and `energy_rate_boundary_dissipation` computed by the
+  `AnalysisCallback` for `VariableLinearAdvectionNonperiodicSemidiscretization` were wrong if the
+  advection velocity was negative at the right boundary or had different signs at the two
+  boundaries. The left and right boundaries are now treated independently.
+- Passing `sparsity_patterns` to `subcell_operator` always threw a `MethodError` ([#116]).
+- `function_space_operator` and `subcell_operator` sorted the passed vector of `nodes` in place.
+  They now sort a copy and leave the passed vector unchanged ([#117]).
+- Passing `basis_functions_weights` different from one to `multidimensional_function_space_operator`
+  led to wrong operators since the moments were not weighted consistently with the basis functions ([#121]).
+- `multidimensional_function_space_operator` constructed operators that did not satisfy the SBP
+  property with the boundary matrices from `mass_matrix_boundary` if a corner appeared twice in
+  `boundary_indices` and `corners` was not passed or did not match the order of the normals ([#127]).

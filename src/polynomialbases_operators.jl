@@ -49,8 +49,9 @@ end
     polynomialbases_derivative_operator(basis_type, xmin::Real, xmax::Real, N::Integer)
     polynomialbases_derivative_operator(basis_type; xmin::Real, xmax::Real, N::Integer)
 
-Construct the `PolynomialBasesDerivativeOperator` on a uniform grid between `xmin` and
-`xmax` using `N` nodes and `N-1` Legendre modes.
+Construct the `PolynomialBasesDerivativeOperator` between `xmin` and `xmax` using `N` nodes and
+polynomials of degree `N-1`. The nodes are the nodes of the nodal basis `basis_type` from PolynomialBases.jl,
+e.g., `LobattoLegendre` or `GaussLegendre`, mapped to `[xmin, xmax]`.
 """
 function polynomialbases_derivative_operator(basis_type, xmin::Real, xmax::Real, N::Integer)
     return PolynomialBasesDerivativeOperator(basis_type, promote(xmin, xmax)..., N)

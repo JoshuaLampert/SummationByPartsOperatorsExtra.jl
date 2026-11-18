@@ -68,7 +68,8 @@ function Base.show(io::IO, source::GlaubitzIskeLampertÖffner2026EigenvaluePrope
     end
 end
 
-# This function is extended in the package extensions SummationByPartsOperatorsExtraOptimForwardDiffExt and SummationByPartsOperatorsExtraManifoldsManoptForwardDiffExt
+# The construction of the operator is implemented in the package extensions OptimForwardDiffExt and
+# ManifoldsManoptForwardDiffExt, which extend `construct_function_space_operator`
 """
     function_space_operator(basis_functions, nodes, source;
                             derivative_order = 1, accuracy_order = 0,
@@ -77,8 +78,8 @@ end
                             min_real_eigen = 0.1,
                             bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
                             different_values = true, sparsity_pattern = nothing,
-                            opt_alg = Optim.BFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
-                            autodiff = ADTypes.AutoForwardDiff(), x0 = nothing, verbose = false)
+                            opt_alg, options, autodiff = ADTypes.AutoForwardDiff(),
+                            x0 = nothing, verbose = false)
 
 Construct an operator that represents a first-derivative operator in a function space spanned by
 the `basis_functions`, which is an iterable of functions. The operator is constructed on the
@@ -97,6 +98,12 @@ Optim.jl about [configurable options](https://julianlsolvers.github.io/Optim.jl/
 and [automatic differentiation](https://julianlsolvers.github.io/Optim.jl/stable/user/gradientsandhessians/#Automatic-differentiation)
 or of Manopt.jl about [algorithm options for, e.g., `augmented_Lagrangian_method`](https://manoptjl.org/stable/solvers/augmented_Lagrangian_method/#Manopt.augmented_Lagrangian_method)
 or [`debug` output](https://manoptjl.org/stable/tutorials/HowToDebug/).
+The defaults depend on the `source`: for [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref),
+`opt_alg = Optim.BFGS()` and `options = Optim.Options(g_tol = 1e-16, iterations = 10000, show_trace = verbose)`.
+For the other sources, `opt_alg` is `Manopt.quasi_Newton` ([`GlaubitzIskeLampertÖffner2026Basic`](@ref)) or
+`Manopt.augmented_Lagrangian_method` ([`GlaubitzIskeLampertÖffner2026Regularized`](@ref) and
+[`GlaubitzIskeLampertÖffner2026EigenvalueProperty`](@ref)), and `options` is a `NamedTuple` of keyword arguments
+passed to it, by default a `stopping_criterion` and a `debug` output if `verbose` is `true`.
 For higher number of nodes, reverse mode automatic differentiation is usually significantly faster than forward mode.
 We recommend using `autodiff = ADTypes.AutoMooncake(; config = nothing)` or
 `autodiff = ADTypes.AutoEnzyme(; mode = Enzyme.Reverse, function_annotation = Enzyme.Duplicated)`. Note that
@@ -107,10 +114,17 @@ The initial guess for the optimization problem can be passed with the keyword ar
 If `nothing` is passed, a default initial guess (zeros for the entries of the differentiation matrix and
 equal values for all the weights) is used.
 
-You can weight each basis function with the keyword argument `basis_functions_weights`, which is a vector of
-weights for each basis function. The default is a vector of ones, which means that all basis functions
-are equally weighted. This can be used to, e.g., enforce exactness for certain basis functions (high weights),
-but allow non-exactness for others only minimizing the error (low weights).
+You can weight the basis functions with the keyword argument `basis_functions_weights`, which is a vector
+with one weight per basis function. The default is a vector of ones, which means that all basis functions
+are equally weighted. Note that the weights are applied after orthonormalizing the basis: the basis functions
+``f_1, \\dots, f_K`` are orthonormalized in the given order with respect to the discrete inner product
+``\\langle f, g \\rangle = \\sum_n f(x_n) g(x_n) + \\sum_n f'(x_n) g'(x_n)``, which yields functions
+``g_k = \\sum_{j \\le k} a_{kj} f_j`` with ``a_{kk} > 0``. The weight `basis_functions_weights[k]` multiplies the
+residual of the exactness condition for ``g_k``, not for ``f_k``. Hence, the result depends on the order of
+the basis functions. Since ``g_1, \\dots, g_m`` span the same space as ``f_1, \\dots, f_m``, you can enforce
+exactness for certain basis functions (high weights), but allow non-exactness for others only minimizing the
+error (low weights), by putting the functions to be reproduced at the beginning of `basis_functions` and
+assigning the high weights to them.
 
 When using the source [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref) there are two alternative
 ways to enforce sparsity of the resulting operator.
@@ -122,7 +136,7 @@ The second way is to use a banded-block structure for the operator as is common,
 The keyword arguments `bandwidth` and `size_boundary` specify the bandwidth and the size of the
 boundary blocks of the operator, where the default of `bandwidth` is set to `length(nodes) - 1`,
 i.e., a dense operator (in this case `size_boundary` is ignored). To construct a sparse operator, you can set the
-bandwidth to a smaller value, such that `2 * size_boundary + bandwidth < length(nodes)`, which is a
+bandwidth to a smaller value, such that `2 * size_boundary + bandwidth <= length(nodes)`, which is a
 requirement for the boundary blocks in the upper left and lower right of the resulting operator.
 If `different_values` is set to `true` all the entries in the upper right triangle of S (the skew symmetric
 part of D) are different, which is generally meaningful for non-equidistant nodes and general bases, if it
@@ -152,6 +166,25 @@ See also [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref), [
     This is an experimental feature and may change in future releases.
 """
 function function_space_operator end
+
+function function_space_operator(basis_functions, nodes::AbstractVector,
+                                 source::SourceOfCoefficients;
+                                 derivative_order = 1, accuracy_order = 0,
+                                 kwargs...)
+    assert_first_derivative_order(derivative_order)
+    # Work on a sorted floating point copy, such that, e.g., ranges or integer nodes are supported
+    nodes = sort!(collect(float.(nodes)))
+    weights, D = construct_function_space_operator(basis_functions, nodes, source;
+                                                   kwargs...)
+    return MatrixDerivativeOperator(first(nodes), last(nodes), nodes, weights, D,
+                                    accuracy_order, source)
+end
+
+function assert_first_derivative_order(derivative_order)
+    if derivative_order != 1
+        throw(ArgumentError("Derivative order $derivative_order not implemented."))
+    end
+end
 
 # We need to define these functions here, because we dispatch on the type of `source` in the
 # different extensions

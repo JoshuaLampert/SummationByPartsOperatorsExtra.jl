@@ -32,7 +32,6 @@ for (i, node) in enumerate(nodes_regular)
         nodes[i] = node .+ (dx / 6, dy / 6) .* (1.0 .- 2.0 .* rand(d))
     end
 end
-corners = SummationByPartsOperatorsExtra.find_corners(boundary_indices)
 
 K_RBF = 8
 sampler_basis = HomogeneousSampling(K_RBF)
@@ -63,7 +62,7 @@ D = open(joinpath(OUT, "out_$file.txt"), "w") do file
         D = multidimensional_function_space_operator(basis, nodes, boundary_indices,
                                                      normals, moments, vol,
                                                      GlaubitzIskeLampertÖffner2026Multidimensional();
-                                                     corners, sparsity_patterns,
+                                                     sparsity_patterns,
                                                      verbose = true, opt_kwargs...)
         return D
     end

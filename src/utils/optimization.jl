@@ -42,10 +42,26 @@ function get_nsigma(N; bandwidth = N - 1,
     end
 end
 
-# This requires sig(x) = 1 / (1 + exp(-x))
+# Parameterization of the weights of the mass matrix and the boundary mass matrix in the
+# optimization-based construction procedures. `invsig` and `invsig_b` are the inverse functions
+# of `sig` and `sig_b`, respectively.
+
+# sig(x) = x
+# invsig(p) = p
+
+sig(x) = 1 / (1 + exp(-x))
 invsig(p) = log(p / (1 - p))
-# This requires sig_b(x) = x
+
+# leading to softmax
+# sig(x) = exp(x)
+# invsig(p) = log(p)
+
+# For b, no sigmoid function seems to perform better
+sig_b(x) = x
 invsig_b(p) = p
+
+# sig_b(x) = 1 / (1 + exp(-x))
+# invsig_b(p) = log(p / (1 - p))
 
 function reconstruct_sparsity_pattern!(sigma, S, sparsity_pattern)
     N = size(S, 1)
@@ -122,10 +138,10 @@ function get_optimization_entries(D;
                                   different_values = false,
                                   sparsity_pattern = nothing)
     p = diag(mass_matrix(D))
-    # for sig = exp this is only equal to the values from the optimization up to a constant, but they give the same P
-    # if sig is the logistic function, inverting the normalized logistic function is harder, but this still works
-    # (eventhough it is not the exaxt inverse)
-    rho = invsig.(p)
+    # The optimization normalizes `sig.(rho)` to the volume of the domain, i.e., `P` only depends on
+    # `sig.(rho)` up to a positive factor. Since the logistic function `sig` maps to (0, 1), we
+    # normalize the weights to sum up to one before inverting it. This yields the same `P`.
+    rho = invsig.(p ./ sum(p))
     Matrix_D = if D isa AbstractMultidimensionalMatrixDerivativeOperator{1}
         Matrix(D[1])
     else
@@ -201,11 +217,12 @@ end
                                               bandwidth = div(accuracy_order(D), 2),
                                               size_boundary = SummationByPartsOperators.lower_bandwidth(D) + 1,
                                               different_values = false,
-                                              sparsity_pattern = nothing)
+                                              sparsity_patterns = nothing)
 
 Get the entries to optimize for in an optimization-based construction procedure of multidimensional summation-by-parts operators
 from a derivative operator `D`. It contains the entries of the skew-symmetric part of the operator ``D``, the
-entries of the diagonal mass matrix ``M``, and the entries of the diagonal boundary mass matrix. For more details,
+entries of the diagonal mass matrix ``M``, and the entries of the diagonal boundary mass matrix. If `sparsity_patterns`
+is given, it has to be a tuple with one sparsity pattern for each direction. For more details,
 see [`multidimensional_function_space_operator`](@ref). The output can be passed as initial values to the optimization problem as `x0`.
 """
 function get_multidimensional_optimization_entries(D;
@@ -234,7 +251,8 @@ function get_multidimensional_optimization_entries(D::AbstractMultidimensionalMa
                                                    sparsity_patterns = nothing) where {Dim,
                                                                                        T}
     p = D.weights
-    rho = invsig.(p)
+    # See the comment in `get_optimization_entries`
+    rho = invsig.(p ./ sum(p))
     v = D.weights_boundary
     phi = invsig_b.(v)
     sigmas = T[]

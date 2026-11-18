@@ -27,15 +27,16 @@ end
 """
     multidimensional_function_space_operator(basis_functions, nodes, boundary_indices, normals, moments, vol, source;
                                              derivative_order = 1, accuracy_order = 0,
+                                             basis_functions_weights = ones(length(basis_functions)),
                                              bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
-                                             different_values = true, sparsity_pattern = nothing,
+                                             different_values = true, sparsity_patterns = nothing,
                                              opt_alg = Optim.BFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
                                              autodiff = ADTypes.AutoForwardDiff(), x0 = nothing, verbose = false)
 
 Construct a [`SummationByPartsOperators.MultidimensionalMatrixDerivativeOperator`](@extref) that represents a first-derivative operator in a function
 space spanned by the `basis_functions`, which is an iterable of functions. The operator is constructed on the
 scattered nodes `nodes`. They should be provided as an iterable of `SVector{Dim, T}`. The `boundary_indices`
-is a vector of indies that indicates, which nodes are on the boundary. `normals` is a vector of `SVector{Dim, T}`
+is a vector of indices that indicates, which nodes are on the boundary. `normals` is a vector of `SVector{Dim, T}`
 that contains the normal vectors of the boundary nodes. The `moments` are a `Tuple` of matrices that represent
 the moments of the basis functions in each direction. The total volume of the domain is given by `vol`.
 
@@ -57,23 +58,40 @@ The initial guess for the optimization problem can be passed with the keyword ar
 If `nothing` is passed, a default initial guess (zeros for the entries of the differentiation matrix and
 equal values for all the weights and boundary weights) is used.
 
+You can weight the basis functions with the keyword argument `basis_functions_weights`, which is a vector
+with one weight per basis function. The default is a vector of ones, which means that all basis functions
+are equally weighted. In contrast to [`function_space_operator`](@ref), the basis is not orthonormalized:
+the residual of the exactness condition for `basis_functions[k]` is weighted with `basis_functions_weights[k]`
+and the residual of the condition on the moments of `basis_functions[k]` and `basis_functions[l]` with
+`basis_functions_weights[k] * basis_functions_weights[l]`. This can be used to, e.g., enforce exactness for
+certain basis functions (high weights), but allow non-exactness for others only minimizing the error (low weights).
+
+If a boundary node is a corner, it can appear several times in `boundary_indices`, once for each
+adjacent face, with the normal of this face in the corresponding entry of `normals`. The boundary
+mass matrices sum the contributions of all entries of a node, i.e., the diagonal entry of
+``B_\\xi`` belonging to a corner shared by two faces is ``v_k \\xi\\cdot n_k + v_l \\xi\\cdot n_l``,
+where ``v_k`` and ``v_l`` are the boundary weights of the two entries. This is consistent with
+`mass_matrix_boundary` from SummationByPartsOperators.jl. The keyword argument `corners` is
+deprecated and ignored.
+
 There are two alternative ways to enforce sparsity of the resulting operator. The first is by passing
-a matrix `sparsity_pattern` that is a matrix of zeros and ones, where the ones indicate the non-zero
-entries of the operator. This matrix should be symmetric or `UpperTriangular` and have zeros on the diagonal.
+a tuple `sparsity_patterns` with one matrix of zeros and ones for each direction, where the ones indicate the
+non-zero entries of the operator in this direction. These matrices should be symmetric or `UpperTriangular`
+and have zeros on the diagonal.
 
 The second way is to use a banded-block structure for the operator as is common, e.g., in finite difference methods.
 The keyword arguments `bandwidth` and `size_boundary` specify the bandwidth and the size of the
 boundary blocks of the differentiation matrices in each direction, where the default of `bandwidth`
 is set to `length(nodes) - 1`, i.e., dense operators (in this case `size_boundary` is ignored). To
 construct sparse operators, you can set the bandwidth to a smaller value, such that
-`2 * size_boundary + bandwidth < length(nodes)`, which is a requirement for the boundary blocks in
+`2 * size_boundary + bandwidth <= length(nodes)`, which is a requirement for the boundary blocks in
 the upper left and lower right of the resulting operator. If `different_values` is set to `true` all
 the entries in the upper right triangle of all matrices S (the skew symmetric parts of the
 differentiation matrices D) are different, which is generally meaningful for non-equidistant nodes and
 general bases, if it is `false` the entries of the stencil are repeated in the central part and the
 two boundary closures share their values (makes sense for uniformly distributed nodes and, e.g., a
 polynomial basis). The keyword argument `different_values` is ignored for dense operators.
-The parameters `bandwidth`, `size_boundary`, and `different_values` are only used if `sparsity_pattern`
+The parameters `bandwidth`, `size_boundary`, and `different_values` are only used if `sparsity_patterns`
 is not provided.
 
 The keyword argument `verbose` can be set to `true` to print information about the optimization process.

@@ -14,11 +14,9 @@ import SummationByPartsOperatorsExtra: construct_function_space_operator,
 using SummationByPartsOperatorsExtra: SummationByPartsOperatorsExtra,
                                       GlaubitzIskeLampertÖffner2026Basic,
                                       GlaubitzIskeLampertÖffner2026Regularized,
-                                      GlaubitzIskeLampertÖffner2026EigenvalueProperty,
-                                      MatrixDerivativeOperator
+                                      GlaubitzIskeLampertÖffner2026EigenvalueProperty
 
 include("utils.jl")
-include("function_space_operators.jl")
 
 function default_opt_alg(::GlaubitzIskeLampertÖffner2026Basic)
     return quasi_Newton
@@ -113,8 +111,9 @@ function construct_function_space_operator(basis_functions, nodes,
         throw(ArgumentError("Passing a sparsity pattern is currently not supported."))
     end
     assert_correct_length_basis_functions_weights(basis_functions_weights, basis_functions)
-    if source isa GlaubitzIskeLampertÖffner2026Regularized
-        @assert !isnothing(regularization_functions) "regularization_functions must be provided for GlaubitzIskeLampertÖffner2026Regularized"
+    if source isa GlaubitzIskeLampertÖffner2026Regularized &&
+       isnothing(regularization_functions)
+        throw(ArgumentError("`regularization_functions` must be provided for GlaubitzIskeLampertÖffner2026Regularized."))
     end
     L = get_nsigma(N; bandwidth, size_boundary, different_values, sparsity_pattern)
 
@@ -122,7 +121,9 @@ function construct_function_space_operator(basis_functions, nodes,
                                    for i in 1:K]
     V, V_x = orthonormal_vandermonde_matrices(basis_functions, basis_functions_derivatives,
                                               nodes)
-    # This weights column k, i.e. basis function k, with the weight `basis_functions_weights[k]`
+    # This weights column k, i.e. the k-th orthonormalized basis function, which is a linear combination
+    # of the first k basis functions, with the weight `basis_functions_weights[k]`, see the docstring of
+    # `function_space_operator`
     V = V * Diagonal(basis_functions_weights)
     V_x = V_x * Diagonal(basis_functions_weights)
     B = spzeros(T, N, N)
@@ -202,7 +203,6 @@ function get_objective_function(::GlaubitzIskeLampertÖffner2026Regularized,
 end
 function get_objective_function(::GlaubitzIskeLampertÖffner2026EigenvalueProperty,
                                 param, autodiff)
-    N, N = size(param.V)
     f(M, x) = optimization_function_function_space_operator(M, x, param)
     grad_f(M, x) = optimization_gradient_function_space_operator(M, f, x, autodiff)
     hess_f(M, p, Xp) = ApproxHessianBFGS(M, p, grad_f)(M, p, Xp)
