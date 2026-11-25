@@ -229,6 +229,9 @@ end
 # iterates seen on Windows). Returning a constant also keeps the (ForwardDiff) gradient finite
 # (zero) at these probe points. The accepted iterate is always finite, so this only affects
 # rejected line-search probes and does not change the optimum.
+# A probe can also be finite and positive, but such that `inv(Diagonal(p))` or products with `S`
+# overflow, in particular for `Float32` (seen with Julia v1.12). Hence, the cost and the
+# constraint are also checked for non-finite values before they are returned or passed to `eigen`.
 p_is_degenerate(p) = !all(pᵢ -> isfinite(pᵢ) && pᵢ > 0, p)
 degenerate_penalty(::Type{T}) where {T} = inv(eps(real(T)))
 
@@ -238,7 +241,9 @@ function optimization_function_function_space_operator(M, x, param)
 
     p_is_degenerate(p) && return convert(eltype(p), degenerate_penalty(eltype(p)))
     A = S * V - Diagonal(p) * V_x + R
-    return sum(abs2, A)
+    cost = sum(abs2, A)
+    isfinite(cost) || return convert(eltype(p), degenerate_penalty(eltype(p)))
+    return cost
 end
 
 function optimization_function_function_space_operator_G(M, x, param)
@@ -247,7 +252,9 @@ function optimization_function_function_space_operator_G(M, x, param)
 
     p_is_degenerate(p) && return convert(eltype(p), degenerate_penalty(eltype(p)))
     A = S * G - Diagonal(p) * G_x + R_G
-    return sum(abs2, A)
+    cost = sum(abs2, A)
+    isfinite(cost) || return convert(eltype(p), degenerate_penalty(eltype(p)))
+    return cost
 end
 
 # There is a PR for this in ForwardDiff.jl: https://github.com/JuliaDiff/ForwardDiff.jl/pull/788
@@ -298,6 +305,7 @@ function eigenvalue_property(M, x, param)
     D_tilde = inv(Diagonal(p)) * Q
     nu = 1.0
     D_tilde[1, 1] += nu / p[1]
+    all(isfinite, D_tilde) || return convert(eltype(p), degenerate_penalty(eltype(p)))
     lambdas = eigen(D_tilde).values
     return -minimum(real(lambdas) .- min_real_eigen)
 end

@@ -32,6 +32,8 @@ for human readability.
 
 #### Fixed
 
+- The constructions with Manopt.jl could throw an `ArgumentError` from `eigen` if the line search
+  probed weights that are finite but make the operator overflow, e.g., for `Float32` ([#XXX]).
 - `MultidimensionalLinearAdvectionNonperiodicSemidiscretization` was not energy stable at corners
   adjacent to one inflow and one outflow boundary face, e.g., for tensor product operators and
   operators constructed with `corners`. The boundary data is now imposed at the nodes with
