@@ -41,8 +41,11 @@ function default_options(::GlaubitzIskeLampertÖffner2026Basic,
     else
         debug = []
     end
+    # Manopt.jl v1 lowered the default `memory_size` of `quasi_Newton` from 20 to 10, which
+    # makes the operators less accurate. Fix it to keep the results independent of the version.
     return (;
             debug = debug,
+            memory_size = 20,
             stopping_criterion = StopAfterIteration(10000) |
                                  StopWhenGradientNormLess(1e-16) |
                                  StopWhenCostLess(1e-28))
@@ -61,8 +64,12 @@ function default_options(::GlaubitzIskeLampertÖffner2026Regularized,
     else
         debug = []
     end
+    # Manopt.jl v1 raised the default `ϵ_exponent` of `augmented_Lagrangian_method` from 1/100
+    # to 1/30, which lets the method stop before the constraints are satisfied accurately. Fix it
+    # to keep the results independent of the version.
     return (;
             debug = debug,
+            ϵ_exponent = 1 / 100,
             stopping_criterion = StopAfterIteration(1000) |
                                  StopWhenCostLess(1e-28))
 end
@@ -80,8 +87,10 @@ function default_options(::GlaubitzIskeLampertÖffner2026EigenvalueProperty,
     else
         debug = []
     end
+    # See the comment on `ϵ_exponent` for `GlaubitzIskeLampertÖffner2026Regularized`.
     return (;
             debug = debug,
+            ϵ_exponent = 1 / 100,
             stopping_criterion = StopAfterIteration(10000) |
                                  cross(StopWhenCostLess(5e-28), 5))
 end
@@ -217,11 +226,13 @@ function get_objective_function(::GlaubitzIskeLampertÖffner2026EigenvalueProper
 end
 
 # During the (Manopt >= 0.6) Wolfe-Powell line search the exponential retraction on the
-# `PositiveVectors` manifold, `q = p .* exp.(t .* X ./ p)`, can probe huge step sizes
-# (`max_stepsize(M) == Inf`, so the increase loop is only bounded by `1e9`). This makes
-# entries of `p` over-/underflow to `Inf`/`0.0`, after which the objective/constraint
-# (`Diagonal(p)`, `inv(Diagonal(p))`, `eigen`) produce `Inf`/`NaN` or even throw a
-# `SingularException`. Whether `exp` lands on exactly `0.0`/`Inf` is platform dependent, which
+# `PositiveVectors` manifold, `q = p .* exp.(t .* X ./ p)`, can probe huge step sizes. The
+# increase loop is bounded by the keyword `max_stepsize` (renamed to
+# `stop_when_stepsize_exceeds` in Manopt v1) and, since Manopt 0.6.16, by
+# `directional_max_stepsize(M, p, X)`. Both are infinite here since `max_stepsize(M) == Inf`,
+# so the step size is only bounded by `1e9`. This makes entries of `p` over-/underflow to
+# `Inf`/`0.0`, after which the objective/constraint (`Diagonal(p)`, `inv(Diagonal(p))`,
+# `eigen`) produce `Inf`/`NaN` or even throw a `SingularException`. Whether `exp` lands on exactly `0.0`/`Inf` is platform dependent, which
 # is why this only surfaced on Windows. Detect such degenerate `p` and return a large *finite*
 # penalty so the line search backtracks. It must stay finite when squared (augmented Lagrangian)
 # and scaled by the penalty parameter `ρ`, hence not `Inf`: a non-finite cost/constraint feeds
