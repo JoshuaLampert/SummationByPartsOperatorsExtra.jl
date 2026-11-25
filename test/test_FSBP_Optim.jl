@@ -76,6 +76,29 @@ end
     end
 end
 
+@testitem "FSBP without normalized weights with Optim.jl" setup=[FSBP_Optim] begin
+    # For the function space spanned by 1 and exp, exactness of a tridiagonal operator fixes the
+    # sum of the weights to a value different from the length of the interval. Hence, an exact
+    # operator only exists without the normalization of the weights.
+    nodes = collect(range(-1.0, 1.0, length = 6))
+    basis_functions = [one, exp]
+    source = GlaubitzNordströmÖffner2023()
+    error_exp(D) = maximum(abs, D * exp.(nodes) - exp.(nodes))
+    kwargs = (; bandwidth = 1, size_boundary = 1, different_values = false)
+
+    D = function_space_operator(basis_functions, nodes, source; kwargs...)
+    @test sum(mass_matrix(D)) ≈ 2
+    @test error_exp(D) > 1e-3
+
+    D = function_space_operator(basis_functions, nodes, source; kwargs...,
+                                normalize_weights = false)
+    @test !(sum(mass_matrix(D)) ≈ 2)
+    @test error_exp(D) < 1e-10
+    @test all(isapprox.(D * ones(length(nodes)), 0; atol = 1e-12))
+    M = mass_matrix(D)
+    @test M * D.D + D.D' * M ≈ mass_matrix_boundary(D)
+end
+
 @testitem "FSBP basis function weights with Optim.jl" setup=[FSBP_Optim] begin
     # With 4 equidistant nodes, the basis functions 1, x, x^2, x^3 cannot all be reproduced
     # exactly. Since the weights act on the basis orthonormalized in the given order, a basis

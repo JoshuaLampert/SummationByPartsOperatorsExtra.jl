@@ -16,9 +16,10 @@ end
 
     for T in (Float32, Float64, Double64)
         nodes = collect(LinRange{T}(x_min, x_max, N))
-        debug = SummationByPartsOperatorsExtra.default_options(source, true).debug
+        defaults = SummationByPartsOperatorsExtra.default_options(source, true)
         options = (;
-                   debug = debug,
+                   debug = defaults.debug,
+                   memory_size = defaults.memory_size,
                    stopping_criterion = StopAfterIteration(1000) |
                                         StopWhenGradientNormLess(eps(T)) |
                                         cross(StopWhenCostChangeLess(1e-30), 3))
@@ -108,9 +109,10 @@ end
     # because `eigen!` is defined only for `BlasReal`.
     for T in (Float32, Float64)
         nodes = collect(LinRange{T}(x_min, x_max, N))
-        debug = SummationByPartsOperatorsExtra.default_options(source, true).debug
+        defaults = SummationByPartsOperatorsExtra.default_options(source, true)
         options = (;
-                   debug = push!(debug, 100), # Only print every 100 iterations
+                   debug = push!(defaults.debug, 100), # Only print every 100 iterations
+                   ϵ_exponent = defaults.ϵ_exponent,
                    stopping_criterion = StopAfterIteration(10000) |
                                         cross(StopWhenCostLess(10000 * eps(T)^2), 5) |
                                         cross(StopWhenCostChangeLess(1e-30), 3))
@@ -173,9 +175,9 @@ end
     # it works, but is not more accurate than Float64
     for T in (Float32, Float64)
         nodes = collect(LinRange{T}(x_min, x_max, N))
-        debug = SummationByPartsOperatorsExtra.default_options(source, true).debug
+        defaults = SummationByPartsOperatorsExtra.default_options(source, true)
         # Use the default stopping criterion of `augmented_Lagrangian_method` here.
-        options = (; debug = debug)
+        options = (; debug = defaults.debug, ϵ_exponent = defaults.ϵ_exponent)
         let basis_functions = [x -> x^i for i in 0:3]
             # Test errors
             @test_throws ArgumentError function_space_operator(basis_functions, nodes,
