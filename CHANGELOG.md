@@ -13,7 +13,7 @@ for human readability.
 - `function_space_operator` with `GlaubitzNordströmÖffner2023` and
   `multidimensional_function_space_operator` can construct operators whose weights do not sum up
   to the volume of the domain (`normalize_weights = false`), which some function spaces need for
-  exactness ([#XXX]).
+  exactness ([#133]).
 
 #### Changed
 
