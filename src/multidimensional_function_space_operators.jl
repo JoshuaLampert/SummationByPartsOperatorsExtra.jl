@@ -30,7 +30,7 @@ end
                                              basis_functions_weights = ones(length(basis_functions)),
                                              bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
                                              different_values = true, sparsity_patterns = nothing,
-                                             opt_alg = Optim.BFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
+                                             normalize_weights = true, opt_alg = Optim.BFGS(), options = Optim.Options(g_tol = 1e-14, iterations = 10000),
                                              autodiff = ADTypes.AutoForwardDiff(), x0 = nothing, verbose = false)
 
 Construct a [`SummationByPartsOperators.MultidimensionalMatrixDerivativeOperator`](@extref) that represents a first-derivative operator in a function
@@ -65,6 +65,11 @@ the residual of the exactness condition for `basis_functions[k]` is weighted wit
 and the residual of the condition on the moments of `basis_functions[k]` and `basis_functions[l]` with
 `basis_functions_weights[k] * basis_functions_weights[l]`. This can be used to, e.g., enforce exactness for
 certain basis functions (high weights), but allow non-exactness for others only minimizing the error (low weights).
+
+By default, the weights of the mass matrix are normalized such that they sum up to `vol`, i.e., the
+quadrature is exact for constants. This is implied by exactness of the operator if the coordinate
+functions are in the function space, but not in general. In such cases, the normalization can prevent
+an exact operator, and it can be switched off with `normalize_weights = false`.
 
 If a boundary node is a corner, it can appear several times in `boundary_indices`, once for each
 adjacent face, with the normal of this face in the corresponding entry of `normals`. The boundary

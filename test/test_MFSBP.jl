@@ -82,6 +82,35 @@ end
     end
 end
 
+@testitem "MFSBP without normalized weights" setup=[MFSBP] begin
+    # As in the one-dimensional test: for the function space spanned by 1 and exp, exactness of a
+    # tridiagonal operator fixes the sum of the weights to a value different from the volume.
+    # Hence, an exact operator only exists without the normalization of the weights.
+    nodes = SVector.(collect(range(-1.0, 1.0, length = 6)))
+    x = first.(nodes)
+    basis_functions = [x -> one(x[1]), x -> exp(x[1])]
+    boundary_indices = [1, 6]
+    normals = [SVector(-1.0), SVector(1.0)]
+    moments = compute_moments_boundary(basis_functions, nodes, normals)
+    source = GlaubitzIskeLampertÖffner2026Multidimensional()
+    error_exp(D) = maximum(abs, D[1] * exp.(x) - exp.(x))
+    kwargs = (; bandwidth = 1, size_boundary = 1, different_values = false)
+
+    D = multidimensional_function_space_operator(basis_functions, nodes, boundary_indices,
+                                                 normals, moments, 2.0, source; kwargs...)
+    @test sum(D.weights) ≈ 2
+    @test error_exp(D) > 1e-3
+
+    D = multidimensional_function_space_operator(basis_functions, nodes, boundary_indices,
+                                                 normals, moments, 2.0, source; kwargs...,
+                                                 normalize_weights = false)
+    @test !(sum(D.weights) ≈ 2)
+    @test error_exp(D) < 1e-10
+    @test all(isapprox.(D[1] * ones(length(x)), 0; atol = 1e-12))
+    M = mass_matrix(D)
+    @test M * D[1] + D[1]' * M ≈ mass_matrix_boundary(D)
+end
+
 @testitem "MFSBP basis function weights" setup=[MFSBP] begin
     # On Legendre nodes, the basis functions 1, x, x^2 can be reproduced exactly. Hence, the
     # weights of the basis functions must not change the resulting operator.
