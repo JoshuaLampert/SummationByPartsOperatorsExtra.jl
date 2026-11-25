@@ -13,6 +13,7 @@ function construct_function_space_operator(basis_functions, nodes,
                                            size_boundary = 2 * bandwidth,
                                            different_values = true,
                                            sparsity_pattern = nothing,
+                                           normalize_weights = true,
                                            autodiff = Optim.ADTypes.AutoForwardDiff(),
                                            x0 = nothing, verbose = false,
                                            opt_alg = default_opt_alg(source),
@@ -67,7 +68,7 @@ function construct_function_space_operator(basis_functions, nodes,
     PV_x_cache = DiffCache(PV_x, chunksize)
     A_cache = DiffCache(A, chunksize)
     p = (; L, x_length, V, V_x, R, S_cache, SV_cache, PV_x_cache, A_cache,
-         bandwidth, size_boundary, different_values, sparsity_pattern)
+         bandwidth, size_boundary, different_values, sparsity_pattern, normalize_weights)
 
     f(x) = optimization_function_function_space_operator(x, p)
     result = optimize(f, x0, opt_alg, options; autodiff)
@@ -77,7 +78,7 @@ function construct_function_space_operator(basis_functions, nodes,
     sigma, rho = split_x_function_space_operator(x, L)
     S = SummationByPartsOperatorsExtra.create_S(sigma, N, bandwidth, size_boundary,
                                                 different_values, sparsity_pattern)
-    P = create_P(rho, x_length)
+    P = create_P(rho, x_length; normalize = normalize_weights)
     weights = diag(P)
     Q = S + B / 2
     D = inv(P) * Q
@@ -86,7 +87,7 @@ end
 
 @views function optimization_function_function_space_operator(x, p)
     (; L, x_length, V, V_x, R, S_cache, SV_cache, PV_x_cache, A_cache,
-    bandwidth, size_boundary, different_values, sparsity_pattern) = p
+    bandwidth, size_boundary, different_values, sparsity_pattern, normalize_weights) = p
 
     sigma, rho = split_x_function_space_operator(x, L)
 
@@ -96,7 +97,7 @@ end
     A = get_tmp(A_cache, x)
     set_S!(S, sigma, bandwidth, size_boundary, different_values, sparsity_pattern)
     mul!(SV, S, V)
-    P = create_P(rho, x_length)
+    P = create_P(rho, x_length; normalize = normalize_weights)
     mul!(PV_x, P, V_x)
     @. A = SV - PV_x + R
     return sum(abs2, A)

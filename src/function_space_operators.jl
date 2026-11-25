@@ -78,6 +78,7 @@ end
                             min_real_eigen = 0.1,
                             bandwidth = length(nodes) - 1, size_boundary = 2 * bandwidth,
                             different_values = true, sparsity_pattern = nothing,
+                            normalize_weights = true,
                             opt_alg, options, autodiff = ADTypes.AutoForwardDiff(),
                             x0 = nothing, verbose = false)
 
@@ -143,6 +144,14 @@ part of D) are different, which is generally meaningful for non-equidistant node
 is `false` the entries of the stencil are repeated in the central part and the two boundary closures share
 their values (makes sense for uniformly distributed nodes and, e.g., a polynomial basis). The keyword
 argument `different_values` is ignored for dense operators.
+
+For the source [`SummationByPartsOperators.GlaubitzNordströmÖffner2023`](@extref), the weights of the
+mass matrix are normalized by default such that they sum up to `x_max - x_min`, i.e., the quadrature
+is exact for constants. This is implied by exactness of the operator if the identity is in the
+function space, but not in general, e.g., for the function space spanned by `1` and `exp`. In such
+cases, the normalization can prevent an exact operator, and it can be switched off with
+`normalize_weights = false`. Note that some codes assume a quadrature that is exact for constants,
+e.g., Trixi.jl computes the length of the reference element as the sum of the weights.
 
 When using the regularized optimization procedure using [`GlaubitzIskeLampertÖffner2026Regularized`](@ref), you have to pass
 additional functions to be regularized with the keyword argument `regularization_functions`, which is an iterable of functions.

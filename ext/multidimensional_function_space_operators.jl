@@ -32,6 +32,7 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
                                                             size_boundary = 2 * bandwidth,
                                                             different_values = true,
                                                             sparsity_patterns = nothing,
+                                                            normalize_weights = true,
                                                             corners = nothing,
                                                             opt_alg = BFGS(),
                                                             options = Options(g_tol = 1e-14,
@@ -106,7 +107,7 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
     C_cache = DiffCache(copy(M), chunksize)
     p = (; Ls, vol, normals, moments, boundary_indices, V, V_xis,
          S_cache, SV_cache, PV_xi_cache, B_cache, BV_cache, A_cache, VTBV_cache, C_cache,
-         bandwidth, size_boundary, different_values, sparsity_patterns)
+         bandwidth, size_boundary, different_values, sparsity_patterns, normalize_weights)
 
     f(x) = optimization_function_multidimensional_function_space_operator(x, p)
     result = optimize(f, x0, opt_alg, options; autodiff)
@@ -115,7 +116,7 @@ function construct_multidimensional_function_space_operator(basis_functions, nod
     x = minimizer(result)
     sigmas, rho, phi = split_x_multidimensional_function_space_operator(x, Ls, d, N,
                                                                         N_boundary)
-    P = create_P(rho, vol)
+    P = create_P(rho, vol; normalize = normalize_weights)
     weights = diag(P)
     weights_boundary = sig_b.(phi)
     function create_D(i)
@@ -134,7 +135,7 @@ end
 @views function optimization_function_multidimensional_function_space_operator(x, p)
     (; Ls, vol, normals, moments, boundary_indices, V, V_xis,
     S_cache, SV_cache, PV_xi_cache, B_cache, BV_cache, A_cache, VTBV_cache, C_cache,
-    bandwidth, size_boundary, different_values, sparsity_patterns) = p
+    bandwidth, size_boundary, different_values, sparsity_patterns, normalize_weights) = p
     d = length(V_xis)
     N = size(V, 1)
     N_boundary = length(normals)
@@ -150,7 +151,7 @@ end
     VTBV = get_tmp(VTBV_cache, x)
     C = get_tmp(C_cache, x)
 
-    P = create_P(rho, vol)
+    P = create_P(rho, vol; normalize = normalize_weights)
     res = 0.0
     for i in 1:d
         M = moments[i]

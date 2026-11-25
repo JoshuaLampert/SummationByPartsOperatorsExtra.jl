@@ -147,9 +147,16 @@ function set_S_sparsity_pattern!(S, sigma, N, sparsity_pattern)
     end
 end
 
-function create_P(rho, vol)
+# The weights are `sig.(rho)` scaled to the volume `vol`. If `normalize` is `true`, they sum up
+# to `vol`, i.e., the quadrature is exact for constants. Otherwise, each weight lies in `(0, vol)`
+# and their sum is free.
+function create_P(rho, vol; normalize = true)
     P = Diagonal(sig.(rho))
-    P *= vol / sum(P)
+    if normalize
+        P *= vol / sum(P)
+    else
+        P *= vol
+    end
     return P
 end
 
